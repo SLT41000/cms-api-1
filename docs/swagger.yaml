@@ -1,0 +1,1464 @@
+basePath: /
+definitions:
+  model.CaseCloseInput:
+    properties:
+      caseStatusCode:
+        type: string
+      closedDate:
+        type: string
+      modifiedDate:
+        type: string
+      resultCode:
+        type: string
+      resultDetail:
+        type: string
+      transImg:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      userClose:
+        type: string
+      userModify:
+        type: string
+    type: object
+  model.CaseDetailData:
+    properties:
+      approvedStatus:
+        type: integer
+      caseDetail:
+        type: string
+      caseId:
+        type: string
+      caseLat:
+        type: string
+      caseLocationAddress:
+        type: string
+      caseLocationDetail:
+        type: string
+      caseLon:
+        type: string
+      caseStatusCode:
+        type: string
+      caseStatusName:
+        type: string
+      casetypeCode:
+        type: string
+      casetypeName:
+        type: string
+      citizenCode:
+        type: string
+      citizenFullname:
+        type: string
+      commandCode:
+        type: string
+      commandName:
+        type: string
+      createdDate:
+        type: string
+      departmentName:
+        type: string
+      destLat:
+        type: string
+      destLocationAddress:
+        type: string
+      destLocationDetail:
+        type: string
+      destLon:
+        type: string
+      extensionReceive:
+        type: string
+      id:
+        type: integer
+      mediaType:
+        type: integer
+      modifiedDate:
+        type: string
+      openedDate:
+        type: string
+      phoneNumber:
+        type: string
+      policeStationCode:
+        type: string
+      policeStationName:
+        type: string
+      priority:
+        type: integer
+      referCaseId:
+        type: string
+      responsible:
+        type: string
+      savedDate:
+        type: string
+      specialEmergency:
+        type: integer
+      startedDate:
+        type: string
+      transImg:
+        description: Was a string in your example, not an array
+        type: string
+      urgentAmount:
+        type: string
+      userCreate:
+        type: string
+      userCreateId:
+        type: string
+      userModify:
+        type: string
+      vOwner:
+        type: integer
+      vVin:
+        type: string
+      ways:
+        type: integer
+    type: object
+  model.CaseDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/model.CaseDetailData'
+      desc:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.CaseForCreate:
+    properties:
+      actionProCode:
+        example: "1"
+        type: string
+      backdated:
+        example: 0
+        type: integer
+      caseCondition:
+        example: 0
+        type: integer
+      caseDetail:
+        example: "1"
+        type: string
+      caseDirection:
+        example: "1"
+        type: string
+      caseLat:
+        example: "1"
+        type: string
+      caseLocationAddress:
+        example: "1"
+        type: string
+      caseLocationDetail:
+        example: "1"
+        type: string
+      caseLocationType:
+        example: "1"
+        type: string
+      caseLon:
+        example: "1"
+        type: string
+      casePhoto:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      caseRoute:
+        example: "1"
+        type: string
+      caseSla:
+        example: 0
+        type: integer
+      caseStatusCode:
+        example: "1"
+        type: string
+      casetypeCode:
+        example: "1"
+        type: string
+      citizenCode:
+        example: "1"
+        type: string
+      closedDate:
+        type: string
+      commandCode:
+        example: "1"
+        type: string
+      createdDate:
+        type: string
+      destLat:
+        example: "1"
+        type: string
+      destLocationAddress:
+        example: "1"
+        type: string
+      destLocationDetail:
+        example: "1"
+        type: string
+      destLon:
+        example: "1"
+        type: string
+      duration:
+        example: 0
+        type: integer
+      escapeRoute:
+        example: "1"
+        type: string
+      extensionReceive:
+        example: "1"
+        type: string
+      home:
+        example: 0
+        type: integer
+      mediaCode:
+        example: "1"
+        type: string
+      mediaType:
+        example: 0
+        type: integer
+      modifiedDate:
+        type: string
+      needAmbulance:
+        example: 0
+        type: integer
+      openedDate:
+        type: string
+      phoneNumber:
+        example: "1"
+        type: string
+      phoneNumberHide:
+        example: 0
+        type: integer
+      policeStationCode:
+        example: "1"
+        type: string
+      priority:
+        example: 0
+        type: integer
+      referCaseId:
+        example: "1"
+        type: string
+      specialEmergency:
+        example: 1
+        type: integer
+      startedDate:
+        type: string
+      token:
+        example: "1"
+        type: string
+      transImg:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      userClose:
+        example: "1"
+        type: string
+      userCreate:
+        example: "1"
+        type: string
+      userModify:
+        example: "1"
+        type: string
+      vOwner:
+        example: 0
+        type: integer
+      vVin:
+        example: "1"
+        type: string
+      ways:
+        example: 0
+        type: integer
+    type: object
+  model.CaseForUpdate:
+    properties:
+      actionProCode:
+        type: string
+      backdated:
+        type: integer
+      caseCondition:
+        type: integer
+      caseDetail:
+        type: string
+      caseDirection:
+        type: string
+      caseLat:
+        type: string
+      caseLocationAddress:
+        type: string
+      caseLocationDetail:
+        type: string
+      caseLocationType:
+        type: string
+      caseLon:
+        type: string
+      casePhoto:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      caseRoute:
+        type: string
+      caseSla:
+        type: integer
+      caseStatusCode:
+        type: string
+      casetypeCode:
+        type: string
+      citizenCode:
+        type: string
+      closedDate:
+        type: string
+      commandCode:
+        type: string
+      createdDate:
+        type: string
+      destLat:
+        type: string
+      destLocationAddress:
+        type: string
+      destLocationDetail:
+        type: string
+      destLon:
+        type: string
+      duration:
+        type: integer
+      escapeRoute:
+        type: string
+      extensionReceive:
+        type: string
+      home:
+        type: integer
+      mediaCode:
+        type: string
+      mediaType:
+        type: integer
+      modifiedDate:
+        type: string
+      needAmbulance:
+        type: integer
+      openedDate:
+        type: string
+      phoneNumber:
+        type: string
+      phoneNumberHide:
+        type: integer
+      policeStationCode:
+        type: string
+      priority:
+        type: integer
+      referCaseId:
+        type: string
+      specialEmergency:
+        type: integer
+      startedDate:
+        type: string
+      transImg:
+        items:
+          $ref: '#/definitions/model.Media'
+        type: array
+      userClose:
+        type: string
+      userCreate:
+        type: string
+      userModify:
+        type: string
+      vOwner:
+        type: integer
+      vVin:
+        type: string
+      ways:
+        type: integer
+    type: object
+  model.CaseListData:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.OutputCase'
+        type: array
+      draw:
+        type: integer
+      error:
+        type: string
+      recordsFiltered:
+        type: integer
+      recordsTotal:
+        type: integer
+    type: object
+  model.CreateCaseResponse:
+    properties:
+      caseId:
+        type: string
+      desc:
+        type: string
+      id:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.Customer:
+    properties:
+      email:
+        description: Customer E-mail
+        example: choo@gmail.com
+        maxLength: 255
+        type: string
+      firstname:
+        description: Customer Firstname
+        example: Choopong
+        maxLength: 255
+        type: string
+      gender:
+        description: Customer Gender
+        enum:
+        - male
+        - female
+        example: male
+        type: string
+      id:
+        description: Customer ID
+        example: 1
+        type: integer
+      lastname:
+        description: Customer Lastname
+        example: Choosamer
+        maxLength: 255
+        type: string
+      username:
+        description: Customer Username
+        example: choo
+        maxLength: 255
+        type: string
+    required:
+    - email
+    - firstname
+    - lastname
+    - username
+    type: object
+  model.CustomerForCreate:
+    properties:
+      email:
+        description: Customer E-mail
+        example: choo@gmail.com
+        maxLength: 255
+        type: string
+      firstname:
+        description: Customer Firstname
+        example: Choopong
+        maxLength: 255
+        type: string
+      gender:
+        description: Customer Gender
+        enum:
+        - male
+        - female
+        example: male
+        type: string
+      lastname:
+        description: Customer Lastname
+        example: Choosamer
+        maxLength: 255
+        type: string
+      username:
+        description: Customer Username
+        example: choo
+        maxLength: 255
+        type: string
+    required:
+    - email
+    - firstname
+    - lastname
+    - username
+    type: object
+  model.CustomerForUpdate:
+    properties:
+      email:
+        description: Customer E-mail
+        example: choo@gmail.com
+        maxLength: 255
+        type: string
+      firstname:
+        description: Customer Firstname
+        example: Choopong
+        maxLength: 255
+        type: string
+      gender:
+        description: Customer Gender
+        enum:
+        - male
+        - female
+        example: male
+        type: string
+      lastname:
+        description: Customer Lastname
+        example: Choosamer
+        maxLength: 255
+        type: string
+    required:
+    - email
+    - firstname
+    - lastname
+    type: object
+  model.Customers:
+    properties:
+      customers:
+        items:
+          $ref: '#/definitions/model.Customer'
+        type: array
+    type: object
+  model.DeleteCaseResponse:
+    properties:
+      desc:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.InputTokenModel:
+    properties:
+      clientId:
+        type: string
+      clientSecret:
+        type: string
+      grantType:
+        type: string
+      password:
+        type: string
+      scope:
+        type: string
+      username:
+        type: string
+    type: object
+  model.Media:
+    properties:
+      url:
+        type: string
+    type: object
+  model.OutputCase:
+    properties:
+      CasetypeCode:
+        type: string
+      caseDetail:
+        type: string
+      caseId:
+        type: string
+      caseLocationAddress:
+        type: string
+      caseLocationDetail:
+        type: string
+      caseStatusCode:
+        type: string
+      caseStatusName:
+        type: string
+      casetypeName:
+        type: string
+      createdDate:
+        type: string
+      id:
+        type: string
+      mediaType:
+        type: integer
+      phoneNumber:
+        type: string
+      priority:
+        type: integer
+      specialEmergency:
+        type: integer
+      stationName:
+        type: string
+      urgentAmount:
+        type: string
+      vOwner:
+        type: integer
+      vVin:
+        type: string
+    type: object
+  model.OutputTokenModel:
+    properties:
+      accessToken:
+        type: string
+      tokenType:
+        type: string
+    type: object
+  model.Response:
+    properties:
+      code:
+        description: Response Code
+        type: integer
+      status:
+        description: Response Status
+        type: string
+    type: object
+  model.UpdateCaseResponse:
+    properties:
+      desc:
+        type: string
+      id:
+        type: integer
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@somewhere.com
+    name: API Support
+    url: http://somewhere.com/support
+  description: This is the Customers API server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://somewhere.com/
+  title: Customers API
+  version: "1.0"
+paths:
+  /api/v1/authAPI/token:
+    post:
+      consumes:
+      - application/json
+      description: Login to the system and get an access token
+      operationId: Login
+      parameters:
+      - description: Token data
+        in: body
+        name: Token
+        required: true
+        schema:
+          $ref: '#/definitions/model.InputTokenModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+      security:
+      - ApiKeyAuth: []
+      summary: Login
+      tags:
+      - authAPI
+  /api/v1/cases:
+    get:
+      consumes:
+      - application/json
+      operationId: ListCases
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: List Cases
+      tags:
+      - Cases
+    post:
+      consumes:
+      - application/json
+      operationId: Create a new case
+      parameters:
+      - description: Case data to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseForCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new case
+      tags:
+      - Cases
+  /api/v1/cases/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete an existing case
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an existing case
+      tags:
+      - Cases
+    get:
+      consumes:
+      - application/json
+      operationId: Get a specify case by record ID
+      parameters:
+      - default: 0
+        description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a specify case by record ID
+      tags:
+      - Cases
+    patch:
+      consumes:
+      - application/json
+      operationId: Update an existing case
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Case data to be update
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseForUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing case
+      tags:
+      - Cases
+  /api/v1/cases/close/{id}:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update an existing case status (close or cancel)
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Case data to be update
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseCloseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.UpdateCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing case status (close or cancel)
+      tags:
+      - Cases
+  /api/v1/cases/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get a specify case by case code (case_id)
+      parameters:
+      - description: case code
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.CaseDetailResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a specify case by case code (case_id)
+      tags:
+      - Cases
+  /api/v1/cases/search:
+    get:
+      consumes:
+      - application/json
+      operationId: SearchCase
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      - default: '"-1"'
+        description: case_status_code
+        in: query
+        name: css
+        type: string
+      - description: case_id
+        in: query
+        name: cid
+        type: string
+      - description: case_detail
+        in: query
+        name: cdl
+        type: string
+      - description: command_code
+        in: query
+        name: cmc
+        type: string
+      - description: station_code
+        in: query
+        name: stc
+        type: string
+      - description: opened_date (date start)
+        in: query
+        name: fdt
+        type: string
+      - description: date_to (date end)
+        in: query
+        name: tdt
+        type: string
+      - description: user_create
+        in: query
+        name: uce
+        type: string
+      - description: casetype_code
+        in: query
+        name: ctc
+        type: string
+      - default: '"5-DESC"'
+        description: order_by
+        in: query
+        name: odb
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: Search Case
+      tags:
+      - Cases
+  /api/v1/customers:
+    get:
+      consumes:
+      - application/json
+      description: List all customers
+      operationId: ListCustomers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.Response'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.Response'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List Customers
+      tags:
+      - customers
+    post:
+      consumes:
+      - application/json
+      description: Create new customer
+      operationId: CreateCustomer
+      parameters:
+      - description: Customer data to be created
+        in: body
+        name: Customer
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerForCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.Response'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.Response'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Customer
+      tags:
+      - customers
+  /api/v1/customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a customer by ID
+      operationId: DeleteCustomer
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.Response'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.Response'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete customer
+      tags:
+      - customers
+    get:
+      consumes:
+      - application/json
+      description: Get customer by id
+      operationId: GetCustomer
+      parameters:
+      - description: id of customer to be gotten
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.Response'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.Response'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer
+      tags:
+      - customers
+    patch:
+      consumes:
+      - application/json
+      description: Update customer by id
+      operationId: UpdateCustomer
+      parameters:
+      - description: id of customer to be updated
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Customer data to be updated
+        in: body
+        name: Customer
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerForUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.Customers'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.Response'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.Response'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Customer
+      tags:
+      - customers
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

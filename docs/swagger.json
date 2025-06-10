@@ -1,0 +1,2184 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "This is the Customers API server.",
+        "title": "Customers API",
+        "termsOfService": "http://somewhere.com/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://somewhere.com/support",
+            "email": "support@somewhere.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/api/v1/authAPI/token": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Login to the system and get an access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authAPI"
+                ],
+                "summary": "Login",
+                "operationId": "Login",
+                "parameters": [
+                    {
+                        "description": "Token data",
+                        "name": "Token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.InputTokenModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cases": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List Cases",
+                "operationId": "ListCases",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Create a new case",
+                "operationId": "Create a new case",
+                "parameters": [
+                    {
+                        "description": "Case data to be created",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseForCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateCaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cases/close/{id}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Update an existing case status (close or cancel)",
+                "operationId": "Update an existing case status (close or cancel)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Case data to be update",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseCloseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cases/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Get a specify case by case code (case_id)",
+                "operationId": "Get a specify case by case code (case_id)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "case code",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cases/search": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Search Case",
+                "operationId": "SearchCase",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"-1\"",
+                        "description": "case_status_code",
+                        "name": "css",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "case_id",
+                        "name": "cid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "case_detail",
+                        "name": "cdl",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "command_code",
+                        "name": "cmc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "station_code",
+                        "name": "stc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "opened_date (date start)",
+                        "name": "fdt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "date_to (date end)",
+                        "name": "tdt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "user_create",
+                        "name": "uce",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "casetype_code",
+                        "name": "ctc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"5-DESC\"",
+                        "description": "order_by",
+                        "name": "odb",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cases/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Get a specify case by record ID",
+                "operationId": "Get a specify case by record ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseDetailResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Delete an existing case",
+                "operationId": "Delete an existing case",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteCaseResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Update an existing case",
+                "operationId": "Update an existing case",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Case data to be update",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseForUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateCaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customers": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "List all customers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "List Customers",
+                "operationId": "ListCustomers",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create new customer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Create Customer",
+                "operationId": "CreateCustomer",
+                "parameters": [
+                    {
+                        "description": "Customer data to be created",
+                        "name": "Customer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CustomerForCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get customer by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Get Customer",
+                "operationId": "GetCustomer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id of customer to be gotten",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a customer by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Delete customer",
+                "operationId": "DeleteCustomer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Update customer by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Update Customer",
+                "operationId": "UpdateCustomer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id of customer to be updated",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Customer data to be updated",
+                        "name": "Customer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CustomerForUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.Customers"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.CaseCloseInput": {
+            "type": "object",
+            "properties": {
+                "caseStatusCode": {
+                    "type": "string"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "resultCode": {
+                    "type": "string"
+                },
+                "resultDetail": {
+                    "type": "string"
+                },
+                "transImg": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Media"
+                    }
+                },
+                "userClose": {
+                    "type": "string"
+                },
+                "userModify": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseDetailData": {
+            "type": "object",
+            "properties": {
+                "approvedStatus": {
+                    "type": "integer"
+                },
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseId": {
+                    "type": "string"
+                },
+                "caseLat": {
+                    "type": "string"
+                },
+                "caseLocationAddress": {
+                    "type": "string"
+                },
+                "caseLocationDetail": {
+                    "type": "string"
+                },
+                "caseLon": {
+                    "type": "string"
+                },
+                "caseStatusCode": {
+                    "type": "string"
+                },
+                "caseStatusName": {
+                    "type": "string"
+                },
+                "casetypeCode": {
+                    "type": "string"
+                },
+                "casetypeName": {
+                    "type": "string"
+                },
+                "citizenCode": {
+                    "type": "string"
+                },
+                "citizenFullname": {
+                    "type": "string"
+                },
+                "commandCode": {
+                    "type": "string"
+                },
+                "commandName": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "departmentName": {
+                    "type": "string"
+                },
+                "destLat": {
+                    "type": "string"
+                },
+                "destLocationAddress": {
+                    "type": "string"
+                },
+                "destLocationDetail": {
+                    "type": "string"
+                },
+                "destLon": {
+                    "type": "string"
+                },
+                "extensionReceive": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mediaType": {
+                    "type": "integer"
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "openedDate": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "policeStationCode": {
+                    "type": "string"
+                },
+                "policeStationName": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "referCaseId": {
+                    "type": "string"
+                },
+                "responsible": {
+                    "type": "string"
+                },
+                "savedDate": {
+                    "type": "string"
+                },
+                "specialEmergency": {
+                    "type": "integer"
+                },
+                "startedDate": {
+                    "type": "string"
+                },
+                "transImg": {
+                    "description": "Was a string in your example, not an array",
+                    "type": "string"
+                },
+                "urgentAmount": {
+                    "type": "string"
+                },
+                "userCreate": {
+                    "type": "string"
+                },
+                "userCreateId": {
+                    "type": "string"
+                },
+                "userModify": {
+                    "type": "string"
+                },
+                "vOwner": {
+                    "type": "integer"
+                },
+                "vVin": {
+                    "type": "string"
+                },
+                "ways": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CaseDetailResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/model.CaseDetailData"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseForCreate": {
+            "type": "object",
+            "properties": {
+                "actionProCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "backdated": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "caseCondition": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "caseDetail": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseDirection": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseLat": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseLocationAddress": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseLocationDetail": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseLocationType": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseLon": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "casePhoto": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Media"
+                    }
+                },
+                "caseRoute": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "caseSla": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "caseStatusCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "casetypeCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "citizenCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "commandCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "destLat": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "destLocationAddress": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "destLocationDetail": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "destLon": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "duration": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "escapeRoute": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "extensionReceive": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "home": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "mediaCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "mediaType": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "needAmbulance": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "openedDate": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "phoneNumberHide": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "policeStationCode": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "priority": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "referCaseId": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "specialEmergency": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "startedDate": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "transImg": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Media"
+                    }
+                },
+                "userClose": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "userCreate": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "userModify": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "vOwner": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "vVin": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "ways": {
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
+        "model.CaseForUpdate": {
+            "type": "object",
+            "properties": {
+                "actionProCode": {
+                    "type": "string"
+                },
+                "backdated": {
+                    "type": "integer"
+                },
+                "caseCondition": {
+                    "type": "integer"
+                },
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseDirection": {
+                    "type": "string"
+                },
+                "caseLat": {
+                    "type": "string"
+                },
+                "caseLocationAddress": {
+                    "type": "string"
+                },
+                "caseLocationDetail": {
+                    "type": "string"
+                },
+                "caseLocationType": {
+                    "type": "string"
+                },
+                "caseLon": {
+                    "type": "string"
+                },
+                "casePhoto": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Media"
+                    }
+                },
+                "caseRoute": {
+                    "type": "string"
+                },
+                "caseSla": {
+                    "type": "integer"
+                },
+                "caseStatusCode": {
+                    "type": "string"
+                },
+                "casetypeCode": {
+                    "type": "string"
+                },
+                "citizenCode": {
+                    "type": "string"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "commandCode": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "destLat": {
+                    "type": "string"
+                },
+                "destLocationAddress": {
+                    "type": "string"
+                },
+                "destLocationDetail": {
+                    "type": "string"
+                },
+                "destLon": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "escapeRoute": {
+                    "type": "string"
+                },
+                "extensionReceive": {
+                    "type": "string"
+                },
+                "home": {
+                    "type": "integer"
+                },
+                "mediaCode": {
+                    "type": "string"
+                },
+                "mediaType": {
+                    "type": "integer"
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "needAmbulance": {
+                    "type": "integer"
+                },
+                "openedDate": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "phoneNumberHide": {
+                    "type": "integer"
+                },
+                "policeStationCode": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "referCaseId": {
+                    "type": "string"
+                },
+                "specialEmergency": {
+                    "type": "integer"
+                },
+                "startedDate": {
+                    "type": "string"
+                },
+                "transImg": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Media"
+                    }
+                },
+                "userClose": {
+                    "type": "string"
+                },
+                "userCreate": {
+                    "type": "string"
+                },
+                "userModify": {
+                    "type": "string"
+                },
+                "vOwner": {
+                    "type": "integer"
+                },
+                "vVin": {
+                    "type": "string"
+                },
+                "ways": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CaseListData": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.OutputCase"
+                    }
+                },
+                "draw": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "recordsFiltered": {
+                    "type": "integer"
+                },
+                "recordsTotal": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CreateCaseResponse": {
+            "type": "object",
+            "properties": {
+                "caseId": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Customer": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstname",
+                "lastname",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Customer E-mail",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "choo@gmail.com"
+                },
+                "firstname": {
+                    "description": "Customer Firstname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choopong"
+                },
+                "gender": {
+                    "description": "Customer Gender",
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ],
+                    "example": "male"
+                },
+                "id": {
+                    "description": "Customer ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "lastname": {
+                    "description": "Customer Lastname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choosamer"
+                },
+                "username": {
+                    "description": "Customer Username",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "choo"
+                }
+            }
+        },
+        "model.CustomerForCreate": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstname",
+                "lastname",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Customer E-mail",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "choo@gmail.com"
+                },
+                "firstname": {
+                    "description": "Customer Firstname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choopong"
+                },
+                "gender": {
+                    "description": "Customer Gender",
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ],
+                    "example": "male"
+                },
+                "lastname": {
+                    "description": "Customer Lastname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choosamer"
+                },
+                "username": {
+                    "description": "Customer Username",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "choo"
+                }
+            }
+        },
+        "model.CustomerForUpdate": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstname",
+                "lastname"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Customer E-mail",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "choo@gmail.com"
+                },
+                "firstname": {
+                    "description": "Customer Firstname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choopong"
+                },
+                "gender": {
+                    "description": "Customer Gender",
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ],
+                    "example": "male"
+                },
+                "lastname": {
+                    "description": "Customer Lastname",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Choosamer"
+                }
+            }
+        },
+        "model.Customers": {
+            "type": "object",
+            "properties": {
+                "customers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Customer"
+                    }
+                }
+            }
+        },
+        "model.DeleteCaseResponse": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.InputTokenModel": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "grantType": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Media": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.OutputCase": {
+            "type": "object",
+            "properties": {
+                "CasetypeCode": {
+                    "type": "string"
+                },
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseId": {
+                    "type": "string"
+                },
+                "caseLocationAddress": {
+                    "type": "string"
+                },
+                "caseLocationDetail": {
+                    "type": "string"
+                },
+                "caseStatusCode": {
+                    "type": "string"
+                },
+                "caseStatusName": {
+                    "type": "string"
+                },
+                "casetypeName": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mediaType": {
+                    "type": "integer"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "specialEmergency": {
+                    "type": "integer"
+                },
+                "stationName": {
+                    "type": "string"
+                },
+                "urgentAmount": {
+                    "type": "string"
+                },
+                "vOwner": {
+                    "type": "integer"
+                },
+                "vVin": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.OutputTokenModel": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "tokenType": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "Response Code",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Response Status",
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdateCaseResponse": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

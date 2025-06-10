@@ -1,0 +1,47 @@
+2025-06-10 16:53:04	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 16:53:05	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 16:53:05	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 16:59:12	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 16:59:12	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 16:59:12	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 16:59:35	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 16:59:35	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 16:59:35	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 16:59:43	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 16:59:43	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 16:59:43	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:01:49	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:01:49	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:01:49	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:03:16	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:03:16	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:03:16	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:04:28	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:04:29	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:04:29	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:09:07	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:09:07	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:09:07	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:12:02	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:12:02	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:12:02	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:14:41	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:14:42	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:14:42	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:15:07	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:15:07	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:15:07	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:15:29	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:15:30	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:15:30	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:48:52	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:48:52	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:48:52	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:49:21	WARN	handler/case.go:429	Insert failed	{"error": "ERROR: null value in column \"isdup\" of relation \"case\" violates not-null constraint (SQLSTATE 23502)"}
+2025-06-10 17:50:48	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:50:48	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:50:48	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-10 17:50:49	WARN	handler/case.go:429	Insert failed	{"error": "ERROR: INSERT has more target columns than expressions (SQLSTATE 42601)"}
+2025-06-10 17:51:58	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-10 17:51:58	INFO	api/main.go:71	Server started at: http://localhost:8080
+2025-06-10 17:51:58	INFO	api/main.go:72	Swagger docs available at: http://localhost:8080/swagger/index.html
