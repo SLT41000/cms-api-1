@@ -9,6 +9,7 @@ import (
 	"mainPackage/model"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -195,8 +196,10 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 	rows, err := h.DB.Query(ctx, query, length, start, keyword)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
+		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
 		})
 		return
 	}
@@ -216,12 +219,21 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 			continue
 		}
 
-		fmt.Printf("%+v\n", casetypeMap)
-		fmt.Println(*cusCase.Casetype_code)
-		fmt.Printf("%+v\n", stationMap)
-		fmt.Println(*cusCase.Police_station_name)
-		fmt.Printf("%+v\n", caseStatusMap)
-		fmt.Println(*cusCase.Case_status_code)
+		jsonData, _ := json.MarshalIndent(casetypeMap, "", "  ")
+		logger.Debug("casetypeMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Casetype_code)
+		jsonData, _ = json.MarshalIndent(stationMap, "", "  ")
+		logger.Debug("stationMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Police_station_name)
+		jsonData, _ = json.MarshalIndent(caseStatusMap, "", "  ")
+		logger.Debug("caseStatusMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Case_status_code)
 
 		cusCase.Case_status_name = Convert(caseStatusMap, cusCase.Case_status_code)
 		cusCase.Casetype_name = Convert(casetypeMap, cusCase.Casetype_code)
@@ -282,7 +294,214 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 // @response 429 {object} model.CaseListData "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseListData "Internal Server Error"
 // @Router /api/v1/cases/search [get]
-func (h *CaseHandler) SearchCase(c *gin.Context) {}
+func (h *CaseHandler) SearchCase(c *gin.Context) {
+	logger := config.GetLog()
+	keyword := c.Query("keyword")
+	start := c.DefaultQuery("start", "0")
+	length := c.DefaultQuery("length", "0")
+	case_status_code := c.Query("css")
+	case_id := c.Query("cid")
+	case_detail := c.Query("cdl")
+	command_code := c.Query("cmc")
+	station_code := c.Query("stc")
+	opened_date := c.Query("fdt")
+	date_to := c.Query("tdt")
+	user_create := c.Query("uce")
+	casetype_code := c.Query("ctc")
+	order_by := c.Query("odb")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	caseStatusMap, err := GetCaseStatusMap(ctx, h.DB)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		logger.Warn("Query failed", zap.Error(err))
+		return
+	}
+	//---
+	stationMap, err := GetStationMap(ctx, h.DB)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		logger.Warn("Query failed", zap.Error(err))
+		return
+	}
+
+	//-------
+	casetypeMap, err := GetCaseTypeMap(ctx, h.DB)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		logger.Warn("Query failed", zap.Error(err))
+		return
+	}
+
+	var (
+		whereClauses []string
+		args         []interface{}
+		argIndex     = 1
+	)
+
+	// Always required for LIMIT and OFFSET
+	args = append(args, length, start)
+	argIndex += 2
+
+	// Build dynamic filters
+	if keyword != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("caseid ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, keyword)
+		argIndex++
+	}
+
+	if case_id != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("caseid ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, case_id)
+		argIndex++
+	}
+
+	if case_status_code != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("casestatuscode ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, case_status_code)
+		argIndex++
+	}
+
+	if case_detail != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("casedetail ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, case_detail)
+		argIndex++
+	}
+
+	if command_code != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("commandcode ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, command_code)
+		argIndex++
+	}
+
+	if station_code != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("policestationcode ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, station_code)
+		argIndex++
+	}
+
+	if opened_date != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("openeddate >= $%d::date", argIndex))
+		args = append(args, opened_date)
+		argIndex++
+	}
+
+	if date_to != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("closeddate <= $%d::date", argIndex))
+		args = append(args, date_to)
+		argIndex++
+	}
+
+	if user_create != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("usercreate ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, user_create)
+		argIndex++
+	}
+
+	if casetype_code != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("casetypecode ILIKE '%%' || $%d || '%%'", argIndex))
+		args = append(args, casetype_code)
+		argIndex++
+	}
+
+	// Validate and inject ORDER BY direction
+	cleanOrder := strings.ToUpper(strings.TrimSpace(order_by))
+	if cleanOrder != "ASC" && cleanOrder != "DESC" {
+		cleanOrder = "DESC"
+	}
+
+	// Final query
+	query := fmt.Sprintf(`
+	SELECT id, caseid, casetypecode, priority, phonenumber, casestatuscode,
+	       resultcode, casedetail, policestationcode, caselocationaddress, caselocationdetail,
+	       specialemergency, urgentamount, createddate, casetypecode, mediatype, vowner, vvin
+	FROM public."case"
+	%s
+	ORDER BY caseid %s
+	LIMIT $1 OFFSET $2
+`, func() string {
+		if len(whereClauses) > 0 {
+			return "WHERE " + strings.Join(whereClauses, " AND ")
+		}
+		return ""
+	}(), cleanOrder)
+
+	logger.Debug("Final Query", zap.String("sql", query))
+
+	rows, err := h.DB.Query(ctx, query, args...)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.OutputCase
+	var errorMsg string
+	for rows.Next() {
+		var cusCase model.OutputCase
+		err := rows.Scan(&cusCase.Id, &cusCase.CaseId, &cusCase.Casetype_code, &cusCase.Priority, &cusCase.Phone_number,
+			&cusCase.Case_status_code, &cusCase.Case_status_name, &cusCase.Case_detail, &cusCase.Police_station_name,
+			&cusCase.Case_location_address, &cusCase.Case_location_detail, &cusCase.Special_emergency, &cusCase.Urgent_amount,
+			&cusCase.Created_date, &cusCase.Casetype_name, &cusCase.Media_type, &cusCase.VOwner, &cusCase.VVin)
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			errorMsg = err.Error()
+			continue
+		}
+
+		jsonData, _ := json.MarshalIndent(casetypeMap, "", "  ")
+		logger.Debug("casetypeMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Casetype_code)
+		//--
+		jsonData, _ = json.MarshalIndent(stationMap, "", "  ")
+		logger.Debug("stationMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Police_station_name)
+		//--
+		jsonData, _ = json.MarshalIndent(caseStatusMap, "", "  ")
+		logger.Debug("caseStatusMap contents",
+			zap.String("data", string(jsonData)), // Correct: wraps string as zap.Field
+		)
+		logger.Debug(*cusCase.Case_status_code)
+
+		cusCase.Case_status_name = Convert(caseStatusMap, cusCase.Case_status_code)
+		cusCase.Casetype_name = Convert(casetypeMap, cusCase.Casetype_code)
+		cusCase.Police_station_name = Convert(stationMap, cusCase.Police_station_name)
+
+		caseLists = append(caseLists, cusCase)
+	}
+
+	// Total count (for frontend pagination)
+	var totalCount int
+	err = h.DB.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		totalCount = 0
+	}
+
+	// Final JSON
+	c.JSON(http.StatusOK, model.CaseListResponse{
+		Status: "0",
+		Msg:    "Success",
+		Data: model.CaseListData{
+			Draw:            ToInt(start), // Default or parsed from query
+			RecordsTotal:    totalCount,
+			RecordsFiltered: ToInt(length), // Your logic or default
+			Data:            caseLists,
+			Error:           errorMsg,
+		},
+		Desc: "",
+	})
+}
 
 // @summary Get a specify case by record ID
 // @security ApiKeyAuth
@@ -301,7 +520,57 @@ func (h *CaseHandler) SearchCase(c *gin.Context) {}
 // @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseDetailResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [get]
-func (h *CaseHandler) SearchCaseById(c *gin.Context) {}
+func (h *CaseHandler) SearchCaseById(c *gin.Context) {
+	logger := config.GetLog()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id := c.Param("id")
+	query := `SELECT id, caseid, refercaseid, casetypecode, priority, ways, phonenumber, casestatuscode, casedetail,
+	commandcode, policestationcode, caselocationaddress, caselocationdetail,caselat, caselon, transimg,citizencode, 
+	extensionreceive, specialemergency,urgentamount, openeddate, saveddate, 
+	createddate, starteddate, modifieddate, usercreate, usermodify,responsible,approvedstatus, casetypecode,
+	mediatype, vowner, vvin, destlocationaddress, destlocationdetail, destlat, destlon
+	FROM public."case" WHERE id = $1 `
+	var cusCase model.CaseDetailData
+	err := h.DB.QueryRow(ctx, query, id).Scan(
+		&cusCase.ID, &cusCase.CaseID, &cusCase.ReferCaseID, &cusCase.CasetypeCode, &cusCase.Priority,
+		&cusCase.Ways, &cusCase.PhoneNumber, &cusCase.CaseStatusCode, &cusCase.CaseDetail,
+		&cusCase.CommandCode, &cusCase.PoliceStationCode, &cusCase.CaseLocationAddress, &cusCase.CaseLocationDetail,
+		&cusCase.CaseLat, &cusCase.CaseLon, &cusCase.TransImg, &cusCase.CitizenCode, &cusCase.ExtensionReceive,
+		&cusCase.SpecialEmergency, &cusCase.UrgentAmount, &cusCase.OpenedDate, &cusCase.SavedDate,
+		&cusCase.CreatedDate, &cusCase.StartedDate, &cusCase.ModifiedDate, &cusCase.UserCreate,
+		&cusCase.UserModify, &cusCase.Responsible, &cusCase.ApprovedStatus,
+		&cusCase.CasetypeName, &cusCase.MediaType, &cusCase.VOwner, &cusCase.VVin, &cusCase.DestLocationAddress,
+		&cusCase.DestLocationDetail, &cusCase.DestLat, &cusCase.DestLon,
+	)
+
+	// cusCase.CaseStatusName = Convert(caseStatusMap, cusCase.Case_status_code)
+	// cusCase.CommandName = Convert(caseStatusMap, cusCase.Case_status_code)
+	// cusCase.CitizenFullname
+	// cusCase.UserCreateID
+	// DepartmentName
+	// CasetypeName
+	// cusCase.PoliceStationName
+
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.CaseDetailResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Data:   nil,
+			Desc:   err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, model.CaseDetailResponse{
+		Status: "0",
+		Msg:    "Success",
+		Data:   &cusCase,
+		Desc:   "",
+	})
+}
 
 // @summary Get a specify case by case code (case_id)
 // @security ApiKeyAuth
@@ -309,7 +578,7 @@ func (h *CaseHandler) SearchCaseById(c *gin.Context) {}
 // @tags Cases
 // @accept json
 // @produce json
-// @Param id path string true "case code"
+// @Param case_id  path string true "case code"
 // @response 200 {object} model.CaseDetailResponse "OK - Request successful"
 // @response 201 {object} model.CaseDetailResponse "Created - Resource created successfully"
 // @response 400 {object} model.CaseDetailResponse "Bad Request - Invalid request parameters"
@@ -320,7 +589,58 @@ func (h *CaseHandler) SearchCaseById(c *gin.Context) {}
 // @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseDetailResponse "Internal Server Error"
 // @Router /api/v1/cases/detail/{id} [get]
-func (h *CaseHandler) SearchCaseByCaseCode(c *gin.Context) {}
+func (h *CaseHandler) SearchCaseByCaseCode(c *gin.Context) {
+	logger := config.GetLog()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	case_id := c.Param("id")
+	query := `SELECT id, caseid, refercaseid, casetypecode, priority, ways, phonenumber, casestatuscode, casedetail,
+	commandcode, policestationcode, caselocationaddress, caselocationdetail,caselat, caselon, transimg,citizencode, 
+	extensionreceive, specialemergency,urgentamount, openeddate, saveddate, 
+	createddate, starteddate, modifieddate, usercreate, usermodify,responsible,approvedstatus, casetypecode,
+	mediatype, vowner, vvin, destlocationaddress, destlocationdetail, destlat, destlon
+	FROM public."case" WHERE caseid = $1 `
+	var cusCase model.CaseDetailData
+	err := h.DB.QueryRow(ctx, query, case_id).Scan(
+		&cusCase.ID, &cusCase.CaseID, &cusCase.ReferCaseID, &cusCase.CasetypeCode, &cusCase.Priority,
+		&cusCase.Ways, &cusCase.PhoneNumber, &cusCase.CaseStatusCode, &cusCase.CaseDetail,
+		&cusCase.CommandCode, &cusCase.PoliceStationCode, &cusCase.CaseLocationAddress, &cusCase.CaseLocationDetail,
+		&cusCase.CaseLat, &cusCase.CaseLon, &cusCase.TransImg, &cusCase.CitizenCode, &cusCase.ExtensionReceive,
+		&cusCase.SpecialEmergency, &cusCase.UrgentAmount, &cusCase.OpenedDate, &cusCase.SavedDate,
+		&cusCase.CreatedDate, &cusCase.StartedDate, &cusCase.ModifiedDate, &cusCase.UserCreate,
+		&cusCase.UserModify, &cusCase.Responsible, &cusCase.ApprovedStatus,
+		&cusCase.CasetypeName, &cusCase.MediaType, &cusCase.VOwner, &cusCase.VVin, &cusCase.DestLocationAddress,
+		&cusCase.DestLocationDetail, &cusCase.DestLat, &cusCase.DestLon,
+	)
+
+	// cusCase.CaseStatusName = Convert(caseStatusMap, cusCase.Case_status_code)
+	// cusCase.CommandName = Convert(caseStatusMap, cusCase.Case_status_code)
+	// cusCase.CitizenFullname
+	// cusCase.UserCreateID
+	// DepartmentName
+	// CasetypeName
+	// cusCase.PoliceStationName
+
+	logger.Debug("Query", zap.String("query", query), zap.Any("case_id", case_id))
+
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.CaseDetailResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Data:   nil,
+			Desc:   err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, model.CaseDetailResponse{
+		Status: "0",
+		Msg:    "Success",
+		Data:   &cusCase,
+		Desc:   "",
+	})
+
+}
 
 // @summary Create a new case
 // @id Create a new case
@@ -455,7 +775,128 @@ INSERT INTO public."case"(
 // @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [patch]
-func (h *CaseHandler) UpdateCase(c *gin.Context) {}
+func (h *CaseHandler) UpdateCase(c *gin.Context) {
+	logger := config.GetLog()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	id := c.Param("id")
+
+	var req model.CaseForUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.UpdateCaseResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+			ID:     ToInt(id),
+		})
+		return
+	}
+	casePhotoJSON, err := json.Marshal(req.CasePhoto)
+	if err != nil {
+		logger.Warn("Failed to marshal CasePhoto", zap.Error(err))
+		// Handle error or return
+	}
+
+	transImgJSON, err := json.Marshal(req.TransImg)
+	if err != nil {
+		logger.Warn("Failed to marshal TransImg", zap.Error(err))
+		// Handle error or return
+	}
+	query := `UPDATE public."case" SET refercaseid=$2,
+    casetypecode=$3,
+    priority=$4,
+    ways=$5,
+    phonenumber=$6,
+    phonenumberhide=$7,
+    duration=$8,
+    casestatuscode=$9,
+    casecondition=$10,
+    casedetail=$11,
+    caselocationtype=$12,
+    commandcode=$13,
+    policestationcode=$14,
+    caselocationaddress=$15,
+    caselocationdetail=$16,
+    caseroute=$17,
+    caselat=$18,
+    caselon=$19,
+    casedirection=$20,
+    casephoto=$21,
+    transimg=$22,
+    home=$23,
+    citizencode=$24,
+    extensionreceive=$25,
+    casesla=$26,
+    actionprocode=$27,
+    specialemergency=$28,
+    mediacode=$29,
+    mediatype=$30,
+    openeddate=$31,
+    createddate=$32,
+    starteddate=$33,
+    closeddate=$34,
+    modifieddate=$35,
+    usercreate=$36,
+    userclose=$37,
+    usermodify=$38,
+    needambulance=$39,
+    backdated=$40,
+    escaperoute=$41,
+    vowner=$42,
+    vvin=$43,
+    destlocationaddress=$44,
+    destlocationdetail=$45,
+    destlat=$46,
+    destlon=$47
+	WHERE id = $1 `
+	_, err = h.DB.Exec(ctx, query,
+		id, req.ReferCaseID, req.CasetypeCode, req.Priority, req.Ways,
+		req.PhoneNumber, req.PhoneNumberHide, req.Duration, req.CaseStatusCode, req.CaseCondition,
+		req.CaseDetail, req.CaseLocationType, req.CommandCode, req.PoliceStationCode, req.CaseLocationAddress,
+		req.CaseLocationDetail, req.CaseRoute, req.CaseLat, req.CaseLon, req.CaseDirection,
+		casePhotoJSON, transImgJSON, req.Home, req.CitizenCode, req.ExtensionReceive,
+		req.CaseSLA, req.ActionProCode, req.SpecialEmergency, req.MediaCode, req.MediaType,
+		req.OpenedDate, req.CreatedDate, req.StartedDate, req.ClosedDate, req.ModifiedDate,
+		req.UserCreate, req.UserClose, req.UserModify, req.NeedAmbulance, req.Backdated,
+		req.EscapeRoute, req.VOwner, req.VVin, req.DestLocationAddress,
+		req.DestLocationDetail, req.DestLat, req.DestLon,
+	)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("args", []any{
+			id,
+			req.ReferCaseID, req.CasetypeCode, req.Priority, req.Ways,
+			req.PhoneNumber, req.PhoneNumberHide, req.Duration, req.CaseStatusCode, req.CaseCondition,
+			req.CaseDetail, req.CaseLocationType, req.CommandCode, req.PoliceStationCode, req.CaseLocationAddress,
+			req.CaseLocationDetail, req.CaseRoute, req.CaseLat, req.CaseLon, req.CaseDirection,
+			string(casePhotoJSON), string(transImgJSON), req.Home, req.CitizenCode, req.ExtensionReceive,
+			req.CaseSLA, req.ActionProCode, req.SpecialEmergency, req.MediaCode, req.MediaType,
+			req.OpenedDate, req.CreatedDate, req.StartedDate, req.ClosedDate, req.ModifiedDate,
+			req.UserCreate, req.UserClose, req.UserModify, req.NeedAmbulance, req.Backdated,
+			req.EscapeRoute, req.VOwner, req.VVin, req.DestLocationAddress, req.DestLocationDetail,
+			req.DestLat, req.DestLon,
+		}))
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.UpdateCaseResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+			ID:     ToInt(id),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.UpdateCaseResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update case successfully",
+		ID:     ToInt(id),
+	})
+}
 
 // @summary Delete an existing case
 // @id Delete an existing case
@@ -474,7 +915,34 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {}
 // @response 429 {object} model.DeleteCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.DeleteCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [delete]
-func (h *CaseHandler) DeleteCase(c *gin.Context) {}
+func (h *CaseHandler) DeleteCase(c *gin.Context) {
+
+	logger := config.GetLog()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	id := c.Param("id")
+	query := `DELETE FROM public."case" WHERE id = $1 `
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err := h.DB.Exec(ctx, query, id)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.DeleteCaseResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.DeleteCaseResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete case successfully",
+	})
+}
 
 // @summary Update an existing case status (close or cancel)
 // @id Update an existing case status (close or cancel)
@@ -494,4 +962,65 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {}
 // @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/close/{id} [patch]
-func (h *CaseHandler) UpdateCaseClose(c *gin.Context) {}
+func (h *CaseHandler) UpdateCaseClose(c *gin.Context) {
+	logger := config.GetLog()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	id := c.Param("id")
+
+	var req model.CaseCloseInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.UpdateCaseResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+			ID:     ToInt(id),
+		})
+		return
+	}
+	transImgJSON, err := json.Marshal(req.TransImg)
+	if err != nil {
+		logger.Warn("Failed to marshal TransImg", zap.Error(err))
+		// Handle error or return
+	}
+	query := `UPDATE public."case" SET
+    casestatuscode=$2,
+    resultcode=$3,
+    resultdetail=$4,
+    transimg=$5,
+    closeddate=$6,
+    modifieddate=$7,
+    userclose=$8,
+    usermodify=$9
+	WHERE id = $1 `
+	_, err = h.DB.Exec(ctx, query,
+		id, req.CaseStatusCode, req.ResultCode, req.ResultDetail, transImgJSON,
+		req.ClosedDate, req.ModifiedDate, req.UserClose, req.UserModify,
+	)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("args", []any{
+			id, req.CaseStatusCode, req.ResultCode, req.ResultDetail, transImgJSON,
+			req.ClosedDate, req.ModifiedDate, req.UserClose, req.UserModify,
+		}))
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.UpdateCaseResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+			ID:     ToInt(id),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.UpdateCaseResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update case successfully",
+		ID:     ToInt(id),
+	})
+}

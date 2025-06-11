@@ -1023,7 +1023,7 @@ paths:
       parameters:
       - description: case code
         in: path
-        name: id
+        name: case_id
         required: true
         type: string
       produces:

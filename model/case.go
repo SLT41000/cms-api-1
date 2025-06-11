@@ -55,7 +55,7 @@ type CaseDetailData struct {
 	CitizenCode         string     `json:"citizenCode"`
 	ExtensionReceive    string     `json:"extensionReceive"`
 	SpecialEmergency    int        `json:"specialEmergency"`
-	UrgentAmount        string     `json:"urgentAmount"`
+	UrgentAmount        *string    `json:"urgentAmount"`
 	OpenedDate          time.Time  `json:"openedDate"`
 	SavedDate           *time.Time `json:"savedDate"`
 	CreatedDate         time.Time  `json:"createdDate"`
@@ -65,7 +65,7 @@ type CaseDetailData struct {
 	UserCreateID        *string    `json:"userCreateId"`
 	UserModify          string     `json:"userModify"`
 	Responsible         *string    `json:"responsible"`
-	ApprovedStatus      int        `json:"approvedStatus"`
+	ApprovedStatus      *int       `json:"approvedStatus"`
 	CasetypeName        string     `json:"casetypeName"`
 	MediaType           int        `json:"mediaType"`
 	VOwner              int        `json:"vOwner"`
@@ -78,16 +78,16 @@ type CaseDetailData struct {
 }
 
 type CaseDetailResponse struct {
-	Status string         `json:"status"`
-	Msg    string         `json:"msg"`
-	Data   CaseDetailData `json:"data"`
-	Desc   string         `json:"desc"`
+	Status string          `json:"status"`
+	Msg    string          `json:"msg"`
+	Data   *CaseDetailData `json:"data,omitempty"`
+	Desc   string          `json:"desc"`
 }
 
 type CaseListResponse struct {
 	Status string       `json:"status"`
 	Msg    string       `json:"msg"`
-	Data   CaseListData `json:"data"`
+	Data   CaseListData `json:"data,omitempty"`
 	Desc   string       `json:"desc"`
 }
 

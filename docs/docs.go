@@ -411,7 +411,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "case code",
-                        "name": "id",
+                        "name": "case_id",
                         "in": "path",
                         "required": true
                     }
