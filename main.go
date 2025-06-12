@@ -39,17 +39,6 @@ func main() {
 
 		auth.POST("/token", handler.GetToken)
 	}
-	// customers := router.Group("/api/v1/customers")
-	// customers.Use(handler.ProtectedHandler)
-	// {
-
-	// 	customerHandler := handler.CustomerHandler{DB: dbConn}
-	// 	customers.GET("/:id", customerHandler.GetCustomer)
-	// 	customers.GET("", customerHandler.ListCustomers)
-	// 	customers.POST("", customerHandler.CreateCustomer)
-	// 	customers.DELETE("/:id", customerHandler.DeleteCustomer)
-	// 	customers.PATCH("/:id", customerHandler.UpdateCustomer)
-	// }
 
 	cases := router.Group("/api/v1/cases")
 	{

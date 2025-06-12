@@ -10,16 +10,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
 var secretKey = []byte("secret-key")
 var TIMEOUT = time.Hour
-
-type AuthHandler struct {
-	DB *pgx.Conn
-}
 
 // Login godoc
 // @summary Login
