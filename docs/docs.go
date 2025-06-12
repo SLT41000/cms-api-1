@@ -24,7 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/authAPI/token": {
+        "/api/v1/AuthAPI/token": {
             "post": {
                 "security": [
                     {
@@ -440,7 +440,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "case code",
-                        "name": "case_id",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }

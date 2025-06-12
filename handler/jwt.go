@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"crypto/subtle"
 	"fmt"
 	"mainPackage/config"
@@ -45,16 +44,21 @@ type AuthHandler struct {
 // @response 422 {object} model.OutputTokenModel "Bad Request and Not Found (temporary)"
 // @response 429 {object} model.OutputTokenModel "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.OutputTokenModel "Internal Server Error"
-// @Router /api/v1/authAPI/token [post]
-func (h *AuthHandler) GetToken(c *gin.Context) {
+// @Router /api/v1/AuthAPI/token [post]
+func GetToken(c *gin.Context) {
 	logger := config.GetLog()
 	username := c.Query("username")
 	password := c.Query("password")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 
 	var dbPassword string
-	err := h.DB.QueryRow(ctx, `SELECT password FROM public."uc_users" WHERE username = $1`, username).Scan(&dbPassword)
+	err := conn.QueryRow(ctx, `SELECT password FROM public."uc_users" WHERE username = $1`, username).Scan(&dbPassword)
 	if err != nil {
 		logger.Debug(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -118,7 +122,6 @@ func verifyToken(tokenString string) error {
 func ProtectedHandler(c *gin.Context) {
 	logger := config.GetLog()
 	logger.Debug("Authorization header", zap.String("Authorization", c.GetHeader("Authorization")))
-
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 

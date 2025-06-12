@@ -17,8 +17,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type CaseHandler struct {
-	DB *pgx.Conn
+func Process(function string, key string, status string, input interface{}, output interface{}) string {
+	// Marshal input to JSON
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		inputJSON = []byte(`"marshal input error"`)
+	}
+
+	// Marshal output to JSON
+	outputJSON, err := json.Marshal(output)
+	if err != nil {
+		outputJSON = []byte(`"marshal output error"`)
+	}
+
+	// Format final log string
+	return fmt.Sprintf("[%s][%s][%s][%s][%s]", function, key, status, string(inputJSON), string(outputJSON))
 }
 
 func genCaseID() string {
@@ -137,7 +150,7 @@ func GetCaseStatusMap(ctx context.Context, db *pgx.Conn) (map[string]string, err
 // @response 429 {object} model.CaseListData "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseListData "Internal Server Error"
 // @Router /api/v1/cases [get]
-func (h *CaseHandler) ListCase(c *gin.Context) {
+func ListCase(c *gin.Context) {
 	logger := config.GetLog()
 	keyword := c.Query("keyword")
 	startStr := c.DefaultQuery("start", "0")
@@ -152,28 +165,35 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 	if err != nil {
 		length = 10 // fallback default
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
 	defer cancel()
+	defer conn.Close(ctx)
 	//---
 
-	caseStatusMap, err := GetCaseStatusMap(ctx, h.DB)
+	caseStatusMap, err := GetCaseStatusMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
 	//---
-	stationMap, err := GetStationMap(ctx, h.DB)
+	stationMap, err := GetStationMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
 
 	//-------
-	casetypeMap, err := GetCaseTypeMap(ctx, h.DB)
+	casetypeMap, err := GetCaseTypeMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
@@ -183,13 +203,13 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 			resultcode, casedetail,policestationcode,caselocationaddress,caselocationdetail,
 			specialemergency,urgentamount,createddate,casetypecode,mediatype,vowner,vvin
 			FROM public."case" WHERE caseid ILIKE '%' || $3 || '%' LIMIT $1 OFFSET $2`
-	logger.Debug(`SELECT Query`,
+	logger.Debug(`Query`,
 		zap.String("query", query),
 		zap.Any("args", []any{
 			length, start, keyword,
 		}))
 
-	rows, err := h.DB.Query(ctx, query, length, start, keyword)
+	rows, err := conn.Query(ctx, query, length, start, keyword)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
@@ -240,25 +260,30 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 
 	// Total count (for frontend pagination)
 	var totalCount int
-	err = h.DB.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
+	err = conn.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		totalCount = 0
 	}
 
 	// Final JSON
-	c.JSON(http.StatusOK, model.CaseListResponse{
+	response := model.CaseListResponse{
 		Status: "0",
 		Msg:    "Success",
 		Data: model.CaseListData{
-			Draw:            start, // Default or parsed from query
+			Draw:            start,
 			RecordsTotal:    totalCount,
-			RecordsFiltered: length, // Your logic or default
+			RecordsFiltered: length,
 			Data:            caseLists,
 			Error:           errorMsg,
 		},
 		Desc: "",
-	})
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
 }
 
 // @summary Search Case
@@ -290,7 +315,7 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 // @response 429 {object} model.CaseListData "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseListData "Internal Server Error"
 // @Router /api/v1/cases/search [get]
-func (h *CaseHandler) SearchCase(c *gin.Context) {
+func SearchCase(c *gin.Context) {
 	logger := config.GetLog()
 	keyword := c.Query("keyword")
 	start := c.DefaultQuery("start", "0")
@@ -305,27 +330,34 @@ func (h *CaseHandler) SearchCase(c *gin.Context) {
 	user_create := c.Query("uce")
 	casetype_code := c.Query("ctc")
 	order_by := c.Query("odb")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
 	defer cancel()
+	defer conn.Close(ctx)
 
-	caseStatusMap, err := GetCaseStatusMap(ctx, h.DB)
+	caseStatusMap, err := GetCaseStatusMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
 	//---
-	stationMap, err := GetStationMap(ctx, h.DB)
+	stationMap, err := GetStationMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
 
 	//-------
-	casetypeMap, err := GetCaseTypeMap(ctx, h.DB)
+	casetypeMap, err := GetCaseTypeMap(ctx, conn)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed",
+			"message": err.Error()})
 		logger.Warn("Query failed", zap.Error(err))
 		return
 	}
@@ -425,7 +457,7 @@ func (h *CaseHandler) SearchCase(c *gin.Context) {
 
 	logger.Debug("Final Query", zap.String("sql", query))
 
-	rows, err := h.DB.Query(ctx, query, args...)
+	rows, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
@@ -478,7 +510,7 @@ func (h *CaseHandler) SearchCase(c *gin.Context) {
 
 	// Total count (for frontend pagination)
 	var totalCount int
-	err = h.DB.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
+	err = conn.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		totalCount = 0
@@ -516,9 +548,14 @@ func (h *CaseHandler) SearchCase(c *gin.Context) {
 // @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseDetailResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [get]
-func (h *CaseHandler) SearchCaseById(c *gin.Context) {
+func SearchCaseById(c *gin.Context) {
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 	id := c.Param("id")
 	query := `SELECT id, caseid, refercaseid, casetypecode, priority, ways, phonenumber, casestatuscode, casedetail,
@@ -528,7 +565,7 @@ func (h *CaseHandler) SearchCaseById(c *gin.Context) {
 	mediatype, vowner, vvin, destlocationaddress, destlocationdetail, destlat, destlon
 	FROM public."case" WHERE id = $1 `
 	var cusCase model.CaseDetailData
-	err := h.DB.QueryRow(ctx, query, id).Scan(
+	err := conn.QueryRow(ctx, query, id).Scan(
 		&cusCase.ID, &cusCase.CaseID, &cusCase.ReferCaseID, &cusCase.CasetypeCode, &cusCase.Priority,
 		&cusCase.Ways, &cusCase.PhoneNumber, &cusCase.CaseStatusCode, &cusCase.CaseDetail,
 		&cusCase.CommandCode, &cusCase.PoliceStationCode, &cusCase.CaseLocationAddress, &cusCase.CaseLocationDetail,
@@ -574,7 +611,7 @@ func (h *CaseHandler) SearchCaseById(c *gin.Context) {
 // @tags Cases
 // @accept json
 // @produce json
-// @Param case_id  path string true "case code"
+// @Param id  path string true "case code"
 // @response 200 {object} model.CaseDetailResponse "OK - Request successful"
 // @response 201 {object} model.CaseDetailResponse "Created - Resource created successfully"
 // @response 400 {object} model.CaseDetailResponse "Bad Request - Invalid request parameters"
@@ -585,9 +622,14 @@ func (h *CaseHandler) SearchCaseById(c *gin.Context) {
 // @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CaseDetailResponse "Internal Server Error"
 // @Router /api/v1/cases/detail/{id} [get]
-func (h *CaseHandler) SearchCaseByCaseCode(c *gin.Context) {
+func SearchCaseByCaseCode(c *gin.Context) {
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 	case_id := c.Param("id")
 	query := `SELECT id, caseid, refercaseid, casetypecode, priority, ways, phonenumber, casestatuscode, casedetail,
@@ -597,7 +639,7 @@ func (h *CaseHandler) SearchCaseByCaseCode(c *gin.Context) {
 	mediatype, vowner, vvin, destlocationaddress, destlocationdetail, destlat, destlon
 	FROM public."case" WHERE caseid = $1 `
 	var cusCase model.CaseDetailData
-	err := h.DB.QueryRow(ctx, query, case_id).Scan(
+	err := conn.QueryRow(ctx, query, case_id).Scan(
 		&cusCase.ID, &cusCase.CaseID, &cusCase.ReferCaseID, &cusCase.CasetypeCode, &cusCase.Priority,
 		&cusCase.Ways, &cusCase.PhoneNumber, &cusCase.CaseStatusCode, &cusCase.CaseDetail,
 		&cusCase.CommandCode, &cusCase.PoliceStationCode, &cusCase.CaseLocationAddress, &cusCase.CaseLocationDetail,
@@ -655,9 +697,14 @@ func (h *CaseHandler) SearchCaseByCaseCode(c *gin.Context) {
 // @response 429 {object} model.CreateCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.CreateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases [post]
-func (h *CaseHandler) CreateCase(c *gin.Context) {
+func CreateCase(c *gin.Context) {
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 
 	var req model.CaseForCreate
@@ -716,7 +763,7 @@ INSERT INTO public."case"(
 		return
 	}
 
-	err = h.DB.QueryRow(ctx, query, genCaseID(),
+	err = conn.QueryRow(ctx, query, genCaseID(),
 		req.ReferCaseID, req.CasetypeCode, req.Priority, req.Ways, req.PhoneNumber,
 		req.PhoneNumberHide, req.Duration, req.CaseStatusCode, req.CaseCondition, req.CaseDetail,
 		req.CaseLocationType, req.CommandCode, req.PoliceStationCode, req.CaseLocationAddress, req.CaseLocationDetail,
@@ -771,15 +818,21 @@ INSERT INTO public."case"(
 // @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [patch]
-func (h *CaseHandler) UpdateCase(c *gin.Context) {
+func UpdateCase(c *gin.Context) {
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 
 	id := c.Param("id")
 
 	var req model.CaseForUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("Update failed", zap.Error(err))
 		c.JSON(http.StatusBadRequest, model.UpdateCaseResponse{
 			Status: "-1",
 			Msg:    "Failure",
@@ -846,7 +899,7 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
     destlat=$46,
     destlon=$47
 	WHERE id = $1 `
-	_, err = h.DB.Exec(ctx, query,
+	_, err = conn.Exec(ctx, query,
 		id, req.ReferCaseID, req.CasetypeCode, req.Priority, req.Ways,
 		req.PhoneNumber, req.PhoneNumberHide, req.Duration, req.CaseStatusCode, req.CaseCondition,
 		req.CaseDetail, req.CaseLocationType, req.CommandCode, req.PoliceStationCode, req.CaseLocationAddress,
@@ -911,16 +964,21 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
 // @response 429 {object} model.DeleteCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.DeleteCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [delete]
-func (h *CaseHandler) DeleteCase(c *gin.Context) {
+func DeleteCase(c *gin.Context) {
 
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 
 	id := c.Param("id")
 	query := `DELETE FROM public."case" WHERE id = $1 `
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
-	_, err := h.DB.Exec(ctx, query, id)
+	_, err := conn.Exec(ctx, query, id)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
 		c.JSON(http.StatusInternalServerError, model.DeleteCaseResponse{
@@ -958,9 +1016,14 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 // @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/close/{id} [patch]
-func (h *CaseHandler) UpdateCaseClose(c *gin.Context) {
+func UpdateCaseClose(c *gin.Context) {
 	logger := config.GetLog()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
 	defer cancel()
 
 	id := c.Param("id")
@@ -990,7 +1053,7 @@ func (h *CaseHandler) UpdateCaseClose(c *gin.Context) {
     userclose=$8,
     usermodify=$9
 	WHERE id = $1 `
-	_, err = h.DB.Exec(ctx, query,
+	_, err = conn.Exec(ctx, query,
 		id, req.CaseStatusCode, req.ResultCode, req.ResultDetail, transImgJSON,
 		req.ClosedDate, req.ModifiedDate, req.UserClose, req.UserModify,
 	)

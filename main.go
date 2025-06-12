@@ -30,16 +30,14 @@ import (
 )
 
 func main() {
-	dbConn, _, _ := config.ConnectDB()
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(cors.Default())
 	router.Use(gin.Recovery())
-	auth := router.Group("/api/v1/authAPI")
+	auth := router.Group("/api/v1/AuthAPI")
 	{
 
-		authHandler := handler.AuthHandler{DB: dbConn}
-		auth.POST("/token", authHandler.GetToken)
+		auth.POST("/token", handler.GetToken)
 	}
 	// customers := router.Group("/api/v1/customers")
 	// customers.Use(handler.ProtectedHandler)
@@ -56,15 +54,14 @@ func main() {
 	cases := router.Group("/api/v1/cases")
 	{
 		cases.Use(handler.ProtectedHandler)
-		caseHandler := handler.CaseHandler{DB: dbConn}
-		cases.GET("", caseHandler.ListCase)
-		cases.GET("/search", caseHandler.SearchCase)
-		cases.GET("/:id", caseHandler.SearchCaseById)
-		cases.PATCH("/:id", caseHandler.UpdateCase)
-		cases.DELETE("/:id", caseHandler.DeleteCase)
-		cases.PATCH("/close/:id", caseHandler.UpdateCaseClose)
-		cases.GET("/detail/:id", caseHandler.SearchCaseByCaseCode)
-		cases.POST("", caseHandler.CreateCase)
+		cases.GET("", handler.ListCase)
+		cases.GET("/search", handler.SearchCase)
+		cases.GET("/:id", handler.SearchCaseById)
+		cases.PATCH("/:id", handler.UpdateCase)
+		cases.DELETE("/:id", handler.DeleteCase)
+		cases.PATCH("/close/:id", handler.UpdateCaseClose)
+		cases.GET("/detail/:id", handler.SearchCaseByCaseCode)
+		cases.POST("", handler.CreateCase)
 	}
 	logger := config.GetLog()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

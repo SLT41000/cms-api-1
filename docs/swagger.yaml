@@ -593,7 +593,7 @@ info:
   title: Customers API
   version: "1.0"
 paths:
-  /api/v1/authAPI/token:
+  /api/v1/AuthAPI/token:
     post:
       consumes:
       - application/json
@@ -1028,7 +1028,7 @@ paths:
       parameters:
       - description: case code
         in: path
-        name: case_id
+        name: id
         required: true
         type: string
       produces:

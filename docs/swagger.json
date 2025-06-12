@@ -20,7 +20,7 @@
     },
     "basePath": "/",
     "paths": {
-        "/api/v1/authAPI/token": {
+        "/api/v1/AuthAPI/token": {
             "post": {
                 "security": [
                     {
@@ -436,7 +436,7 @@
                     {
                         "type": "string",
                         "description": "case code",
-                        "name": "case_id",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
