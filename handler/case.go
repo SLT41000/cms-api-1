@@ -183,15 +183,11 @@ func (h *CaseHandler) ListCase(c *gin.Context) {
 			resultcode, casedetail,policestationcode,caselocationaddress,caselocationdetail,
 			specialemergency,urgentamount,createddate,casetypecode,mediatype,vowner,vvin
 			FROM public."case" WHERE caseid ILIKE '%' || $3 || '%' LIMIT $1 OFFSET $2`
-	// finalQuery := fmt.Sprintf(`
-	// 		SELECT id, caseid, casetypecode, priority, phonenumber, casestatuscode,
-	// 		resultcode, casedetail, policestationcode, caselocationaddress, caselocationdetail,
-	// 		specialemergency, urgentamount, createddate, casetypecode, mediatype, vowner, vvin
-	// 		FROM public."case"
-	// 		WHERE caseid ILIKE '%%%s%%'
-	// 		LIMIT %d OFFSET %d`, keyword, length, start)
-
-	// logger.Debug("Final Query", zap.String("sql", finalQuery))
+	logger.Debug(`SELECT Query`,
+		zap.String("query", query),
+		zap.Any("args", []any{
+			length, start, keyword,
+		}))
 
 	rows, err := h.DB.Query(ctx, query, length, start, keyword)
 	if err != nil {

@@ -509,21 +509,6 @@ definitions:
       status:
         type: string
     type: object
-  model.InputTokenModel:
-    properties:
-      clientId:
-        type: string
-      clientSecret:
-        type: string
-      grantType:
-        type: string
-      password:
-        type: string
-      scope:
-        type: string
-      username:
-        type: string
-    type: object
   model.Media:
     properties:
       url:
@@ -615,12 +600,32 @@ paths:
       description: Login to the system and get an access token
       operationId: Login
       parameters:
-      - description: Token data
-        in: body
-        name: Token
+      - description: grantType
+        in: query
+        name: grantType
+        type: string
+      - description: username
+        in: query
+        name: username
         required: true
-        schema:
-          $ref: '#/definitions/model.InputTokenModel'
+        type: string
+      - description: password
+        in: query
+        name: password
+        required: true
+        type: string
+      - description: scope
+        in: query
+        name: scope
+        type: string
+      - description: clientId
+        in: query
+        name: clientId
+        type: string
+      - description: clientSecret
+        in: query
+        name: clientSecret
+        type: string
       produces:
       - application/json
       responses:

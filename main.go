@@ -41,21 +41,21 @@ func main() {
 		authHandler := handler.AuthHandler{DB: dbConn}
 		auth.POST("/token", authHandler.GetToken)
 	}
-	customers := router.Group("/api/v1/customers")
-	customers.Use(handler.ProtectedHandler)
-	{
+	// customers := router.Group("/api/v1/customers")
+	// customers.Use(handler.ProtectedHandler)
+	// {
 
-		customerHandler := handler.CustomerHandler{DB: dbConn}
-		customers.GET("/:id", customerHandler.GetCustomer)
-		customers.GET("", customerHandler.ListCustomers)
-		customers.POST("", customerHandler.CreateCustomer)
-		customers.DELETE("/:id", customerHandler.DeleteCustomer)
-		customers.PATCH("/:id", customerHandler.UpdateCustomer)
-	}
+	// 	customerHandler := handler.CustomerHandler{DB: dbConn}
+	// 	customers.GET("/:id", customerHandler.GetCustomer)
+	// 	customers.GET("", customerHandler.ListCustomers)
+	// 	customers.POST("", customerHandler.CreateCustomer)
+	// 	customers.DELETE("/:id", customerHandler.DeleteCustomer)
+	// 	customers.PATCH("/:id", customerHandler.UpdateCustomer)
+	// }
 
 	cases := router.Group("/api/v1/cases")
 	{
-
+		cases.Use(handler.ProtectedHandler)
 		caseHandler := handler.CaseHandler{DB: dbConn}
 		cases.GET("", caseHandler.ListCase)
 		cases.GET("/search", caseHandler.SearchCase)

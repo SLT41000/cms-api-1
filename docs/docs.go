@@ -45,13 +45,42 @@ const docTemplate = `{
                 "operationId": "Login",
                 "parameters": [
                     {
-                        "description": "Token data",
-                        "name": "Token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.InputTokenModel"
-                        }
+                        "type": "string",
+                        "description": "grantType",
+                        "name": "grantType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "password",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "scope",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "clientId",
+                        "name": "clientId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "clientSecret",
+                        "name": "clientSecret",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2042,29 +2071,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.InputTokenModel": {
-            "type": "object",
-            "properties": {
-                "clientId": {
-                    "type": "string"
-                },
-                "clientSecret": {
-                    "type": "string"
-                },
-                "grantType": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "scope": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }

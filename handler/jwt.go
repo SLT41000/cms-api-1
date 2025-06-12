@@ -4,8 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
-	"log"
-	"mainPackage/model"
+	"mainPackage/config"
 	"net/http"
 	"strings"
 	"time"
@@ -13,9 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 var secretKey = []byte("secret-key")
+var TIMEOUT = time.Hour
 
 type AuthHandler struct {
 	DB *pgx.Conn
@@ -29,7 +30,12 @@ type AuthHandler struct {
 // @id Login
 // @accept json
 // @produce json
-// @param Token body model.InputTokenModel true "Token data"
+// @Param grantType query string false "grantType"
+// @Param username query string true "username"
+// @Param password query string true "password"
+// @Param scope query string false "scope"
+// @Param clientId query string false "clientId"
+// @Param clientSecret query string false "clientSecret"
 // @response 200 {object} model.OutputTokenModel "OK - Request successful"
 // @response 201 {object} model.OutputTokenModel "Created - Resource created successfully"
 // @response 400 {object} model.OutputTokenModel "Bad Request - Invalid request parameters"
@@ -41,33 +47,30 @@ type AuthHandler struct {
 // @response 500 {object} model.OutputTokenModel "Internal Server Error"
 // @Router /api/v1/authAPI/token [post]
 func (h *AuthHandler) GetToken(c *gin.Context) {
-
+	logger := config.GetLog()
+	username := c.Query("username")
+	password := c.Query("password")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	var u model.InputTokenModel
 
-	// Bind incoming JSON to struct
-	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
-		return
-	}
-	var password string
-	err := h.DB.QueryRow(ctx, `SELECT password FROM public."GoLangDemo" WHERE name = $1`, u.Username).Scan(&password)
+	var dbPassword string
+	err := h.DB.QueryRow(ctx, `SELECT password FROM public."uc_users" WHERE username = $1`, username).Scan(&dbPassword)
 	if err != nil {
-		log.Printf("Query failed: %v", err)
+		logger.Debug(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"customerName": u.Username,
+			"customerName": username,
 			"message":      err.Error(),
 		})
 		return
 	}
-	if subtle.ConstantTimeCompare([]byte(password), []byte(u.Password)) == 1 {
-		tokenString, err := CreateToken(u.Username)
+	if subtle.ConstantTimeCompare([]byte(dbPassword), []byte(password)) == 1 {
+		tokenString, err := CreateToken(username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Token creation failed",
 				"message": err.Error(),
 			})
+			logger.Debug(err.Error())
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -78,31 +81,14 @@ func (h *AuthHandler) GetToken(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 	}
 
-	fmt.Printf("The user request value: %+v\n", u)
-
-	// Dummy user check
-	// if u.Username == "Chek" && u.Password == "123456" {
-	// 	tokenString, err := CreateToken(u.Username)
-	// 	if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token creation failed",
-	// 			"message": err.Error()})
-	// 		return
-	// 	}
-
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"accessToken": tokenString,
-	// 		"token_type":  "bearer",
-	// 	})
-	// } else {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-	// }
+	logger.Debug("User : " + username)
 }
 
 func CreateToken(username string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
+			"exp":      time.Now().Add(TIMEOUT).Unix(),
 		})
 
 	tokenString, err := token.SignedString(secretKey)
@@ -130,10 +116,14 @@ func verifyToken(tokenString string) error {
 }
 
 func ProtectedHandler(c *gin.Context) {
-	fmt.Print(c.GetHeader("Authorization"))
+	logger := config.GetLog()
+	logger.Debug("Authorization header", zap.String("Authorization", c.GetHeader("Authorization")))
+
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
+
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
+		logger.Debug("Missing authorization header")
 		c.Abort()
 		return
 	}
@@ -141,6 +131,7 @@ func ProtectedHandler(c *gin.Context) {
 	const prefix = "Bearer "
 	if !strings.HasPrefix(authHeader, prefix) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+		logger.Debug("Invalid authorization header format")
 		c.Abort()
 		return
 	}
@@ -150,7 +141,8 @@ func ProtectedHandler(c *gin.Context) {
 	// Verify token
 	err := verifyToken(token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token", "message": err.Error()})
+		logger.Debug("Invalid token")
 		c.Abort()
 		return
 	}
