@@ -1,0 +1,12 @@
+2025-06-16 04:57:03	INFO	app/main.go:57	Server started at: http://localhost:8080
+2025-06-16 04:57:03	INFO	app/main.go:58	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-16 04:57:16	DEBUG	handler/jwt.go:119	Authorization header	{"Authorization": ""}
+2025-06-16 04:57:16	DEBUG	handler/jwt.go:124	Missing authorization header
+2025-06-16 04:59:09	INFO	app/main.go:57	Server started at: http://localhost:8080
+2025-06-16 04:59:09	INFO	app/main.go:58	Swagger docs available at: http://localhost:8080/swagger/index.html
+2025-06-16 04:59:28	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-16 04:59:28	DEBUG	handler/jwt.go:83	User : pond
+2025-06-16 04:59:58	DEBUG	handler/jwt.go:119	Authorization header	{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTAwNTM1NjgsInVzZXJuYW1lIjoicG9uZCJ9._WmgIfqAxhRdgW5QWWEoIOG4d-BSFgY_5ysb4IUYuuc"}
+2025-06-16 04:59:58	DEBUG	config/postgresql.go:18	Connection String : postgres://postgres:admin123@103.212.39.79:31365/pond-test
+2025-06-16 04:59:59	DEBUG	handler/case.go:206	Query	{"query": "SELECT id, caseid,casetypecode,priority,phonenumber,casestatuscode ,\n\t\t\tresultcode, casedetail,policestationcode,caselocationaddress,caselocationdetail,\n\t\t\tspecialemergency,urgentamount,createddate,casetypecode,mediatype,vowner,vvin\n\t\t\tFROM public.\"case\" WHERE caseid ILIKE '%' || $3 || '%' LIMIT $1 OFFSET $2", "args": [10,0,""]}
+2025-06-16 04:59:59	INFO	handler/case.go:286	[ListCase][start=0&length=10][0]["start=0\u0026length=10"][{"status":"0","msg":"Success","data":{"draw":0,"recordsTotal":0,"recordsFiltered":10,"data":null,"error":""},"desc":""}]
