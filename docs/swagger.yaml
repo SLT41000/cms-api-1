@@ -466,12 +466,11 @@ info:
     email: support@somewhere.com
     name: API Support
     url: http://somewhere.com/support
-  description: This is the Customers API server.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://somewhere.com/
-  title: Customers API
+  title: CMS API
   version: "1.0"
 paths:
   /api/v1/AuthAPI/token:

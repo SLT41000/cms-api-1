@@ -5,8 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "This is the Customers API server.",
-        "title": "Customers API",
+        "title": "CMS API",
         "termsOfService": "http://somewhere.com/",
         "contact": {
             "name": "API Support",

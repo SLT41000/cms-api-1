@@ -1,6 +1,5 @@
-// @title Customers API
+// @title CMS API
 // @version 1.0
-// @description This is the Customers API server.
 // @termsOfService http://somewhere.com/
 // @BasePath /
 // @contact.name API Support

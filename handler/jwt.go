@@ -19,7 +19,7 @@ var TIMEOUT = time.Hour
 // Login godoc
 // @summary Login
 // @description Login to the system and get an access token
-// @tags authAPI
+// @tags Authentication
 // @security ApiKeyAuth
 // @id Login
 // @accept json
