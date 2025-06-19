@@ -155,7 +155,12 @@ func ListCase(c *gin.Context) {
 	keyword := c.Query("keyword")
 	startStr := c.DefaultQuery("start", "0")
 	lengthStr := c.DefaultQuery("length", "0")
-
+	userID, exists := c.Get("username")
+	if !exists {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+	logger.Debug(userID.(string))
 	start, err := strconv.Atoi(startStr)
 	if err != nil {
 		start = 1 // fallback default

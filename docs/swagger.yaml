@@ -549,7 +549,7 @@ paths:
       - ApiKeyAuth: []
       summary: Login
       tags:
-      - authAPI
+      - Authentication
   /api/v1/cases:
     get:
       consumes:

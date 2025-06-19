@@ -39,7 +39,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "authAPI"
+                    "Authentication"
                 ],
                 "summary": "Login",
                 "operationId": "Login",

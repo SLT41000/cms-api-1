@@ -98,30 +98,32 @@ func CreateToken(username string) (string, error) {
 	return tokenString, nil
 }
 
-func verifyToken(tokenString string) error {
+func verifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	return nil
+	return token, nil
 }
 
 func ProtectedHandler(c *gin.Context) {
 	logger := config.GetLog()
-	logger.Debug("Authorization header", zap.String("Authorization", c.GetHeader("Authorization")))
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
+	logger.Debug("Authorization header", zap.String("Authorization", authHeader))
 
+	if authHeader == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
-		logger.Debug("Missing authorization header")
 		c.Abort()
 		return
 	}
@@ -129,21 +131,27 @@ func ProtectedHandler(c *gin.Context) {
 	const prefix = "Bearer "
 	if !strings.HasPrefix(authHeader, prefix) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-		logger.Debug("Invalid authorization header format")
 		c.Abort()
 		return
 	}
 
-	token := authHeader[len(prefix):]
+	tokenString := strings.TrimPrefix(authHeader, prefix)
+	logger.Debug("Token: " + tokenString)
 
-	// Verify token
-	err := verifyToken(token)
+	parsedToken, err := verifyToken(tokenString)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token", "message": err.Error()})
-		logger.Debug("Invalid token")
 		c.Abort()
 		return
 	}
 
-	c.Next()
+	// Extract claims
+	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+		if username, ok := claims["username"].(string); ok {
+			logger.Debug("Verified username", zap.String("username", username))
+			c.Set("username", username)
+			c.Next()
+			return
+		}
+	}
 }
