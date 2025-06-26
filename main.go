@@ -51,6 +51,19 @@ func main() {
 		cases.GET("/detail/:id", handler.SearchCaseByCaseCode)
 		cases.POST("", handler.CreateCase)
 	}
+	trans := router.Group("/api/v1/trans")
+	{
+		// trans.Use(handler.ProtectedHandler)
+		trans.GET("", handler.ListTransaction)
+		trans.GET("/:id", handler.SearchTransaction)
+		trans.GET("/notes/:id", handler.ListTransactionNote)
+		trans.POST("", handler.CreateTransaction)
+		trans.POST("/notes", handler.CreateTransactionNote)
+		trans.PATCH("/:id", handler.UpdateTransaction)
+		trans.DELETE("/:id", handler.DeleteTransaction)
+
+	}
+
 	logger := config.GetLog()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	logger.Info("Server started at: http://localhost:8080")

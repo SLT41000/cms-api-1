@@ -94,7 +94,6 @@ definitions:
       startedDate:
         type: string
       transImg:
-        description: Was a string in your example, not an array
         type: string
       urgentAmount:
         type: string
@@ -111,156 +110,105 @@ definitions:
       ways:
         type: integer
     type: object
-  model.CaseDetailResponse:
-    properties:
-      data:
-        $ref: '#/definitions/model.CaseDetailData'
-      desc:
-        type: string
-      msg:
-        type: string
-      status:
-        type: string
-    type: object
   model.CaseForCreate:
     properties:
       actionProCode:
-        example: "1"
         type: string
       backdated:
-        example: 0
         type: integer
       caseCondition:
-        example: 0
         type: integer
       caseDetail:
-        example: "1"
         type: string
       caseDirection:
-        example: "1"
         type: string
       caseLat:
-        example: "1"
         type: string
       caseLocationAddress:
-        example: "1"
         type: string
       caseLocationDetail:
-        example: "1"
         type: string
       caseLocationType:
-        example: "1"
         type: string
       caseLon:
-        example: "1"
         type: string
       casePhoto:
         items:
           $ref: '#/definitions/model.Media'
         type: array
       caseRoute:
-        example: "1"
         type: string
       caseSla:
-        example: 0
         type: integer
       caseStatusCode:
-        example: "1"
         type: string
       casetypeCode:
-        example: "1"
         type: string
       citizenCode:
-        example: "1"
         type: string
       closedDate:
         type: string
       commandCode:
-        example: "1"
         type: string
       createdDate:
         type: string
       destLat:
-        example: "1"
         type: string
       destLocationAddress:
-        example: "1"
         type: string
       destLocationDetail:
-        example: "1"
         type: string
       destLon:
-        example: "1"
         type: string
       duration:
-        example: 0
         type: integer
       escapeRoute:
-        example: "1"
         type: string
       extensionReceive:
-        example: "1"
         type: string
       home:
-        example: 0
         type: integer
       mediaCode:
-        example: "1"
         type: string
       mediaType:
-        example: 0
         type: integer
       modifiedDate:
         type: string
       needAmbulance:
-        example: 0
         type: integer
       openedDate:
         type: string
       phoneNumber:
-        example: "1"
         type: string
       phoneNumberHide:
-        example: 0
         type: integer
       policeStationCode:
-        example: "1"
         type: string
       priority:
-        example: 0
         type: integer
       referCaseId:
-        example: "1"
         type: string
       specialEmergency:
-        example: 1
         type: integer
       startedDate:
         type: string
       token:
-        example: "1"
         type: string
       transImg:
         items:
           $ref: '#/definitions/model.Media'
         type: array
       userClose:
-        example: "1"
         type: string
       userCreate:
-        example: "1"
         type: string
       userModify:
-        example: "1"
         type: string
       vOwner:
-        example: 0
         type: integer
       vVin:
-        example: "1"
         type: string
       ways:
-        example: 0
         type: integer
     type: object
   model.CaseForUpdate:
@@ -375,6 +323,108 @@ definitions:
       recordsFiltered:
         type: integer
       recordsTotal:
+        type: integer
+    type: object
+  model.CaseResponse:
+    properties:
+      data:
+        $ref: '#/definitions/model.CaseDetailData'
+      desc:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.CaseTransactionCRUDResponse:
+    properties:
+      caseId:
+        type: string
+      desc:
+        type: string
+      id:
+        type: integer
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.CaseTransactionModelInput:
+    properties:
+      actionCarType:
+        type: string
+      arriveDate:
+        type: string
+      arrivedDate:
+        type: string
+      cancelDate:
+        type: string
+      caseId:
+        type: string
+      caseStatusCode:
+        type: string
+      closeDate:
+        type: string
+      closedDate:
+        type: string
+      commandedDate:
+        type: string
+      createdDate:
+        type: string
+      createdModify:
+        type: string
+      duration:
+        type: integer
+      lat:
+        description: Consider float64 if GPS
+        type: string
+      lon:
+        type: string
+      modifiedDate:
+        type: string
+      notiStage:
+        type: string
+      owner:
+        type: string
+      receiveDate:
+        type: string
+      receivedDate:
+        type: string
+      resultCode:
+        type: string
+      resultDetail:
+        type: string
+      suggestRoute:
+        type: string
+      timeToArrive:
+        description: If it’s a string, keep as-is; else change to time.Duration or
+          time.Time
+        type: string
+      token:
+        type: string
+      updatedAccount:
+        type: string
+      userArrive:
+        type: string
+      userClose:
+        type: string
+      userClosedJob:
+        type: string
+      userCode:
+        type: string
+      userCommand:
+        type: string
+      userModify:
+        type: string
+      userName:
+        type: string
+      userReceive:
+        type: string
+      userSla:
+        type: integer
+      vehicleCode:
+        type: string
+      viewed:
         type: integer
     type: object
   model.CreateCaseResponse:
@@ -577,38 +627,6 @@ paths:
           description: OK - Request successful
           schema:
             $ref: '#/definitions/model.CaseListData'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.CaseListData'
       security:
       - ApiKeyAuth: []
       summary: List Cases
@@ -630,38 +648,6 @@ paths:
       responses:
         "200":
           description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/model.CreateCaseResponse'
       security:
@@ -687,38 +673,6 @@ paths:
           description: OK - Request successful
           schema:
             $ref: '#/definitions/model.DeleteCaseResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete an existing case
@@ -741,39 +695,7 @@ paths:
         "200":
           description: OK - Request successful
           schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
+            $ref: '#/definitions/model.CaseResponse'
       security:
       - ApiKeyAuth: []
       summary: Get a specify case by record ID
@@ -800,38 +722,6 @@ paths:
       responses:
         "200":
           description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/model.UpdateCaseResponse'
       security:
@@ -863,38 +753,6 @@ paths:
           description: OK - Request successful
           schema:
             $ref: '#/definitions/model.UpdateCaseResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
       security:
       - ApiKeyAuth: []
       summary: Update an existing case status (close or cancel)
@@ -917,39 +775,7 @@ paths:
         "200":
           description: OK - Request successful
           schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.CaseDetailResponse'
+            $ref: '#/definitions/model.CaseResponse'
       security:
       - ApiKeyAuth: []
       summary: Get a specify case by case code (case_id)
@@ -1024,43 +850,186 @@ paths:
           description: OK - Request successful
           schema:
             $ref: '#/definitions/model.CaseListData'
-        "201":
-          description: Created - Resource created successfully
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "400":
-          description: Bad Request - Invalid request parameters
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "401":
-          description: Unauthorized - Invalid or missing authentication
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "403":
-          description: Forbidden - Insufficient permissions
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "404":
-          description: Not Found - Resource doesn't exist
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "422":
-          description: Bad Request and Not Found (temporary)
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "429":
-          description: Too Many Requests - Rate limit exceeded
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.CaseListData'
       security:
       - ApiKeyAuth: []
       summary: Search Case
       tags:
       - Cases
+  /api/v1/trans:
+    get:
+      consumes:
+      - application/json
+      operationId: ListTransaction
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: List Transaction
+      tags:
+      - Transaction
+    post:
+      consumes:
+      - application/json
+      operationId: Create transaction
+      parameters:
+      - description: Case data to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseTransactionModelInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseTransactionCRUDResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create transaction
+      tags:
+      - Transaction
+  /api/v1/trans/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete an existing transaction
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.DeleteCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an existing transaction
+      tags:
+      - Transaction
+    get:
+      consumes:
+      - application/json
+      operationId: Get a specify transaction by record ID or case code (caseId)
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a specify transaction by record ID or case code (caseId)
+      tags:
+      - Transaction
+    patch:
+      consumes:
+      - application/json
+      operationId: Update an existing transaction
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Body
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseForCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CreateCaseResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing transaction
+      tags:
+      - Transaction
+  /api/v1/trans/notes:
+    post:
+      consumes:
+      - application/json
+      operationId: Create transaction Note
+      parameters:
+      - description: Case data to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseForCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: Create transaction Note
+      tags:
+      - Transaction
+  /api/v1/trans/notes/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: ListTransactionNote
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: List Transaction Note
+      tags:
+      - Transaction
 schemes:
 - http
 - https

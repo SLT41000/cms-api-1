@@ -141,14 +141,6 @@ func GetCaseStatusMap(ctx context.Context, db *pgx.Conn) (map[string]string, err
 // @Param length query int false "length" default(10)
 // @Param keyword query string false "keyword"
 // @response 200 {object} model.CaseListData "OK - Request successful"
-// @response 201 {object} model.CaseListData "Created - Resource created successfully"
-// @response 400 {object} model.CaseListData "Bad Request - Invalid request parameters"
-// @response 401 {object} model.CaseListData "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.CaseListData "Forbidden - Insufficient permissions"
-// @response 404 {object} model.CaseListData "Not Found - Resource doesn't exist"
-// @response 422 {object} model.CaseListData "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.CaseListData "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.CaseListData "Internal Server Error"
 // @Router /api/v1/cases [get]
 func ListCase(c *gin.Context) {
 	logger := config.GetLog()
@@ -311,14 +303,6 @@ func ListCase(c *gin.Context) {
 // @Param ctc query string false "casetype_code"
 // @Param odb query string false "order_by" default("5-DESC")
 // @response 200 {object} model.CaseListData "OK - Request successful"
-// @response 201 {object} model.CaseListData "Created - Resource created successfully"
-// @response 400 {object} model.CaseListData "Bad Request - Invalid request parameters"
-// @response 401 {object} model.CaseListData "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.CaseListData "Forbidden - Insufficient permissions"
-// @response 404 {object} model.CaseListData "Not Found - Resource doesn't exist"
-// @response 422 {object} model.CaseListData "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.CaseListData "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.CaseListData "Internal Server Error"
 // @Router /api/v1/cases/search [get]
 func SearchCase(c *gin.Context) {
 	logger := config.GetLog()
@@ -543,15 +527,7 @@ func SearchCase(c *gin.Context) {
 // @accept json
 // @produce json
 // @Param id path int true "id" default(0)
-// @response 200 {object} model.CaseDetailResponse "OK - Request successful"
-// @response 201 {object} model.CaseDetailResponse "Created - Resource created successfully"
-// @response 400 {object} model.CaseDetailResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.CaseDetailResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.CaseDetailResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.CaseDetailResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.CaseDetailResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.CaseDetailResponse "Internal Server Error"
+// @response 200 {object} model.CaseResponse "OK - Request successful"
 // @Router /api/v1/cases/{id} [get]
 func SearchCaseById(c *gin.Context) {
 	logger := config.GetLog()
@@ -594,7 +570,7 @@ func SearchCaseById(c *gin.Context) {
 
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.CaseDetailResponse{
+		c.JSON(http.StatusInternalServerError, model.CaseResponse{
 			Status: "-1",
 			Msg:    "Failure",
 			Data:   nil,
@@ -602,7 +578,7 @@ func SearchCaseById(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, model.CaseDetailResponse{
+	c.JSON(http.StatusOK, model.CaseResponse{
 		Status: "0",
 		Msg:    "Success",
 		Data:   &cusCase,
@@ -617,15 +593,7 @@ func SearchCaseById(c *gin.Context) {
 // @accept json
 // @produce json
 // @Param id  path string true "case code"
-// @response 200 {object} model.CaseDetailResponse "OK - Request successful"
-// @response 201 {object} model.CaseDetailResponse "Created - Resource created successfully"
-// @response 400 {object} model.CaseDetailResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.CaseDetailResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.CaseDetailResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.CaseDetailResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.CaseDetailResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.CaseDetailResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.CaseDetailResponse "Internal Server Error"
+// @response 200 {object} model.CaseResponse "OK - Request successful"
 // @Router /api/v1/cases/detail/{id} [get]
 func SearchCaseByCaseCode(c *gin.Context) {
 	logger := config.GetLog()
@@ -668,7 +636,7 @@ func SearchCaseByCaseCode(c *gin.Context) {
 
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.CaseDetailResponse{
+		c.JSON(http.StatusInternalServerError, model.CaseResponse{
 			Status: "-1",
 			Msg:    "Failure",
 			Data:   nil,
@@ -676,7 +644,7 @@ func SearchCaseByCaseCode(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, model.CaseDetailResponse{
+	c.JSON(http.StatusOK, model.CaseResponse{
 		Status: "0",
 		Msg:    "Success",
 		Data:   &cusCase,
@@ -693,14 +661,6 @@ func SearchCaseByCaseCode(c *gin.Context) {
 // @produce json
 // @param Case body model.CaseForCreate true "Case data to be created"
 // @response 200 {object} model.CreateCaseResponse "OK - Request successful"
-// @response 201 {object} model.CreateCaseResponse "Created - Resource created successfully"
-// @response 400 {object} model.CreateCaseResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.CreateCaseResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.CreateCaseResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.CreateCaseResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.CreateCaseResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.CreateCaseResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.CreateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases [post]
 func CreateCase(c *gin.Context) {
 	logger := config.GetLog()
@@ -814,14 +774,6 @@ INSERT INTO public."case"(
 // @Param id path int true "id"
 // @param Case body model.CaseForUpdate true "Case data to be update"
 // @response 200 {object} model.UpdateCaseResponse "OK - Request successful"
-// @response 201 {object} model.UpdateCaseResponse "Created - Resource created successfully"
-// @response 400 {object} model.UpdateCaseResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.UpdateCaseResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.UpdateCaseResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.UpdateCaseResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.UpdateCaseResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [patch]
 func UpdateCase(c *gin.Context) {
 	logger := config.GetLog()
@@ -960,14 +912,6 @@ func UpdateCase(c *gin.Context) {
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.DeleteCaseResponse "OK - Request successful"
-// @response 201 {object} model.DeleteCaseResponse "Created - Resource created successfully"
-// @response 400 {object} model.DeleteCaseResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.DeleteCaseResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.DeleteCaseResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.DeleteCaseResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.DeleteCaseResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.DeleteCaseResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.DeleteCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/{id} [delete]
 func DeleteCase(c *gin.Context) {
 
@@ -1012,14 +956,6 @@ func DeleteCase(c *gin.Context) {
 // @Param id path int true "id"
 // @param Case body model.CaseCloseInput true "Case data to be update"
 // @response 200 {object} model.UpdateCaseResponse "OK - Request successful"
-// @response 201 {object} model.UpdateCaseResponse "Created - Resource created successfully"
-// @response 400 {object} model.UpdateCaseResponse "Bad Request - Invalid request parameters"
-// @response 401 {object} model.UpdateCaseResponse "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.UpdateCaseResponse "Forbidden - Insufficient permissions"
-// @response 404 {object} model.UpdateCaseResponse "Not Found - Resource doesn't exist"
-// @response 422 {object} model.UpdateCaseResponse "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.UpdateCaseResponse "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.UpdateCaseResponse "Internal Server Error"
 // @Router /api/v1/cases/close/{id} [patch]
 func UpdateCaseClose(c *gin.Context) {
 	logger := config.GetLog()
