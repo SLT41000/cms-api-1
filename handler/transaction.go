@@ -44,7 +44,7 @@ func ListTransaction(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, caseid, usercode, username, receivedate, arrivedate, closedate, canceldate, duration,
-	       suggestroute, usersla, viewed, casestatuscode, notistage, userclosedjob, resultcodet, resultdetailt,
+	       suggestroute, usersla, viewed, casestatuscode, notistage, userclosedjob, resultcode, resultdetail,
 	       createddate, createdmodify, owner, updatedaccount, vehiclecode, actioncartype, timetoarrive, lat, lon
 	FROM public.case_transaction`
 
@@ -58,12 +58,8 @@ func ListTransaction(c *gin.Context) {
 		rows, err = conn.Query(ctx, query, length, start, keyword)
 	}
 
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			length, start, keyword,
-		}))
-
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{length, start, keyword}))
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.CaseTransactionResponse{
@@ -82,7 +78,7 @@ func ListTransaction(c *gin.Context) {
 		err := rows.Scan(&Transaction.ID, &Transaction.CaseID, &Transaction.UserCode, &Transaction.UserName, &Transaction.ReceiveDate,
 			&Transaction.ArriveDate, &Transaction.CloseDate, &Transaction.CancelDate, &Transaction.Duration,
 			&Transaction.SuggestRoute, &Transaction.UserSLA, &Transaction.Viewed, &Transaction.CaseStatusCode,
-			&Transaction.NotiStage, &Transaction.UserClosedJob, &Transaction.ResultCodeT, &Transaction.ResultDetailT, &Transaction.CreatedDate,
+			&Transaction.NotiStage, &Transaction.UserClosedJob, &Transaction.ResultCode, &Transaction.ResultDetail, &Transaction.CreatedDate,
 			&Transaction.CreatedModify, &Transaction.Owner, &Transaction.UpdatedAccount, &Transaction.VehicleCode, &Transaction.ActionCarType,
 			&Transaction.TimeToArrive, &Transaction.Lat, &Transaction.Lon)
 		if err != nil {
@@ -132,7 +128,7 @@ func SearchTransaction(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, caseid, usercode, username, receivedate, arrivedate, closedate, canceldate, duration,
-	       suggestroute, usersla, viewed, casestatuscode, notistage, userclosedjob, resultcodet, resultdetailt,
+	       suggestroute, usersla, viewed, casestatuscode, notistage, userclosedjob, resultcode, resultdetail,
 	       createddate, createdmodify, owner, updatedaccount, vehiclecode, actioncartype, timetoarrive, lat, lon
 	FROM public.case_transaction WHERE (caseid ILIKE '%' || $1 || '%' OR id::text ILIKE '%' || $1 || '%')`
 
@@ -140,11 +136,8 @@ func SearchTransaction(c *gin.Context) {
 
 	rows, err := conn.Query(ctx, query, id)
 
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			id,
-		}))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", id))
 
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -163,7 +156,7 @@ func SearchTransaction(c *gin.Context) {
 		err := rows.Scan(&Transaction.ID, &Transaction.CaseID, &Transaction.UserCode, &Transaction.UserName, &Transaction.ReceiveDate,
 			&Transaction.ArriveDate, &Transaction.CloseDate, &Transaction.CancelDate, &Transaction.Duration,
 			&Transaction.SuggestRoute, &Transaction.UserSLA, &Transaction.Viewed, &Transaction.CaseStatusCode,
-			&Transaction.NotiStage, &Transaction.UserClosedJob, &Transaction.ResultCodeT, &Transaction.ResultDetailT, &Transaction.CreatedDate,
+			&Transaction.NotiStage, &Transaction.UserClosedJob, &Transaction.ResultCode, &Transaction.ResultDetail, &Transaction.CreatedDate,
 			&Transaction.CreatedModify, &Transaction.Owner, &Transaction.UpdatedAccount, &Transaction.VehicleCode, &Transaction.ActionCarType,
 			&Transaction.TimeToArrive, &Transaction.Lat, &Transaction.Lon)
 		if err != nil {
@@ -217,12 +210,8 @@ func ListTransactionNote(c *gin.Context) {
 	var rows pgx.Rows
 
 	rows, err := conn.Query(ctx, query, id)
-
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			id,
-		}))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", id))
 
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -238,8 +227,8 @@ func ListTransactionNote(c *gin.Context) {
 	var errorMsg string
 	for rows.Next() {
 		var Transaction model.CaseNote
-		err := rows.Scan(&Transaction.ID, &Transaction.CaseID, &Transaction.Detail, &Transaction.CreatedDate, &Transaction.ModifiedDate,
-			&Transaction.UserCreate, &Transaction.UserModify)
+		err := rows.Scan(&Transaction.ID, &Transaction.CaseID, &Transaction.Detail, &Transaction.CreatedDate,
+			&Transaction.ModifiedDate, &Transaction.UserCreate, &Transaction.UserModify)
 		if err != nil {
 			logger.Warn("Query failed", zap.Error(err))
 			errorMsg = err.Error()
@@ -315,11 +304,8 @@ INSERT INTO public.case_transaction(
 	)
 	RETURNING id, caseid;
 	`
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			req,
-		}))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{req}))
 	err := conn.QueryRow(ctx, query,
 		req.CaseID, req.UserCode, req.UserName, req.ReceiveDate, req.ArriveDate,
 		req.CloseDate, req.CancelDate, req.Duration, req.SuggestRoute, req.UserSLA,
@@ -385,11 +371,8 @@ func CreateTransactionNote(c *gin.Context) {
 	var cust model.CaseNoteInputResponse
 	query := `INSERT INTO public.case_note(caseid, detail, createddate, modifieddate, usercreate,
  				usermodify) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, caseid;`
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			req,
-		}))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{req}))
 	err := conn.QueryRow(ctx, query,
 		req.CaseID, req.Detail, req.CreatedDate, req.ModifiedDate, req.UserCreate, req.UserModify,
 	).Scan(&cust.ID, &cust.CaseID)
@@ -459,11 +442,8 @@ UPDATE public.case_transaction SET
 
 	RETURNING id, caseid;
 	`
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("args", []any{
-			req,
-		}))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{req}))
 	err := conn.QueryRow(ctx, query, id,
 		req.CaseID, req.UserCode, req.UserName, req.ReceiveDate, req.ArriveDate,
 		req.CloseDate, req.CancelDate, req.Duration, req.SuggestRoute, req.UserSLA,
@@ -515,7 +495,8 @@ func DeleteTransaction(c *gin.Context) {
 
 	id := c.Param("id")
 	query := `DELETE FROM public."case_transaction" WHERE id = $1 `
-	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", id))
 	_, err := conn.Exec(ctx, query, id)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)

@@ -202,7 +202,7 @@ func ListCase(c *gin.Context) {
 			FROM public."case" WHERE caseid ILIKE '%' || $3 || '%' LIMIT $1 OFFSET $2`
 	logger.Debug(`Query`,
 		zap.String("query", query),
-		zap.Any("args", []any{
+		zap.Any("Input", []any{
 			length, start, keyword,
 		}))
 
@@ -870,7 +870,7 @@ func UpdateCase(c *gin.Context) {
 	)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
-		zap.Any("args", []any{
+		zap.Any("Input", []any{
 			id,
 			req.ReferCaseID, req.CasetypeCode, req.Priority, req.Ways,
 			req.PhoneNumber, req.PhoneNumberHide, req.Duration, req.CaseStatusCode, req.CaseCondition,
@@ -998,12 +998,24 @@ func UpdateCaseClose(c *gin.Context) {
 		id, req.CaseStatusCode, req.ResultCode, req.ResultDetail, transImgJSON,
 		req.ClosedDate, req.ModifiedDate, req.UserClose, req.UserModify,
 	)
-	logger.Debug("Update Case SQL Args",
+	logger.Debug("Update Case SQL Query",
 		zap.String("query", query),
-		zap.Any("args", []any{
-			id, req.CaseStatusCode, req.ResultCode, req.ResultDetail, transImgJSON,
-			req.ClosedDate, req.ModifiedDate, req.UserClose, req.UserModify,
-		}))
+	)
+
+	logger.Debug("Update Case SQL Args",
+		zap.Any("Input", []any{
+			id,
+			req.CaseStatusCode,
+			req.ResultCode,
+			req.ResultDetail,
+			transImgJSON,
+			req.ClosedDate,
+			req.ModifiedDate,
+			req.UserClose,
+			req.UserModify,
+		}),
+	)
+
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
 		c.JSON(http.StatusInternalServerError, model.UpdateCaseResponse{

@@ -29,8 +29,8 @@ type CaseTransactionData struct {
 	CaseStatusCode string      `json:"caseStatusCode"`
 	NotiStage      *string     `json:"notiStage"`
 	UserClosedJob  *string     `json:"userClosedJob"`
-	ResultCodeT    *string     `json:"resultCodeT"`
-	ResultDetailT  *string     `json:"resultDetailT"`
+	ResultCode     *string     `json:"resultCode"`
+	ResultDetail   *string     `json:"resultDetail"`
 	CreatedDate    time.Time   `json:"createdDate"`
 	CreatedModify  time.Time   `json:"createdModify"`
 	Owner          string      `json:"owner"`
@@ -38,8 +38,8 @@ type CaseTransactionData struct {
 	VehicleCode    *string     `json:"vehicleCode"`
 	ActionCarType  *string     `json:"actionCarType"`
 	TimeToArrive   *string     `json:"timeToArrive"`
-	Lat            *float64    `json:"lat"`
-	Lon            *float64    `json:"lon"`
+	Lat            *string     `json:"lat"`
+	Lon            *string     `json:"lon"`
 }
 
 type CaseNote struct {
