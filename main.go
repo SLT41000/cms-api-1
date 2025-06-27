@@ -56,12 +56,15 @@ func main() {
 		// trans.Use(handler.ProtectedHandler)
 		trans.GET("", handler.ListTransaction)
 		trans.GET("/:id", handler.SearchTransaction)
-		trans.GET("/notes/:id", handler.ListTransactionNote)
 		trans.POST("", handler.CreateTransaction)
-		trans.POST("/notes", handler.CreateTransactionNote)
 		trans.PATCH("/:id", handler.UpdateTransaction)
 		trans.DELETE("/:id", handler.DeleteTransaction)
-
+	}
+	notes := router.Group("/api/v1/notes")
+	{
+		// trans.Use(handler.ProtectedHandler)
+		notes.GET("/:id", handler.ListTransactionNote)
+		notes.POST("", handler.CreateTransactionNote)
 	}
 
 	logger := config.GetLog()

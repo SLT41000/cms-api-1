@@ -70,6 +70,7 @@ func ListTransaction(c *gin.Context) {
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
+			Data:   []model.CaseTransactionData{},
 		})
 		return
 	}
@@ -200,7 +201,7 @@ func SearchTransaction(c *gin.Context) {
 // @produce json
 // @Param id path string true "id"
 // @response 200 {object} model.CaseListData "OK - Request successful"
-// @Router /api/v1/trans/notes/{id} [get]
+// @Router /api/v1/notes/{id} [get]
 func ListTransactionNote(c *gin.Context) {
 	logger := config.GetLog()
 	id := c.Param("id")
@@ -314,7 +315,11 @@ INSERT INTO public.case_transaction(
 	)
 	RETURNING id, caseid;
 	`
-
+	logger.Debug(`Query`,
+		zap.String("query", query),
+		zap.Any("args", []any{
+			req,
+		}))
 	err := conn.QueryRow(ctx, query,
 		req.CaseID, req.UserCode, req.UserName, req.ReceiveDate, req.ArriveDate,
 		req.CloseDate, req.CancelDate, req.Duration, req.SuggestRoute, req.UserSLA,
@@ -351,10 +356,62 @@ INSERT INTO public.case_transaction(
 // @tags Transaction
 // @accept json
 // @produce json
-// @param Case body model.CaseForCreate true "Case data to be created"
+// @param Case body model.CaseNoteInput true "Case data to be created"
 // @response 200 {object} model.CaseListData "OK - Request successful"
-// @Router /api/v1/trans/notes [post]
+// @Router /api/v1/notes [post]
 func CreateTransactionNote(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+
+	var req model.CaseNoteInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.CaseNoteInputResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// now req is ready to use
+
+	var cust model.CaseNoteInputResponse
+	query := `INSERT INTO public.case_note(caseid, detail, createddate, modifieddate, usercreate,
+ 				usermodify) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, caseid;`
+	logger.Debug(`Query`,
+		zap.String("query", query),
+		zap.Any("args", []any{
+			req,
+		}))
+	err := conn.QueryRow(ctx, query,
+		req.CaseID, req.Detail, req.CreatedDate, req.ModifiedDate, req.UserCreate, req.UserModify,
+	).Scan(&cust.ID, &cust.CaseID)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.CaseNoteInputResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.CaseNoteInputResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Create note of transaction successfully",
+		CaseID: cust.CaseID,
+	})
 
 }
 
@@ -365,10 +422,74 @@ func CreateTransactionNote(c *gin.Context) {
 // @accept json
 // @produce json
 // @Param id path int true "id"
-// @param Body body model.CaseForCreate true "Body"
+// @param Body body model.CaseTransactionUpdateInput true "Body"
 // @response 200 {object} model.CreateCaseResponse "OK - Request successful"
 // @Router /api/v1/trans/{id} [patch]
 func UpdateTransaction(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+	id := c.Param("id")
+	var req model.CaseTransactionUpdateInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.CaseTransactionCRUDResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// now req is ready to use
+
+	var cust model.CaseTransactionCRUDResponse
+	query := `
+UPDATE public.case_transaction SET
+	caseid=$2, usercode=$3, username=$4, receivedate=$5, arrivedate=$6, closedate=$7, canceldate=$8,
+	 duration=$9, suggestroute=$10, usersla=$11, viewed=$12, casestatuscode=$13, notistage=$14,
+	  userclosedjob=$15, resultcode=$16, resultdetail=$17, createddate=$18, createdmodify=$19,
+	   owner=$20, updatedaccount=$21, vehiclecode=$22, actioncartype=$23, timetoarrive=$24, lat=$25, lon=$26
+	WHERE id = $1
+
+	RETURNING id, caseid;
+	`
+	logger.Debug(`Query`,
+		zap.String("query", query),
+		zap.Any("args", []any{
+			req,
+		}))
+	err := conn.QueryRow(ctx, query, id,
+		req.CaseID, req.UserCode, req.UserName, req.ReceiveDate, req.ArriveDate,
+		req.CloseDate, req.CancelDate, req.Duration, req.SuggestRoute, req.UserSLA,
+		req.Viewed, req.CaseStatusCode, req.NotiStage, req.UserClosedJob, req.ResultCode,
+		req.ResultDetail, req.CreatedDate, req.CreatedModify, req.Owner, req.UpdatedAccount,
+		req.VehicleCode, req.ActionCarType, req.TimeToArrive, req.Lat, req.Lon,
+	).Scan(&cust.ID, &cust.CaseID)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.CaseTransactionCRUDResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.CaseTransactionCRUDResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update case transaction successfully",
+		ID:     cust.ID,
+	})
 
 }
 
@@ -383,4 +504,34 @@ func UpdateTransaction(c *gin.Context) {
 // @Router /api/v1/trans/{id} [delete]
 func DeleteTransaction(c *gin.Context) {
 
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+
+	id := c.Param("id")
+	query := `DELETE FROM public."case_transaction" WHERE id = $1 `
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err := conn.Exec(ctx, query, id)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.CaseTransactionCRUDResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.CaseTransactionCRUDResponse{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete case transaction successfully",
+	})
 }

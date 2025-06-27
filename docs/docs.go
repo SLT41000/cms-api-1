@@ -540,6 +540,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/notes": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transaction"
+                ],
+                "summary": "Create transaction Note",
+                "operationId": "Create transaction Note",
+                "parameters": [
+                    {
+                        "description": "Case data to be created",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseNoteInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transaction"
+                ],
+                "summary": "List Transaction Note",
+                "operationId": "ListTransactionNote",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseListData"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/trans": {
             "get": {
                 "security": [
@@ -622,82 +698,6 @@ const docTemplate = `{
                         "description": "OK - Request successful",
                         "schema": {
                             "$ref": "#/definitions/model.CaseTransactionCRUDResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/trans/notes": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "Create transaction Note",
-                "operationId": "Create transaction Note",
-                "parameters": [
-                    {
-                        "description": "Case data to be created",
-                        "name": "Case",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseForCreate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseListData"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/trans/notes/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "List Transaction Note",
-                "operationId": "ListTransactionNote",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseListData"
                         }
                     }
                 }
@@ -805,7 +805,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CaseForCreate"
+                            "$ref": "#/definitions/model.CaseTransactionUpdateInput"
                         }
                     }
                 ],
@@ -1311,6 +1311,29 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CaseNoteInput": {
+            "type": "object",
+            "properties": {
+                "caseId": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "detail": {
+                    "type": "string"
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "userCreate": {
+                    "type": "string"
+                },
+                "userModify": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CaseResponse": {
             "type": "object",
             "properties": {
@@ -1349,6 +1372,121 @@ const docTemplate = `{
             }
         },
         "model.CaseTransactionModelInput": {
+            "type": "object",
+            "properties": {
+                "actionCarType": {
+                    "type": "string"
+                },
+                "arriveDate": {
+                    "type": "string"
+                },
+                "arrivedDate": {
+                    "type": "string"
+                },
+                "cancelDate": {
+                    "type": "string"
+                },
+                "caseId": {
+                    "type": "string"
+                },
+                "caseStatusCode": {
+                    "type": "string"
+                },
+                "closeDate": {
+                    "type": "string"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "commandedDate": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "createdModify": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "lat": {
+                    "description": "Consider float64 if GPS",
+                    "type": "string"
+                },
+                "lon": {
+                    "type": "string"
+                },
+                "modifiedDate": {
+                    "type": "string"
+                },
+                "notiStage": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "receiveDate": {
+                    "type": "string"
+                },
+                "receivedDate": {
+                    "type": "string"
+                },
+                "resultCode": {
+                    "type": "string"
+                },
+                "resultDetail": {
+                    "type": "string"
+                },
+                "suggestRoute": {
+                    "type": "string"
+                },
+                "timeToArrive": {
+                    "description": "If it’s a string, keep as-is; else change to time.Duration or time.Time",
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updatedAccount": {
+                    "type": "string"
+                },
+                "userArrive": {
+                    "type": "string"
+                },
+                "userClose": {
+                    "type": "string"
+                },
+                "userClosedJob": {
+                    "type": "string"
+                },
+                "userCode": {
+                    "type": "string"
+                },
+                "userCommand": {
+                    "type": "string"
+                },
+                "userModify": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                },
+                "userReceive": {
+                    "type": "string"
+                },
+                "userSla": {
+                    "type": "integer"
+                },
+                "vehicleCode": {
+                    "type": "string"
+                },
+                "viewed": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CaseTransactionUpdateInput": {
             "type": "object",
             "properties": {
                 "actionCarType": {
