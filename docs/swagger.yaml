@@ -604,6 +604,49 @@ definitions:
       status:
         type: string
     type: object
+  model.UserInputModel:
+    properties:
+      active:
+        type: boolean
+      areaId:
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      currentLat:
+        type: string
+      currentLon:
+        type: string
+      deviceId:
+        type: string
+      displayName:
+        type: string
+      email:
+        type: string
+      fullName:
+        type: string
+      lastLogin:
+        type: string
+      orgId:
+        type: string
+      passwordHash:
+        type: string
+      phoneNumber:
+        type: string
+      pushToken:
+        type: string
+      roleId:
+        type: string
+      updatedAt:
+        type: string
+      updatedBy:
+        type: string
+      userId:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact:
     email: support@somewhere.com
@@ -616,11 +659,99 @@ info:
   title: CMS API
   version: "1.0"
 paths:
+  /api/v1/AuthAPI/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create User
+      parameters:
+      - description: User to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserInputModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+      security:
+      - ApiKeyAuth: []
+      summary: Create User
+      tags:
+      - Authentication
+  /api/v1/AuthAPI/login:
+    post:
+      consumes:
+      - application/json
+      operationId: Login User
+      parameters:
+      - description: username
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: password
+        in: query
+        name: password
+        required: true
+        type: string
+      - description: organization
+        in: query
+        name: organization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "201":
+          description: Created - Resource created successfully
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "400":
+          description: Bad Request - Invalid request parameters
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "401":
+          description: Unauthorized - Invalid or missing authentication
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "403":
+          description: Forbidden - Insufficient permissions
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "404":
+          description: Not Found - Resource doesn't exist
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "422":
+          description: Bad Request and Not Found (temporary)
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "429":
+          description: Too Many Requests - Rate limit exceeded
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.OutputTokenModel'
+      security:
+      - ApiKeyAuth: []
+      summary: Login
+      tags:
+      - Authentication
   /api/v1/AuthAPI/token:
     post:
       consumes:
       - application/json
-      description: Login to the system and get an access token
       operationId: Login
       parameters:
       - description: grantType
@@ -690,7 +821,7 @@ paths:
             $ref: '#/definitions/model.OutputTokenModel'
       security:
       - ApiKeyAuth: []
-      summary: Login
+      summary: Get Token
       tags:
       - Authentication
   /api/v1/cases:

@@ -24,14 +24,52 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/AuthAPI/token": {
+        "/api/v1/AuthAPI/add": {
             "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Login to the system and get an access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Create User",
+                "operationId": "Create User",
+                "parameters": [
+                    {
+                        "description": "User to be created",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserInputModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/AuthAPI/login": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -42,6 +80,105 @@ const docTemplate = `{
                     "Authentication"
                 ],
                 "summary": "Login",
+                "operationId": "Login User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "password",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization",
+                        "name": "organization",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "201": {
+                        "description": "Created - Resource created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing authentication",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Resource doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "422": {
+                        "description": "Bad Request and Not Found (temporary)",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.OutputTokenModel"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/AuthAPI/token": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get Token",
                 "operationId": "Login",
                 "parameters": [
                     {
@@ -1726,6 +1863,71 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UserInputModel": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "areaId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "currentLat": {
+                    "type": "string"
+                },
+                "currentLon": {
+                    "type": "string"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "fullName": {
+                    "type": "string"
+                },
+                "lastLogin": {
+                    "type": "string"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "passwordHash": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "pushToken": {
+                    "type": "string"
+                },
+                "roleId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "updatedBy": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

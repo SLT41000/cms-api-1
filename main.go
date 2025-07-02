@@ -23,11 +23,20 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
+func init() {
+	// Load .env file
+	logger := config.GetLog()
+	err := godotenv.Load()
+	if err != nil {
+		logger.Fatal("Error loading .env file")
+	}
+}
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -37,6 +46,8 @@ func main() {
 	{
 
 		auth.POST("/token", handler.GetToken)
+		auth.POST("/login", handler.UserLogin)
+		auth.POST("/add", handler.UserAdd)
 	}
 
 	cases := router.Group("/api/v1/cases")

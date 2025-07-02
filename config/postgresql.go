@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -10,10 +11,10 @@ import (
 
 func ConnectDB() (*pgx.Conn, context.Context, context.CancelFunc) {
 	logger := GetLog()
-	var username string = "postgres"
-	var password string = "admin123"
-	var host string = "103.212.39.79:31365"
-	var database string = "pond-test"
+	var username string = os.Getenv("DB_USER")
+	var password string = os.Getenv("DB_PASS")
+	var host string = os.Getenv("DB_HOST")
+	var database string = os.Getenv("DB_NAME")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s", username, password, host, database)
 	logger.Debug("Connection String : " + connStr)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
