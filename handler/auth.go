@@ -6,6 +6,8 @@ import (
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,9 +15,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 )
-
-var secretKey = []byte("secret-key")
-var TIMEOUT = time.Hour
 
 // Login godoc
 // @summary Get Token
@@ -178,6 +177,10 @@ func UserLogin(c *gin.Context) {
 }
 
 func CreateToken(username string) (string, error) {
+	var secretKey = []byte(os.Getenv("TOKEN_SECRET_KEY"))
+	TimeoutStr := os.Getenv("TOKEN_TIMEOUT")
+	timeoutInt, _ := strconv.Atoi(TimeoutStr)
+	var TIMEOUT = time.Hour * time.Duration(timeoutInt)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
@@ -193,6 +196,7 @@ func CreateToken(username string) (string, error) {
 }
 
 func verifyToken(tokenString string) (*jwt.Token, error) {
+	var secretKey = []byte(os.Getenv("TOKEN_SECRET_KEY"))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
