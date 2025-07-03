@@ -45,8 +45,8 @@ func main() {
 	auth := router.Group("/api/v1/AuthAPI")
 	{
 
-		auth.POST("/token", handler.GetToken)
-		auth.POST("/login", handler.UserLogin)
+		auth.GET("/token", handler.GetToken)
+		auth.GET("/login", handler.UserLogin)
 		auth.POST("/add", handler.UserAdd)
 	}
 	forms := router.Group("/api/v1/forms")

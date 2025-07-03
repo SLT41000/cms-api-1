@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Login godoc
 // @summary Get Token
 // @tags Authentication
 // @security ApiKeyAuth
@@ -30,15 +29,7 @@ import (
 // @Param clientId query string false "clientId"
 // @Param clientSecret query string false "clientSecret"
 // @response 200 {object} model.OutputTokenModel "OK - Request successful"
-// @response 201 {object} model.OutputTokenModel "Created - Resource created successfully"
-// @response 400 {object} model.OutputTokenModel "Bad Request - Invalid request parameters"
-// @response 401 {object} model.OutputTokenModel "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.OutputTokenModel "Forbidden - Insufficient permissions"
-// @response 404 {object} model.OutputTokenModel "Not Found - Resource doesn't exist"
-// @response 422 {object} model.OutputTokenModel "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.OutputTokenModel "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.OutputTokenModel "Internal Server Error"
-// @Router /api/v1/AuthAPI/token [post]
+// @Router /api/v1/AuthAPI/token [get]
 func GetToken(c *gin.Context) {
 	logger := config.GetLog()
 	username := c.Query("username")
@@ -55,16 +46,16 @@ func GetToken(c *gin.Context) {
 	err := conn.QueryRow(ctx, `SELECT password FROM public."uc_users" WHERE username = $1`, username).Scan(&dbPassword)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"customerName": username,
 			"message":      err.Error(),
 		})
 		return
 	}
 	if subtle.ConstantTimeCompare([]byte(dbPassword), []byte(password)) == 1 {
-		tokenString, err := CreateToken(username)
+		tokenString, err := CreateToken(username, "")
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "Token creation failed",
 				"message": err.Error(),
 			})
@@ -101,7 +92,7 @@ func GetToken(c *gin.Context) {
 // @response 422 {object} model.OutputTokenModel "Bad Request and Not Found (temporary)"
 // @response 429 {object} model.OutputTokenModel "Too Many Requests - Rate limit exceeded"
 // @response 500 {object} model.OutputTokenModel "Internal Server Error"
-// @Router /api/v1/AuthAPI/login [post]
+// @Router /api/v1/AuthAPI/login [get]
 func UserLogin(c *gin.Context) {
 	logger := config.GetLog()
 	username := c.Query("username")
@@ -116,22 +107,22 @@ func UserLogin(c *gin.Context) {
 	defer cancel()
 
 	var dbPassword string
-	var countOrg int
-	query := `SELECT COUNT(*) FROM public.organizations WHERE name = $1`
+	var id string
+	query := `SELECT id FROM public.organizations WHERE name = $1`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("organization", organization))
-	err := conn.QueryRow(ctx, query, organization).Scan(&countOrg)
+	err := conn.QueryRow(ctx, query, organization).Scan(&id)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"organization": organization,
 			"message":      err.Error(),
 		})
 		return
 	}
-	if countOrg < 1 {
+	if id == "" {
 		logger.Debug("organization not found")
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"organization": organization,
 			"message":      "organization not found",
 		})
@@ -143,7 +134,7 @@ func UserLogin(c *gin.Context) {
 	err = conn.QueryRow(ctx, query, username).Scan(&dbPassword)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"customerName": username,
 			"message":      err.Error(),
 		})
@@ -152,13 +143,14 @@ func UserLogin(c *gin.Context) {
 	var dec string
 	dec, err = decrypt(dbPassword)
 	if err != nil {
+		logger.Debug(err.Error())
 		return
 	}
 
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
-		tokenString, err := CreateToken(username)
+		tokenString, err := CreateToken(username, id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "Token creation failed",
 				"message": err.Error(),
 			})
@@ -170,20 +162,26 @@ func UserLogin(c *gin.Context) {
 			"token_type":  "bearer",
 		})
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "",
+			Desc:   "Invalid credentials",
+		})
 	}
 
 	logger.Debug("User : " + username)
 }
 
-func CreateToken(username string) (string, error) {
+func CreateToken(username string, orgId string) (string, error) {
+
 	var secretKey = []byte(os.Getenv("TOKEN_SECRET_KEY"))
 	TimeoutStr := os.Getenv("TOKEN_TIMEOUT")
 	timeoutInt, _ := strconv.Atoi(TimeoutStr)
-	var TIMEOUT = time.Hour * time.Duration(timeoutInt)
+	var TIMEOUT = time.Minute * time.Duration(timeoutInt)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
+			"orgId":    orgId,
 			"exp":      time.Now().Add(TIMEOUT).Unix(),
 		})
 
@@ -321,7 +319,7 @@ func UserAdd(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.CaseTransactionCRUDResponse{
+		c.JSON(http.StatusUnauthorized, model.CaseTransactionCRUDResponse{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
