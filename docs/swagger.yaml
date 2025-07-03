@@ -593,6 +593,16 @@ definitions:
       tokenType:
         type: string
     type: object
+  model.Response:
+    properties:
+      data: {}
+      desc:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
   model.UpdateCaseResponse:
     properties:
       desc:
@@ -1079,6 +1089,29 @@ paths:
       summary: Search Case
       tags:
       - Cases
+  /api/v1/forms/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Form
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Form
+      tags:
+      - Form
   /api/v1/notes:
     post:
       consumes:

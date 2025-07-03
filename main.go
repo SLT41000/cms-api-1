@@ -49,6 +49,11 @@ func main() {
 		auth.POST("/login", handler.UserLogin)
 		auth.POST("/add", handler.UserAdd)
 	}
+	forms := router.Group("/api/v1/forms")
+	{
+
+		forms.GET("/:id", handler.GetForm)
+	}
 
 	cases := router.Group("/api/v1/cases")
 	{
