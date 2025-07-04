@@ -110,54 +110,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.OutputTokenModel"
                         }
-                    },
-                    "201": {
-                        "description": "Created - Resource created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request - Invalid request parameters",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid or missing authentication",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - Insufficient permissions",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found - Resource doesn't exist",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "422": {
-                        "description": "Bad Request and Not Found (temporary)",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "429": {
-                        "description": "Too Many Requests - Rate limit exceeded",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
                     }
                 }
             }

@@ -84,14 +84,6 @@ func GetToken(c *gin.Context) {
 // @Param password query string true "password"
 // @Param organization query string true "organization"
 // @response 200 {object} model.OutputTokenModel "OK - Request successful"
-// @response 201 {object} model.OutputTokenModel "Created - Resource created successfully"
-// @response 400 {object} model.OutputTokenModel "Bad Request - Invalid request parameters"
-// @response 401 {object} model.OutputTokenModel "Unauthorized - Invalid or missing authentication"
-// @response 403 {object} model.OutputTokenModel "Forbidden - Insufficient permissions"
-// @response 404 {object} model.OutputTokenModel "Not Found - Resource doesn't exist"
-// @response 422 {object} model.OutputTokenModel "Bad Request and Not Found (temporary)"
-// @response 429 {object} model.OutputTokenModel "Too Many Requests - Rate limit exceeded"
-// @response 500 {object} model.OutputTokenModel "Internal Server Error"
 // @Router /api/v1/AuthAPI/login [get]
 func UserLogin(c *gin.Context) {
 	logger := config.GetLog()
