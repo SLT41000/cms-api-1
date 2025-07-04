@@ -54,6 +54,11 @@ func main() {
 
 		forms.GET("/:id", handler.GetForm)
 	}
+	workflows := router.Group("/api/v1/workflows")
+	{
+
+		workflows.GET("/:id", handler.GetWorkFlow)
+	}
 
 	cases := router.Group("/api/v1/cases")
 	{

@@ -1223,6 +1223,29 @@ paths:
       summary: Update an existing transaction
       tags:
       - Transaction
+  /api/v1/workflows/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Workflow
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Workflow
+      tags:
+      - Workflow
 schemes:
 - http
 - https
