@@ -1044,10 +1044,7 @@ func UpdateCaseClose(c *gin.Context) {
 // @id ListCaseTypes
 // @accept json
 // @produce json
-// @Param start query int false "start" default(0)
-// @Param length query int false "length" default(10)
-// @Param keyword query string false "keyword"
-// @response 200 {object} model.CaseListData "OK - Request successful"
+// @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casetypes [get]
 func ListCaseType(c *gin.Context) {
 	logger := config.GetLog()
@@ -1059,7 +1056,7 @@ func ListCaseType(c *gin.Context) {
 	defer conn.Close(ctx)
 	//---
 
-	query := `SELECT id,"typeId",en,th,active FROM public.case_types`
+	query := `SELECT id,"typeId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_types`
 	logger.Debug(`Query`, zap.String("query", query))
 
 	rows, err := conn.Query(ctx, query)
@@ -1078,7 +1075,8 @@ func ListCaseType(c *gin.Context) {
 	var errorMsg string
 	for rows.Next() {
 		var cusCase model.OutputCaseType
-		err := rows.Scan(&cusCase.Id, &cusCase.TypeId, &cusCase.En, &cusCase.Th, &cusCase.Active)
+		err := rows.Scan(&cusCase.Id, &cusCase.TypeId, &cusCase.OrgId, &cusCase.En, &cusCase.Th, &cusCase.Active, &cusCase.CreatedAt,
+			&cusCase.UpdatedAt, &cusCase.CreatedBy, &cusCase.UpdatedBy)
 		if err != nil {
 			logger.Warn("Query failed", zap.Error(err))
 			errorMsg = err.Error()
@@ -1094,6 +1092,71 @@ func ListCaseType(c *gin.Context) {
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		totalCount = 0
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   caseLists,
+		Desc:   errorMsg,
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
+// ListCase godoc
+// @summary List Cases Sub Type
+// @tags Case Sub Types
+// @security ApiKeyAuth
+// @id ListCaseSubTypes
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/casesubtypes [get]
+func ListCaseSubType(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	//---
+
+	query := `SELECT id, "typeId", "sTypeId", "orgId", en, th, "wfId", "caseSla", priority, "userSkillList", "unitPropLists",
+	 active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_sub_types`
+	logger.Debug(`Query`, zap.String("query", query))
+
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.OutputCaseSubType
+	var errorMsg string
+	for rows.Next() {
+		var cusCase model.OutputCaseSubType
+		err := rows.Scan(&cusCase.Id, &cusCase.TypeID, &cusCase.STypeID, &cusCase.OrgID, &cusCase.EN, &cusCase.TH, &cusCase.WFID,
+			&cusCase.CaseSLA, &cusCase.Priority, &cusCase.UserSkillList, &cusCase.UnitPropLists, &cusCase.Active,
+			&cusCase.CreatedAt, &cusCase.UpdatedAt, &cusCase.CreatedBy, &cusCase.UpdatedBy)
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			errorMsg = err.Error()
+			continue
+		}
+
+		caseLists = append(caseLists, cusCase)
 	}
 
 	// Final JSON

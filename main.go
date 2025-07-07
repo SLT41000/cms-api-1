@@ -21,8 +21,6 @@ import (
 	_ "mainPackage/docs"
 	"mainPackage/handler"
 
-	"time"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -65,6 +63,11 @@ func main() {
 	{
 
 		casetypes.GET("", handler.ListCaseType)
+	}
+	casesubtypes := router.Group("/api/v1/casesubtypes")
+	{
+
+		casesubtypes.GET("", handler.ListCaseSubType)
 	}
 
 	cases := router.Group("/api/v1/cases")

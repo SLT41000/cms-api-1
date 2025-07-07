@@ -245,9 +245,33 @@ type DeleteCaseResponse struct {
 }
 
 type OutputCaseType struct {
-	Id     string  `json:"id"`
-	TypeId string  `json:"typeId"`
-	En     *string `json:"en"`
-	Th     *string `json:"th"`
-	Active bool    `json:"active"`
+	Id        string    `json:"id"`
+	TypeId    string    `json:"typeId"`
+	OrgId     string    `json:"orgId"`
+	En        *string   `json:"en"`
+	Th        *string   `json:"th"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy *string   `json:"createdBy"`
+	UpdatedBy *string   `json:"updatedBy"`
+}
+
+type OutputCaseSubType struct {
+	Id            string    `json:"id"`
+	TypeID        string    `json:"typeId"`
+	STypeID       string    `json:"sTypeId"`
+	OrgID         string    `json:"orgId"`
+	EN            string    `json:"en"`
+	TH            string    `json:"th"`
+	WFID          string    `json:"wfId"`
+	CaseSLA       string    `json:"caseSla"`
+	Priority      string    `json:"priority"`
+	UserSkillList []string  `json:"userSkillList"`
+	UnitPropLists []string  `json:"unitPropLists"`
+	Active        bool      `json:"active"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+	CreatedBy     string    `json:"createdBy"`
+	UpdatedBy     string    `json:"updatedBy"`
 }
