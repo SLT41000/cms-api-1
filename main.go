@@ -92,7 +92,15 @@ func main() {
 		notes.GET("/:id", handler.ListTransactionNote)
 		notes.POST("", handler.CreateTransactionNote)
 	}
-
+	notifications := router.Group("/api/v1/notifications")
+	{
+		notifications.POST("/new", handler.PostNotificationCustom)
+		notifications.GET("/recipient/:username", handler.GetNotificationsByRecipient)
+		notifications.GET("/noti/:id", handler.GetNotificationByID)
+		notifications.GET("/ws", handler.WebSocketHandler)
+		notifications.PUT("/edit/:id", handler.UpdateNotificationByID)
+		notifications.DELETE("/delete/:id", handler.DeleteNotificationByID)
+	}
 	logger := config.GetLog()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	logger.Info("Server started at: http://localhost:8080")
