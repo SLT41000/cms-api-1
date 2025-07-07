@@ -1036,3 +1036,76 @@ func UpdateCaseClose(c *gin.Context) {
 		ID:     ToInt(id),
 	})
 }
+
+// ListCase godoc
+// @summary List Cases
+// @tags Case Types
+// @security ApiKeyAuth
+// @id ListCaseTypes
+// @accept json
+// @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
+// @Param keyword query string false "keyword"
+// @response 200 {object} model.CaseListData "OK - Request successful"
+// @Router /api/v1/casetypes [get]
+func ListCaseType(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	//---
+
+	query := `SELECT id,"typeId",en,th,active FROM public.case_types`
+	logger.Debug(`Query`, zap.String("query", query))
+
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.OutputCaseType
+	var errorMsg string
+	for rows.Next() {
+		var cusCase model.OutputCaseType
+		err := rows.Scan(&cusCase.Id, &cusCase.TypeId, &cusCase.En, &cusCase.Th, &cusCase.Active)
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			errorMsg = err.Error()
+			continue
+		}
+
+		caseLists = append(caseLists, cusCase)
+	}
+
+	// Total count (for frontend pagination)
+	var totalCount int
+	err = conn.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		totalCount = 0
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   caseLists,
+		Desc:   errorMsg,
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}

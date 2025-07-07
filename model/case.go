@@ -243,3 +243,11 @@ type DeleteCaseResponse struct {
 	Msg    string `json:"msg"`
 	Desc   string `json:"desc"`
 }
+
+type OutputCaseType struct {
+	Id     string  `json:"id"`
+	TypeId string  `json:"typeId"`
+	En     *string `json:"en"`
+	Th     *string `json:"th"`
+	Active bool    `json:"active"`
+}

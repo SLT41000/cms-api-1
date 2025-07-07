@@ -1025,6 +1025,38 @@ paths:
       summary: Search Case
       tags:
       - Cases
+  /api/v1/casetypes:
+    get:
+      consumes:
+      - application/json
+      operationId: ListCaseTypes
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.CaseListData'
+      security:
+      - ApiKeyAuth: []
+      summary: List Cases
+      tags:
+      - Case Types
   /api/v1/forms/{id}:
     get:
       consumes:

@@ -59,6 +59,11 @@ func main() {
 
 		workflows.GET("/:id", handler.GetWorkFlow)
 	}
+	casetypes := router.Group("/api/v1/casetypes")
+	{
+
+		casetypes.GET("", handler.ListCaseType)
+	}
 
 	cases := router.Group("/api/v1/cases")
 	{
