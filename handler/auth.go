@@ -98,7 +98,6 @@ func UserLogin(c *gin.Context) {
 	defer conn.Close(ctx)
 	defer cancel()
 
-	var dbPassword string
 	var id string
 	query := `SELECT id FROM public.organizations WHERE name = $1`
 	logger.Debug(`Query`, zap.String("query", query))
@@ -120,10 +119,17 @@ func UserLogin(c *gin.Context) {
 		})
 		return
 	}
-	query = `SELECT "passwordHash" FROM public.users WHERE username = $1 AND active = true`
+	query = `SELECT id,"orgId", "userId", "displayName", "fullName", "phoneNumber", email, username,
+	 "passwordHash", "lastLogin", "roleId", active, "areaId", "deviceId", "pushToken", "currentLat",
+	  "currentLon", "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.users WHERE username = $1 AND active = true`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
-	err = conn.QueryRow(ctx, query, username).Scan(&dbPassword)
+	var UserOpt model.User
+	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
+		&UserOpt.OrgID, &UserOpt.UserID, &UserOpt.DisplayName, &UserOpt.FullName, &UserOpt.PhoneNumber, &UserOpt.Email,
+		&UserOpt.Username, &UserOpt.PasswordHash, &UserOpt.LastLogin, &UserOpt.RoleID, &UserOpt.Active, &UserOpt.AreaID,
+		&UserOpt.DeviceID, &UserOpt.PushToken, &UserOpt.CurrentLat, &UserOpt.CurrentLon, &UserOpt.CreatedAt, &UserOpt.UpdatedAt,
+		&UserOpt.CreatedBy, &UserOpt.UpdatedBy)
 	if err != nil {
 		logger.Debug(err.Error())
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -133,7 +139,7 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 	var dec string
-	dec, err = decrypt(dbPassword)
+	dec, err = decrypt(UserOpt.PasswordHash)
 	if err != nil {
 		logger.Debug(err.Error())
 		return
@@ -152,6 +158,7 @@ func UserLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"accessToken": tokenString,
 			"token_type":  "bearer",
+			"user":        UserOpt,
 		})
 	} else {
 		c.JSON(http.StatusUnauthorized, model.Response{

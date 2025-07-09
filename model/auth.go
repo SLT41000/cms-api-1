@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type InputTokenModel struct {
 	GrantType    *string `json:"grantType"`
 	Scope        *string `json:"scope"`
@@ -35,4 +37,28 @@ type UserInputModel struct {
 	UpdatedAt    string `json:"updatedAt"`
 	CreatedBy    string `json:"createdBy"`
 	UpdatedBy    string `json:"updatedBy"`
+}
+
+type User struct {
+	ID           string    `json:"id"` // Primary key
+	OrgID        string    `json:"orgId"`
+	UserID       string    `json:"userId"`
+	DisplayName  string    `json:"displayName"`
+	FullName     string    `json:"fullName"`
+	PhoneNumber  string    `json:"phoneNumber"`
+	Email        string    `json:"email"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"passwordHash"`
+	LastLogin    time.Time `json:"lastLogin"`
+	RoleID       string    `json:"roleId"`
+	Active       bool      `json:"active"`
+	AreaID       string    `json:"areaId"`
+	DeviceID     string    `json:"deviceId"`
+	PushToken    string    `json:"pushToken"`
+	CurrentLat   string    `json:"currentLat"`
+	CurrentLon   string    `json:"currentLon"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedBy    string    `json:"createdBy"`
+	UpdatedBy    string    `json:"updatedBy"`
 }

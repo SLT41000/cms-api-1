@@ -114,6 +114,5 @@ func decrypt(ciphertextBase64 string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return string(plaintext), nil
 }
