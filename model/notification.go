@@ -8,7 +8,7 @@ type Notification struct {
 	CaseType    string    `json:"caseType"`
 	CaseDetail  string    `json:"caseDetail"`
 	Recipient   string    `json:"recipient"`
-	Sender      string    `json:"sender"` // Note: 'sender' is intentionally lowercase to avoid conflict with the field in NotificationRecipient
+	Sender      string    `json:"sender"`
 	Message     string    `json:"message"`
 	EventType   string    `json:"eventType"`
 	CreatedAt   time.Time `json:"createdAt"`

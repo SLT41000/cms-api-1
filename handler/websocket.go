@@ -2,6 +2,7 @@ package handler
 
 import (
 	"log"
+	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
 	"strings"
@@ -37,43 +38,53 @@ func WebSocketHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	// Read initial message from client to get username
 	_, msg, err := conn.ReadMessage()
 	if err != nil {
 		log.Println("Failed to read username:", err)
 		return
 	}
-	username := strings.TrimSpace(string(msg)) // ตัดช่องว่างรอบข้าง
+	username := strings.TrimSpace(string(msg))
 	if username == "" {
 		log.Println("Empty username from client")
 		return
 	}
 
-	log.Println("✅ WebSocket connected, username:", username)
+	log.Println("✅ WebSocket connected:", username)
 
 	connMutex.Lock()
 	userConnections[username] = conn
-	log.Printf("🌐 Current connected users: %v\n", getUsernames())
+	log.Printf("🌐 Users connected: %v\n", getUsernames())
 	connMutex.Unlock()
+
+	go func() {
+		unreadNotis, err := GetUnreadNotificationsByUsername(username)
+		if err != nil {
+			log.Println("❌ Failed to get unread notis:", err)
+			return
+		}
+		for _, n := range unreadNotis {
+			if err := conn.WriteJSON(n); err != nil {
+				log.Println("❌ Failed to send noti to", username, ":", err)
+				break
+			}
+		}
+	}()
 
 	defer func() {
 		connMutex.Lock()
 		delete(userConnections, username)
-		log.Printf("❌ WebSocket disconnected: %s\n", username)
-		log.Printf("🌐 Current connected users: %v\n", getUsernames())
+		log.Printf("❌ Disconnected: %s\n", username)
 		connMutex.Unlock()
 	}()
 
-	// Keep the connection alive or handle ping/pong
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
-			log.Println("Read error for user", username, ":", err)
+			log.Println("Read error for", username, ":", err)
 			break
 		}
 	}
 }
 
-// helper function to get usernames from map
 func getUsernames() []string {
 	keys := make([]string, 0, len(userConnections))
 	for k := range userConnections {
@@ -87,10 +98,8 @@ func SendNotificationToRecipient(noti model.Notification) {
 	defer connMutex.Unlock()
 
 	if noti.Recipient == "all" {
-		// Broadcast to all connected users
 		for username, conn := range userConnections {
-			err := conn.WriteJSON(noti)
-			if err != nil {
+			if err := conn.WriteJSON(noti); err != nil {
 				log.Println("❌ Failed to send to", username, ":", err)
 				conn.Close()
 				delete(userConnections, username)
@@ -99,17 +108,44 @@ func SendNotificationToRecipient(noti model.Notification) {
 		return
 	}
 
-	// Send to a specific recipient by username
 	conn, exists := userConnections[noti.Recipient]
 	if !exists {
-		log.Println("🔕 Recipient", noti.Recipient, "is not connected")
+		log.Println("🔕", noti.Recipient, "is not connected")
 		return
 	}
 
-	err := conn.WriteJSON(noti)
-	if err != nil {
-		log.Println("❌ Failed to send to", noti.Recipient, ":", err)
+	if err := conn.WriteJSON(noti); err != nil {
+		log.Println("❌ Send failed to", noti.Recipient, ":", err)
 		conn.Close()
 		delete(userConnections, noti.Recipient)
 	}
+}
+
+func GetUnreadNotificationsByUsername(username string) ([]model.Notification, error) {
+	conn, ctx, cancel := config.ConnectDB()
+	defer cancel()
+	defer conn.Close(ctx)
+
+	rows, err := conn.Query(ctx, `
+		SELECT id, "caseId", "caseType", "caseDetail", recipient, sender, message, "eventType", "createdAt", read, "redirectUrl"
+		FROM notifications
+		WHERE recipient = $1 AND read = false
+		ORDER BY "createdAt" ASC
+	`, username)
+	if err != nil {
+		log.Println("❌ Failed to query unread notifications:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notis []model.Notification
+	for rows.Next() {
+		var n model.Notification
+		if err := rows.Scan(&n.ID, &n.CaseID, &n.CaseType, &n.CaseDetail, &n.Recipient, &n.Sender, &n.Message, &n.EventType, &n.CreatedAt, &n.Read, &n.RedirectURL); err != nil {
+			log.Println("❌ Scan error:", err)
+			continue
+		}
+		notis = append(notis, n)
+	}
+	return notis, nil
 }

@@ -6,6 +6,7 @@ import (
 	"mainPackage/model"
 	"math/rand"
 	"net/http"
+	"net/smtp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,24 @@ func RandomString(n int) string {
 		s[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(s)
+}
+
+// sendEmailNotification ส่งอีเมลแจ้งเตือน
+func sendEmailNotification(to, subject, body string) error {
+	from := "your_email@gmail.com"    // เปลี่ยนเป็นอีเมลผู้ส่ง
+	password := "your_email_password" // เปลี่ยนเป็นรหัสผ่านอีเมล
+	host := "smtp.gmail.com"
+	port := "587"
+	addr := host + ":" + port
+
+	auth := smtp.PlainAuth("", from, password, host)
+	msg := []byte("To: " + to + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
+		"\r\n" +
+		body + "\r\n")
+
+	return smtp.SendMail(addr, auth, from, []string{to}, msg)
 }
 
 // GetNotificationByID godoc
@@ -200,6 +219,16 @@ func PostNotificationCustom(c *gin.Context) {
 
 	// 🔔 Send to WebSocket recipient in real-time
 	SendNotificationToRecipient(noti)
+
+	// 📨 ส่งอีเมลแจ้งเตือน (สมมติ recipient เป็นอีเมล)
+	if noti.Recipient != "" {
+		emailSubject := "New Notification: " + noti.EventType
+		emailBody := noti.Message
+		err := sendEmailNotification(noti.Recipient, emailSubject, emailBody)
+		if err != nil {
+			log.Println("Failed to send email:", err)
+		}
+	}
 
 	c.JSON(http.StatusOK, noti)
 }
