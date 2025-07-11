@@ -1103,6 +1103,29 @@ paths:
       summary: Get Commands
       tags:
       - Commands
+  /api/v1/commands/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Commands by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Commands by id
+      tags:
+      - Commands
   /api/v1/departments:
     get:
       consumes:
@@ -1118,6 +1141,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Department
+      tags:
+      - Department
+  /api/v1/departments/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Department by ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Department by ID
       tags:
       - Department
   /api/v1/forms/{id}:
@@ -1397,6 +1443,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Stations
+      tags:
+      - Stations
+  /api/v1/stations/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Stations  by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Stations by id
       tags:
       - Stations
   /api/v1/trans:

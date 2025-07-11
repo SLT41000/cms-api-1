@@ -44,13 +44,13 @@ func GetStation(c *gin.Context) {
 	}
 	defer rows.Close()
 	var errorMsg string
-	var Department model.Station
-	var DepartmentList []model.Station
+	var Station model.Station
+	var StationList []model.Station
 	rowIndex := 0
 	for rows.Next() {
 		rowIndex++
-		err := rows.Scan(&Department.DeptID, &Department.OrgID, &Department.CommID, &Department.StnID, &Department.En, &Department.Th,
-			&Department.Active, &Department.CreatedAt, &Department.UpdatedAt, &Department.CreatedBy, &Department.UpdatedBy)
+		err := rows.Scan(&Station.DeptID, &Station.OrgID, &Station.CommID, &Station.StnID, &Station.En, &Station.Th,
+			&Station.Active, &Station.CreatedAt, &Station.UpdatedAt, &Station.CreatedBy, &Station.UpdatedBy)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -60,7 +60,7 @@ func GetStation(c *gin.Context) {
 			}
 			c.JSON(http.StatusInternalServerError, response)
 		}
-		DepartmentList = append(DepartmentList, Department)
+		StationList = append(StationList, Station)
 	}
 	if errorMsg != "" {
 		response := model.Response{
@@ -73,7 +73,77 @@ func GetStation(c *gin.Context) {
 		response := model.Response{
 			Status: "0",
 			Msg:    "Success",
-			Data:   DepartmentList,
+			Data:   StationList,
+			Desc:   "",
+		}
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+// Stations godoc
+// @summary Get Stations by id
+// @tags Stations
+// @security ApiKeyAuth
+// @id Get Stations  by id
+// @accept json
+// @produce json
+// @Param id path string true "id" "id"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/stations/{id} [get]
+func GetStationbyId(c *gin.Context) {
+	logger := config.GetLog()
+	id := c.Param("id")
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	query := `SELECT  "orgId", "deptId", "commId", "stnId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.sec_stations WHERE "stnId"=$1`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, id)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var errorMsg string
+	var Station model.Station
+	rowIndex := 0
+	for rows.Next() {
+		rowIndex++
+		err := rows.Scan(&Station.DeptID, &Station.OrgID, &Station.CommID, &Station.StnID, &Station.En, &Station.Th,
+			&Station.Active, &Station.CreatedAt, &Station.UpdatedAt, &Station.CreatedBy, &Station.UpdatedBy)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+		}
+	}
+	if errorMsg != "" {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   errorMsg,
+		}
+		c.JSON(http.StatusInternalServerError, response)
+	} else {
+		response := model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Data:   Station,
 			Desc:   "",
 		}
 		c.JSON(http.StatusOK, response)

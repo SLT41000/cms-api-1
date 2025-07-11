@@ -78,8 +78,11 @@ func main() {
 		v1.GET("/notes/:id", handler.ListTransactionNote)
 		v1.POST("/notes", handler.CreateTransactionNote)
 		v1.GET("/departments", handler.GetDepartment)
+		v1.GET("/departments/:id", handler.GetDepartmentbyId)
 		v1.GET("/commands", handler.GetCommand)
+		v1.GET("/commands/:id", handler.GetCommandById)
 		v1.GET("/stations", handler.GetStation)
+		v1.GET("/stations/:id", handler.GetStationbyId)
 	}
 
 	// cases := router.Group("/api/v1/cases")
