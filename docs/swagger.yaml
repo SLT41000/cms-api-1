@@ -1086,6 +1086,40 @@ paths:
       summary: List Cases
       tags:
       - Case Types
+  /api/v1/commands:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Commands
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Commands
+      tags:
+      - Commands
+  /api/v1/departments:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Department
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Department
+      tags:
+      - Department
   /api/v1/forms/{id}:
     get:
       consumes:
@@ -1348,6 +1382,23 @@ paths:
       summary: WebSocket endpoint for real-time notifications by username
       tags:
       - Notifications
+  /api/v1/stations:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Stations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Stations
+      tags:
+      - Stations
   /api/v1/trans:
     get:
       consumes:
