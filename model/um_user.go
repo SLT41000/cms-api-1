@@ -49,7 +49,7 @@ type UserContact struct {
 	Username     string    `json:"username"`
 	ContactName  string    `json:"contactName"`
 	ContactPhone string    `json:"contactPhone"`
-	ContactAddr  string    `json:"contactAddr"`
+	ContactAddr  any       `json:"contactAddr"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	CreatedBy    string    `json:"createdBy"`
@@ -77,4 +77,23 @@ type UserSocial struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 	CreatedBy  string    `json:"createdBy"`
 	UpdatedBy  string    `json:"updatedBy"`
+}
+
+type UserSocialInsert struct {
+	OrgID      string `json:"orgId"`
+	Username   string `json:"username"`
+	SocialType string `json:"socialType"`
+	SocialID   string `json:"socialId"`
+	SocialName string `json:"socialName"`
+	CreatedBy  string `json:"createdBy"`
+	UpdatedBy  string `json:"updatedBy"`
+}
+
+type UserSocialUpdate struct {
+	OrgID      string `json:"orgId"`
+	Username   string `json:"username"`
+	SocialType string `json:"socialType"`
+	SocialID   string `json:"socialId"`
+	SocialName string `json:"socialName"`
+	UpdatedBy  string `json:"updatedBy"`
 }

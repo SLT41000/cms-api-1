@@ -639,6 +639,26 @@ definitions:
       status:
         type: string
     type: object
+  model.UserContact:
+    properties:
+      contactAddr: {}
+      contactName:
+        type: string
+      contactPhone:
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      orgId:
+        type: string
+      updatedAt:
+        type: string
+      updatedBy:
+        type: string
+      username:
+        type: string
+    type: object
   model.UserInputModel:
     properties:
       active:
@@ -678,6 +698,57 @@ definitions:
       updatedBy:
         type: string
       userId:
+        type: string
+      username:
+        type: string
+    type: object
+  model.UserSkill:
+    properties:
+      active:
+        type: boolean
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      orgId:
+        type: string
+      skillId:
+        type: string
+      updatedAt:
+        type: string
+      updatedBy:
+        type: string
+      userName:
+        type: string
+    type: object
+  model.UserSocialInsert:
+    properties:
+      createdBy:
+        type: string
+      orgId:
+        type: string
+      socialId:
+        type: string
+      socialName:
+        type: string
+      socialType:
+        type: string
+      updatedBy:
+        type: string
+      username:
+        type: string
+    type: object
+  model.UserSocialUpdate:
+    properties:
+      orgId:
+        type: string
+      socialId:
+        type: string
+      socialName:
+        type: string
+      socialType:
+        type: string
+      updatedBy:
         type: string
       username:
         type: string
@@ -1634,6 +1705,120 @@ paths:
       summary: Get User by Id
       tags:
       - User
+  /api/v1/users_with_contacts:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with contacts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with contacts
+      tags:
+      - User
+  /api/v1/users_with_contacts/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete User with contacts
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User with contacts
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with contacts by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with contacts by id
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update User with contacts
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserContact'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User with contacts
+      tags:
+      - User
+  /api/v1/users_with_contacts/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create User with contacts
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserContact'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create User with contacts
+      tags:
+      - User
   /api/v1/users_with_skills:
     get:
       consumes:
@@ -1649,6 +1834,217 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get User with skills
+      tags:
+      - User
+  /api/v1/users_with_skills/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete User with skill
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User with skill
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with skills by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with skills by id
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update User with skill
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserSkill'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User with skill
+      tags:
+      - User
+  /api/v1/users_with_skills/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create User with skill
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserSkill'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create User with skill
+      tags:
+      - User
+  /api/v1/users_with_socials:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with socials
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with socials
+      tags:
+      - User
+  /api/v1/users_with_socials/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete User with socials
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User with socials
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with Socials by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with Socials by id
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update User with socials
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserSocialUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User with socials
+      tags:
+      - User
+  /api/v1/users_with_socials/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create User with socials
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserSocialInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create User with socials
       tags:
       - User
   /api/v1/workflows/{id}:
