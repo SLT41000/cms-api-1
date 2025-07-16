@@ -84,6 +84,7 @@ func main() {
 		v1.GET("/stations", handler.GetStation)
 		v1.GET("/stations/:id", handler.GetStationbyId)
 		v1.GET("/users", handler.GetUmUserList)
+		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)

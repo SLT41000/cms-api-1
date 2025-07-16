@@ -1705,6 +1705,29 @@ paths:
       summary: Get User by Id
       tags:
       - User
+  /api/v1/users/username/{username}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User by username
+      parameters:
+      - description: username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User by username
+      tags:
+      - User
   /api/v1/users_with_contacts:
     get:
       consumes:
