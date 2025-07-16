@@ -1611,6 +1611,46 @@ paths:
       summary: Get User
       tags:
       - User
+  /api/v1/users/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User by Id
+      tags:
+      - User
+  /api/v1/users_with_skills:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with skills
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with skills
+      tags:
+      - User
   /api/v1/workflows/{id}:
     get:
       consumes:

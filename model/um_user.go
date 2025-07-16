@@ -43,3 +43,38 @@ type Um_User struct {
 	CreatedBy             string          `json:"createdBy"`
 	UpdatedBy             string          `json:"updatedBy"`
 }
+
+type UserContact struct {
+	OrgID        string    `json:"orgId"`
+	Username     string    `json:"username"`
+	ContactName  string    `json:"contactName"`
+	ContactPhone string    `json:"contactPhone"`
+	ContactAddr  string    `json:"contactAddr"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedBy    string    `json:"createdBy"`
+	UpdatedBy    string    `json:"updatedBy"`
+}
+
+type UserSkill struct {
+	OrgID     string    `json:"orgId"`
+	UserName  string    `json:"userName"`
+	SkillID   string    `json:"skillId"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy string    `json:"createdBy"`
+	UpdatedBy string    `json:"updatedBy"`
+}
+
+type UserSocial struct {
+	OrgID      string    `json:"orgId"`
+	Username   string    `json:"username"`
+	SocialType string    `json:"socialType"`
+	SocialID   string    `json:"socialId"`
+	SocialName string    `json:"socialName"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+	CreatedBy  string    `json:"createdBy"`
+	UpdatedBy  string    `json:"updatedBy"`
+}
