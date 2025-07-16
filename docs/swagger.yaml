@@ -570,8 +570,6 @@ definitions:
       redirectURL:
         type: string
       sender:
-        description: 'Note: ''sender'' is intentionally lowercase to avoid conflict
-          with the field in NotificationRecipient'
         type: string
     type: object
   model.OutputCase:
@@ -1596,6 +1594,23 @@ paths:
       summary: Update an existing transaction
       tags:
       - Transaction
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User
+      tags:
+      - User
   /api/v1/workflows/{id}:
     get:
       consumes:

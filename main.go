@@ -83,6 +83,7 @@ func main() {
 		v1.GET("/commands/:id", handler.GetCommandById)
 		v1.GET("/stations", handler.GetStation)
 		v1.GET("/stations/:id", handler.GetStationbyId)
+		v1.GET("/users", handler.GetUmUserList)
 	}
 
 	// cases := router.Group("/api/v1/cases")

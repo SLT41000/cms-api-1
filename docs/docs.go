@@ -1438,6 +1438,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "operationId": "Get User",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/workflows/{id}": {
             "get": {
                 "security": [
@@ -2333,7 +2361,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sender": {
-                    "description": "Note: 'sender' is intentionally lowercase to avoid conflict with the field in NotificationRecipient",
                     "type": "string"
                 }
             }
