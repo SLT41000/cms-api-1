@@ -28,11 +28,13 @@ func GetStation(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT  "orgId", "deptId", "commId", "stnId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.sec_stations`
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT  "orgId", "deptId", "commId", "stnId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.sec_stations WHERE "orgId"=$1 LIMIT 1000`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -99,12 +101,13 @@ func GetStationbyId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT  "orgId", "deptId", "commId", "stnId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.sec_stations WHERE "stnId"=$1`
+	FROM public.sec_stations WHERE "stnId"=$1 AND "orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{

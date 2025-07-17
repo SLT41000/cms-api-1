@@ -31,12 +31,15 @@ func GetForm(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT form_builder."formId",form_builder."formName",form_builder."formColSpan",form_elements."eleData" FROM public.form_builder INNER JOIN public.form_elements ON form_builder."formId"=form_elements."formId" WHERE form_builder."formId" = $1`
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT form_builder."formId",form_builder."formName",form_builder."formColSpan",form_elements."eleData" 
+	FROM public.form_builder INNER JOIN public.form_elements ON form_builder."formId"=form_elements."formId" 
+	WHERE form_builder."formId" = $1 AND form_builder."orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`id :` + id)
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -106,13 +109,15 @@ func GetWorkFlow(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT "type","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" FROM public.wf_definitions Inner join public.wf_nodes
-ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1`
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT "type","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
+	FROM public.wf_definitions Inner join public.wf_nodes
+	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1 AND wf_nodes."orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`id :` + id)
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{

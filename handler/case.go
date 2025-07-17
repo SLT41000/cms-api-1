@@ -1039,7 +1039,7 @@ func UpdateCaseClose(c *gin.Context) {
 
 // ListCase godoc
 // @summary List Cases
-// @tags Case Types
+// @tags Cases
 // @security ApiKeyAuth
 // @id ListCaseTypes
 // @accept json
@@ -1054,15 +1054,16 @@ func ListCaseType(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	//---
+	orgId := GetVariableFromToken(c, "orgId")
 
-	query := `SELECT id,"typeId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_types`
+	query := `SELECT id,"typeId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.case_types WHERE "orgId"=$1 LIMIT 1000`
 	logger.Debug(`Query`, zap.String("query", query))
 
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
@@ -1086,14 +1087,6 @@ func ListCaseType(c *gin.Context) {
 		caseLists = append(caseLists, cusCase)
 	}
 
-	// Total count (for frontend pagination)
-	var totalCount int
-	err = conn.QueryRow(ctx, `SELECT COUNT(*) FROM public."case"`).Scan(&totalCount)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		totalCount = 0
-	}
-
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -1110,7 +1103,7 @@ func ListCaseType(c *gin.Context) {
 
 // ListCase godoc
 // @summary List Cases Sub Type
-// @tags Case Sub Types
+// @tags Cases
 // @security ApiKeyAuth
 // @id ListCaseSubTypes
 // @accept json
@@ -1125,16 +1118,15 @@ func ListCaseSubType(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	//---
-
+	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, "typeId", "sTypeId", "orgId", en, th, "wfId", "caseSla", priority, "userSkillList", "unitPropLists",
-	 active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_sub_types`
+	 active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_sub_types WHERE "orgId"=$1`
 	logger.Debug(`Query`, zap.String("query", query))
 
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.CaseListResponse{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),

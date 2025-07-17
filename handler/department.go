@@ -21,18 +21,19 @@ import (
 // @Router /api/v1/departments [get]
 func GetDepartment(c *gin.Context) {
 	logger := config.GetLog()
-
+	orgId := GetVariableFromToken(c, "orgId")
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT "deptId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.sec_departments`
+	query := `SELECT "deptId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.sec_departments WHERE "orgId"=$1 LIMIT 1000`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -99,12 +100,13 @@ func GetDepartmentbyId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT "deptId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.sec_departments WHERE "deptId" = $1`
+	FROM public.sec_departments WHERE "deptId" = $1 AND "orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{

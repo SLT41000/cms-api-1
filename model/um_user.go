@@ -79,14 +79,38 @@ type UserSocial struct {
 	UpdatedBy  string    `json:"updatedBy"`
 }
 
+type UserContactInsert struct {
+	OrgID        string `json:"orgId"`
+	Username     string `json:"username"`
+	ContactName  string `json:"contactName"`
+	ContactPhone string `json:"contactPhone"`
+	ContactAddr  any    `json:"contactAddr"`
+}
+
+type UserContactInsertUpdate struct {
+	ContactName  string `json:"contactName"`
+	ContactPhone string `json:"contactPhone"`
+	ContactAddr  any    `json:"contactAddr"`
+}
+
+type UserSkillInsert struct {
+	OrgID    string `json:"orgId"`
+	UserName string `json:"userName"`
+	SkillID  string `json:"skillId"`
+	Active   bool   `json:"active"`
+}
+
+type UserSkillUpdate struct {
+	SkillID string `json:"skillId"`
+	Active  bool   `json:"active"`
+}
+
 type UserSocialInsert struct {
 	OrgID      string `json:"orgId"`
 	Username   string `json:"username"`
 	SocialType string `json:"socialType"`
 	SocialID   string `json:"socialId"`
 	SocialName string `json:"socialName"`
-	CreatedBy  string `json:"createdBy"`
-	UpdatedBy  string `json:"updatedBy"`
 }
 
 type UserSocialUpdate struct {

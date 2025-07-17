@@ -70,7 +70,7 @@ func main() {
 	}
 	v1 := router.Group("/api/v1")
 	{
-		// 	v1.Use(handler.ProtectedHandler)
+		v1.Use(handler.ProtectedHandler)
 		v1.GET("/forms/:id", handler.GetForm)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
 		v1.GET("/casetypes", handler.ListCaseType)

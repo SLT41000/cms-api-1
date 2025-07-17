@@ -595,7 +595,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Case Sub Types"
+                    "Cases"
                 ],
                 "summary": "List Cases Sub Type",
                 "operationId": "ListCaseSubTypes",
@@ -623,7 +623,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Case Types"
+                    "Cases"
                 ],
                 "summary": "List Cases",
                 "operationId": "ListCaseTypes",
@@ -1593,7 +1593,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserContact"
+                            "$ref": "#/definitions/model.UserContactInsert"
                         }
                     }
                 ],
@@ -1709,7 +1709,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserContact"
+                            "$ref": "#/definitions/model.UserContactInsertUpdate"
                         }
                     }
                 ],
@@ -1776,7 +1776,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserSkill"
+                            "$ref": "#/definitions/model.UserSkillInsert"
                         }
                     }
                 ],
@@ -1892,7 +1892,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserSkill"
+                            "$ref": "#/definitions/model.UserSkillUpdate"
                         }
                     }
                 ],
@@ -3090,7 +3090,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UserContact": {
+        "model.UserContactInsert": {
             "type": "object",
             "properties": {
                 "contactAddr": {},
@@ -3100,22 +3100,22 @@ const docTemplate = `{
                 "contactPhone": {
                     "type": "string"
                 },
-                "createdAt": {
-                    "type": "string"
-                },
-                "createdBy": {
-                    "type": "string"
-                },
                 "orgId": {
                     "type": "string"
                 },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "updatedBy": {
-                    "type": "string"
-                },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UserContactInsertUpdate": {
+            "type": "object",
+            "properties": {
+                "contactAddr": {},
+                "contactName": {
+                    "type": "string"
+                },
+                "contactPhone": {
                     "type": "string"
                 }
             }
@@ -3185,17 +3185,11 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UserSkill": {
+        "model.UserSkillInsert": {
             "type": "object",
             "properties": {
                 "active": {
                     "type": "boolean"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "createdBy": {
-                    "type": "string"
                 },
                 "orgId": {
                     "type": "string"
@@ -3203,13 +3197,18 @@ const docTemplate = `{
                 "skillId": {
                     "type": "string"
                 },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "updatedBy": {
-                    "type": "string"
-                },
                 "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UserSkillUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "skillId": {
                     "type": "string"
                 }
             }
@@ -3217,9 +3216,6 @@ const docTemplate = `{
         "model.UserSocialInsert": {
             "type": "object",
             "properties": {
-                "createdBy": {
-                    "type": "string"
-                },
                 "orgId": {
                     "type": "string"
                 },
@@ -3230,9 +3226,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "socialType": {
-                    "type": "string"
-                },
-                "updatedBy": {
                     "type": "string"
                 },
                 "username": {
