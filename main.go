@@ -75,8 +75,6 @@ func main() {
 
 		v1.GET("/casetypes", handler.ListCaseType)
 		v1.GET("/casesubtypes", handler.ListCaseSubType)
-		v1.GET("/notes/:id", handler.ListTransactionNote)
-		v1.POST("/notes", handler.CreateTransactionNote)
 
 		v1.GET("/departments", handler.GetDepartment)
 		v1.GET("/departments/:id", handler.GetDepartmentbyId)

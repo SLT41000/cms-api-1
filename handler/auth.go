@@ -256,9 +256,9 @@ func UserAdd(c *gin.Context) {
 
 	// now req is ready to use
 
-	var cust model.CaseTransactionCRUDResponse
 	var enc string
 	var err error
+	var id int
 	enc, err = encrypt(req.PasswordHash)
 	if err != nil {
 		return
@@ -286,7 +286,7 @@ func UserAdd(c *gin.Context) {
 		req.Email, req.Username, enc, req.LastLogin, req.RoleID,
 		req.Active, req.AreaID, req.DeviceID, req.PushToken, req.CurrentLat,
 		req.CurrentLon, req.CreatedAt, req.UpdatedAt, req.CreatedBy, req.UpdatedBy,
-	).Scan(&cust.ID)
+	).Scan(&id)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
