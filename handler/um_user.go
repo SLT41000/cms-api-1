@@ -262,54 +262,53 @@ func GetUmUserById(c *gin.Context) {
 	defer rows.Close()
 	var errorMsg string
 	var u model.Um_User
-	rowIndex := 0
-	for rows.Next() {
-		rowIndex++
-		err := rows.Scan(
-			&u.OrgID,
-			&u.DisplayName,
-			&u.Title,
-			&u.FirstName,
-			&u.MiddleName,
-			&u.LastName,
-			&u.CitizenID,
-			&u.Bod,
-			&u.Blood,
-			&u.Gender,
-			&u.MobileNo,
-			&u.Address,
-			&u.Photo,
-			&u.Username,
-			&u.Password,
-			&u.Email,
-			&u.RoleID,
-			&u.UserType,
-			&u.EmpID,
-			&u.DeptID,
-			&u.CommID,
-			&u.StnID,
-			&u.Active,
-			&u.ActivationToken,
-			&u.LastActivationRequest,
-			&u.LostPasswordRequest,
-			&u.SignupStamp,
-			&u.IsLogin,
-			&u.LastLogin,
-			&u.CreatedAt,
-			&u.UpdatedAt,
-			&u.CreatedBy,
-			&u.UpdatedBy,
-		)
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
+	err = rows.Scan(
+		&u.OrgID,
+		&u.DisplayName,
+		&u.Title,
+		&u.FirstName,
+		&u.MiddleName,
+		&u.LastName,
+		&u.CitizenID,
+		&u.Bod,
+		&u.Blood,
+		&u.Gender,
+		&u.MobileNo,
+		&u.Address,
+		&u.Photo,
+		&u.Username,
+		&u.Password,
+		&u.Email,
+		&u.RoleID,
+		&u.UserType,
+		&u.EmpID,
+		&u.DeptID,
+		&u.CommID,
+		&u.StnID,
+		&u.Active,
+		&u.ActivationToken,
+		&u.LastActivationRequest,
+		&u.LostPasswordRequest,
+		&u.SignupStamp,
+		&u.IsLogin,
+		&u.LastLogin,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+		&u.CreatedBy,
+		&u.UpdatedBy,
+	)
+	if err != nil {
+		logger.Warn("Scan failed", zap.Error(err))
+		errorMsg = err.Error()
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   errorMsg,
 		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
 	}
+
 	if errorMsg != "" {
 		response := model.Response{
 			Status: "-1",
@@ -444,48 +443,37 @@ func GetUserWithSkillsById(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	var errorMsg string
 	var u model.UserSkill
-	rowIndex := 0
-	for rows.Next() {
-		rowIndex++
-		err := rows.Scan(
-			&u.OrgID,
-			&u.UserName,
-			&u.SkillID,
-			&u.Active,
-			&u.CreatedAt,
-			&u.UpdatedAt,
-			&u.CreatedBy,
-			&u.UpdatedBy,
-		)
+	err = rows.Scan(
+		&u.OrgID,
+		&u.UserName,
+		&u.SkillID,
+		&u.Active,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+		&u.CreatedBy,
+		&u.UpdatedBy,
+	)
 
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
-		}
-	}
-	if errorMsg != "" {
+	if err != nil {
+		logger.Warn("Scan failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
-			Desc:   errorMsg,
+			Desc:   err.Error(),
 		}
 		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   u,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
+		return
 	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // @summary Create User with skill
@@ -785,52 +773,39 @@ func GetUserWithContactsById(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	var errorMsg string
 	var u model.UserContact
-	rowIndex := 0
-	for rows.Next() {
-		rowIndex++
-		err := rows.Scan(
-			&u.OrgID,
-			&u.Username,
-			&u.ContactName,
-			&u.ContactPhone,
-			&u.ContactAddr,
-			&u.CreatedAt,
-			&u.UpdatedAt,
-			&u.CreatedBy,
-			&u.UpdatedBy,
-		)
 
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-	}
-	if errorMsg != "" {
+	err = rows.Scan(
+		&u.OrgID,
+		&u.Username,
+		&u.ContactName,
+		&u.ContactPhone,
+		&u.ContactAddr,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+		&u.CreatedBy,
+		&u.UpdatedBy,
+	)
+
+	if err != nil {
+		logger.Warn("Scan failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
-			Desc:   errorMsg,
+			Desc:   err.Error(),
 		}
 		c.JSON(http.StatusInternalServerError, response)
 		return
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   u,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
-		return
 	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // @summary Create User with contacts
@@ -1125,49 +1100,37 @@ func GetUserWithSocialsById(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	var errorMsg string
 	var u model.UserSocial
-	rowIndex := 0
-	for rows.Next() {
-		rowIndex++
-		err := rows.Scan(
-			&u.OrgID,
-			&u.Username,
-			&u.SocialType,
-			&u.SocialID,
-			&u.SocialName,
-			&u.CreatedAt,
-			&u.UpdatedAt,
-			&u.CreatedBy,
-			&u.UpdatedBy,
-		)
+	err = rows.Scan(
+		&u.OrgID,
+		&u.Username,
+		&u.SocialType,
+		&u.SocialID,
+		&u.SocialName,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+		&u.CreatedBy,
+		&u.UpdatedBy,
+	)
 
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
-		}
-	}
-	if errorMsg != "" {
+	if err != nil {
+		logger.Warn("Scan failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
-			Desc:   errorMsg,
+			Desc:   err.Error(),
 		}
 		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   u,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
 	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // @summary Create User with socials
