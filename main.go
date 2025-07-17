@@ -62,9 +62,8 @@ func main() {
 	}))
 	router.Use(gin.Recovery())
 	router.Use(ginlimiter.NewMiddleware(instance))
-	auth := router.Group("/api/v1/AuthAPI")
+	auth := router.Group("/api/v1/auth")
 	{
-		auth.GET("/token", handler.GetToken)
 		auth.GET("/login", handler.UserLogin)
 		auth.POST("/add", handler.UserAdd)
 	}
@@ -73,16 +72,30 @@ func main() {
 		v1.Use(handler.ProtectedHandler)
 		v1.GET("/forms/:id", handler.GetForm)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
+
 		v1.GET("/casetypes", handler.ListCaseType)
 		v1.GET("/casesubtypes", handler.ListCaseSubType)
 		v1.GET("/notes/:id", handler.ListTransactionNote)
 		v1.POST("/notes", handler.CreateTransactionNote)
+
 		v1.GET("/departments", handler.GetDepartment)
 		v1.GET("/departments/:id", handler.GetDepartmentbyId)
+		v1.POST("/departments/add", handler.InsertDepartment)
+		v1.PATCH("/departments/:id", handler.UpdateDepartment)
+		v1.DELETE("/departments/:id", handler.DeleteDepartment)
+
 		v1.GET("/commands", handler.GetCommand)
 		v1.GET("/commands/:id", handler.GetCommandById)
+		v1.POST("/commands/add", handler.InsertCommand)
+		v1.PATCH("/commands/:id", handler.UpdateCommand)
+		v1.DELETE("/commands/:id", handler.DeleteCommand)
+
 		v1.GET("/stations", handler.GetStation)
 		v1.GET("/stations/:id", handler.GetStationbyId)
+		v1.POST("/stations/add", handler.InsertStations)
+		v1.PATCH("/stations/:id", handler.UpdateStations)
+		v1.DELETE("/stations/:id", handler.DeleteStations)
+
 		v1.GET("/users", handler.GetUmUserList)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.GET("/users/:id", handler.GetUmUserById)

@@ -1,315 +1,5 @@
 basePath: /
 definitions:
-  model.CaseCloseInput:
-    properties:
-      caseStatusCode:
-        type: string
-      closedDate:
-        type: string
-      modifiedDate:
-        type: string
-      resultCode:
-        type: string
-      resultDetail:
-        type: string
-      transImg:
-        items:
-          $ref: '#/definitions/model.Media'
-        type: array
-      userClose:
-        type: string
-      userModify:
-        type: string
-    type: object
-  model.CaseDetailData:
-    properties:
-      approvedStatus:
-        type: integer
-      caseDetail:
-        type: string
-      caseId:
-        type: string
-      caseLat:
-        type: string
-      caseLocationAddress:
-        type: string
-      caseLocationDetail:
-        type: string
-      caseLon:
-        type: string
-      caseStatusCode:
-        type: string
-      caseStatusName:
-        type: string
-      casetypeCode:
-        type: string
-      casetypeName:
-        type: string
-      citizenCode:
-        type: string
-      citizenFullname:
-        type: string
-      commandCode:
-        type: string
-      commandName:
-        type: string
-      createdDate:
-        type: string
-      departmentName:
-        type: string
-      destLat:
-        type: string
-      destLocationAddress:
-        type: string
-      destLocationDetail:
-        type: string
-      destLon:
-        type: string
-      extensionReceive:
-        type: string
-      id:
-        type: integer
-      mediaType:
-        type: integer
-      modifiedDate:
-        type: string
-      openedDate:
-        type: string
-      phoneNumber:
-        type: string
-      policeStationCode:
-        type: string
-      policeStationName:
-        type: string
-      priority:
-        type: integer
-      referCaseId:
-        type: string
-      responsible:
-        type: string
-      savedDate:
-        type: string
-      specialEmergency:
-        type: integer
-      startedDate:
-        type: string
-      transImg:
-        type: string
-      urgentAmount:
-        type: string
-      userCreate:
-        type: string
-      userCreateId:
-        type: string
-      userModify:
-        type: string
-      vOwner:
-        type: integer
-      vVin:
-        type: string
-      ways:
-        type: integer
-    type: object
-  model.CaseForCreate:
-    properties:
-      actionProCode:
-        type: string
-      backdated:
-        type: integer
-      caseCondition:
-        type: integer
-      caseDetail:
-        type: string
-      caseDirection:
-        type: string
-      caseLat:
-        type: string
-      caseLocationAddress:
-        type: string
-      caseLocationDetail:
-        type: string
-      caseLocationType:
-        type: string
-      caseLon:
-        type: string
-      casePhoto:
-        items:
-          $ref: '#/definitions/model.Media'
-        type: array
-      caseRoute:
-        type: string
-      caseSla:
-        type: integer
-      caseStatusCode:
-        type: string
-      casetypeCode:
-        type: string
-      citizenCode:
-        type: string
-      closedDate:
-        type: string
-      commandCode:
-        type: string
-      createdDate:
-        type: string
-      destLat:
-        type: string
-      destLocationAddress:
-        type: string
-      destLocationDetail:
-        type: string
-      destLon:
-        type: string
-      duration:
-        type: integer
-      escapeRoute:
-        type: string
-      extensionReceive:
-        type: string
-      home:
-        type: integer
-      mediaCode:
-        type: string
-      mediaType:
-        type: integer
-      modifiedDate:
-        type: string
-      needAmbulance:
-        type: integer
-      openedDate:
-        type: string
-      phoneNumber:
-        type: string
-      phoneNumberHide:
-        type: integer
-      policeStationCode:
-        type: string
-      priority:
-        type: integer
-      referCaseId:
-        type: string
-      specialEmergency:
-        type: integer
-      startedDate:
-        type: string
-      token:
-        type: string
-      transImg:
-        items:
-          $ref: '#/definitions/model.Media'
-        type: array
-      userClose:
-        type: string
-      userCreate:
-        type: string
-      userModify:
-        type: string
-      vOwner:
-        type: integer
-      vVin:
-        type: string
-      ways:
-        type: integer
-    type: object
-  model.CaseForUpdate:
-    properties:
-      actionProCode:
-        type: string
-      backdated:
-        type: integer
-      caseCondition:
-        type: integer
-      caseDetail:
-        type: string
-      caseDirection:
-        type: string
-      caseLat:
-        type: string
-      caseLocationAddress:
-        type: string
-      caseLocationDetail:
-        type: string
-      caseLocationType:
-        type: string
-      caseLon:
-        type: string
-      casePhoto:
-        items:
-          $ref: '#/definitions/model.Media'
-        type: array
-      caseRoute:
-        type: string
-      caseSla:
-        type: integer
-      caseStatusCode:
-        type: string
-      casetypeCode:
-        type: string
-      citizenCode:
-        type: string
-      closedDate:
-        type: string
-      commandCode:
-        type: string
-      createdDate:
-        type: string
-      destLat:
-        type: string
-      destLocationAddress:
-        type: string
-      destLocationDetail:
-        type: string
-      destLon:
-        type: string
-      duration:
-        type: integer
-      escapeRoute:
-        type: string
-      extensionReceive:
-        type: string
-      home:
-        type: integer
-      mediaCode:
-        type: string
-      mediaType:
-        type: integer
-      modifiedDate:
-        type: string
-      needAmbulance:
-        type: integer
-      openedDate:
-        type: string
-      phoneNumber:
-        type: string
-      phoneNumberHide:
-        type: integer
-      policeStationCode:
-        type: string
-      priority:
-        type: integer
-      referCaseId:
-        type: string
-      specialEmergency:
-        type: integer
-      startedDate:
-        type: string
-      transImg:
-        items:
-          $ref: '#/definitions/model.Media'
-        type: array
-      userClose:
-        type: string
-      userCreate:
-        type: string
-      userModify:
-        type: string
-      vOwner:
-        type: integer
-      vVin:
-        type: string
-      ways:
-        type: integer
-    type: object
   model.CaseListData:
     properties:
       data:
@@ -338,17 +28,6 @@ definitions:
       userCreate:
         type: string
       userModify:
-        type: string
-    type: object
-  model.CaseResponse:
-    properties:
-      data:
-        $ref: '#/definitions/model.CaseDetailData'
-      desc:
-        type: string
-      msg:
-        type: string
-      status:
         type: string
     type: object
   model.CaseTransactionCRUDResponse:
@@ -520,6 +199,48 @@ definitions:
       viewed:
         type: integer
     type: object
+  model.CommandInsert:
+    properties:
+      active:
+        description: Active status
+        type: boolean
+      commId:
+        description: Community ID
+        type: string
+      deptId:
+        description: Department ID
+        type: string
+      en:
+        description: English name
+        type: string
+      orgId:
+        description: Organization ID
+        type: string
+      th:
+        description: Thai name
+        type: string
+    type: object
+  model.CommandUpdate:
+    properties:
+      active:
+        description: Active status
+        type: boolean
+      commId:
+        description: Community ID
+        type: string
+      deptId:
+        description: Department ID
+        type: string
+      en:
+        description: English name
+        type: string
+      orgId:
+        description: Organization ID
+        type: string
+      th:
+        description: Thai name
+        type: string
+    type: object
   model.CreateCaseResponse:
     properties:
       caseId:
@@ -542,9 +263,37 @@ definitions:
       status:
         type: string
     type: object
-  model.Media:
+  model.DepartmentInsert:
     properties:
-      url:
+      active:
+        description: Active status
+        type: boolean
+      deptId:
+        description: Department ID
+        type: string
+      en:
+        description: English name
+        type: string
+      orgId:
+        description: Organization ID
+        type: string
+      th:
+        description: Thai name
+        type: string
+    type: object
+  model.DepartmentUpdate:
+    properties:
+      active:
+        description: Active status
+        type: boolean
+      deptId:
+        description: Department ID
+        type: string
+      en:
+        description: English name
+        type: string
+      th:
+        description: Thai name
         type: string
     type: object
   model.Notification:
@@ -628,15 +377,49 @@ definitions:
       status:
         type: string
     type: object
-  model.UpdateCaseResponse:
+  model.StationInsert:
     properties:
-      desc:
+      active:
+        description: Active status\
+        type: boolean
+      commId:
+        description: Community ID
         type: string
-      id:
-        type: integer
-      msg:
+      deptId:
+        description: Department ID
         type: string
-      status:
+      en:
+        description: English name
+        type: string
+      orgId:
+        description: Organization ID
+        type: string
+      stnId:
+        description: Station ID
+        type: string
+      th:
+        description: Thai name
+        type: string
+    type: object
+  model.StationUpdate:
+    properties:
+      active:
+        description: Active status\
+        type: boolean
+      commId:
+        description: Community ID
+        type: string
+      deptId:
+        description: Department ID
+        type: string
+      en:
+        description: English name
+        type: string
+      stnId:
+        description: Station ID
+        type: string
+      th:
+        description: Thai name
         type: string
     type: object
   model.UserContactInsert:
@@ -760,7 +543,7 @@ info:
   title: CMS API
   version: "1.0"
 paths:
-  /api/v1/AuthAPI/add:
+  /api/v1/auth/add:
     post:
       consumes:
       - application/json
@@ -784,7 +567,7 @@ paths:
       summary: Create User
       tags:
       - Authentication
-  /api/v1/AuthAPI/login:
+  /api/v1/auth/login:
     get:
       consumes:
       - application/json
@@ -817,305 +600,6 @@ paths:
       summary: Login
       tags:
       - Authentication
-  /api/v1/AuthAPI/token:
-    get:
-      consumes:
-      - application/json
-      operationId: Login
-      parameters:
-      - description: grantType
-        in: query
-        name: grantType
-        type: string
-      - description: username
-        in: query
-        name: username
-        required: true
-        type: string
-      - description: password
-        in: query
-        name: password
-        required: true
-        type: string
-      - description: scope
-        in: query
-        name: scope
-        type: string
-      - description: clientId
-        in: query
-        name: clientId
-        type: string
-      - description: clientSecret
-        in: query
-        name: clientSecret
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.OutputTokenModel'
-      security:
-      - ApiKeyAuth: []
-      summary: Get Token
-      tags:
-      - Authentication
-  /api/v1/cases:
-    get:
-      consumes:
-      - application/json
-      operationId: ListCases
-      parameters:
-      - default: 0
-        description: start
-        in: query
-        name: start
-        type: integer
-      - default: 10
-        description: length
-        in: query
-        name: length
-        type: integer
-      - description: keyword
-        in: query
-        name: keyword
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-      security:
-      - ApiKeyAuth: []
-      summary: List Cases
-      tags:
-      - Cases
-    post:
-      consumes:
-      - application/json
-      operationId: Create a new case
-      parameters:
-      - description: Case data to be created
-        in: body
-        name: Case
-        required: true
-        schema:
-          $ref: '#/definitions/model.CaseForCreate'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CreateCaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Create a new case
-      tags:
-      - Cases
-  /api/v1/cases/{id}:
-    delete:
-      consumes:
-      - application/json
-      operationId: Delete an existing case
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.DeleteCaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Delete an existing case
-      tags:
-      - Cases
-    get:
-      consumes:
-      - application/json
-      operationId: Get a specify case by record ID
-      parameters:
-      - default: 0
-        description: id
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Get a specify case by record ID
-      tags:
-      - Cases
-    patch:
-      consumes:
-      - application/json
-      operationId: Update an existing case
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Case data to be update
-        in: body
-        name: Case
-        required: true
-        schema:
-          $ref: '#/definitions/model.CaseForUpdate'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Update an existing case
-      tags:
-      - Cases
-  /api/v1/cases/close/{id}:
-    patch:
-      consumes:
-      - application/json
-      operationId: Update an existing case status (close or cancel)
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Case data to be update
-        in: body
-        name: Case
-        required: true
-        schema:
-          $ref: '#/definitions/model.CaseCloseInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.UpdateCaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Update an existing case status (close or cancel)
-      tags:
-      - Cases
-  /api/v1/cases/detail/{id}:
-    get:
-      consumes:
-      - application/json
-      operationId: Get a specify case by case code (case_id)
-      parameters:
-      - description: case code
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CaseResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Get a specify case by case code (case_id)
-      tags:
-      - Cases
-  /api/v1/cases/search:
-    get:
-      consumes:
-      - application/json
-      operationId: SearchCase
-      parameters:
-      - default: 0
-        description: start
-        in: query
-        name: start
-        type: integer
-      - default: 10
-        description: length
-        in: query
-        name: length
-        type: integer
-      - description: keyword
-        in: query
-        name: keyword
-        type: string
-      - default: '"-1"'
-        description: case_status_code
-        in: query
-        name: css
-        type: string
-      - description: case_id
-        in: query
-        name: cid
-        type: string
-      - description: case_detail
-        in: query
-        name: cdl
-        type: string
-      - description: command_code
-        in: query
-        name: cmc
-        type: string
-      - description: station_code
-        in: query
-        name: stc
-        type: string
-      - description: opened_date (date start)
-        in: query
-        name: fdt
-        type: string
-      - description: date_to (date end)
-        in: query
-        name: tdt
-        type: string
-      - description: user_create
-        in: query
-        name: uce
-        type: string
-      - description: casetype_code
-        in: query
-        name: ctc
-        type: string
-      - default: '"5-DESC"'
-        description: order_by
-        in: query
-        name: odb
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.CaseListData'
-      security:
-      - ApiKeyAuth: []
-      summary: Search Case
-      tags:
-      - Cases
   /api/v1/casesubtypes:
     get:
       consumes:
@@ -1166,8 +650,30 @@ paths:
       - ApiKeyAuth: []
       summary: Get Commands
       tags:
-      - Commands
+      - Dispatch
   /api/v1/commands/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Commands
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Commands
+      tags:
+      - Dispatch
     get:
       consumes:
       - application/json
@@ -1189,7 +695,59 @@ paths:
       - ApiKeyAuth: []
       summary: Get Commands by id
       tags:
-      - Commands
+      - Dispatch
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Commands
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CommandUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Commands
+      tags:
+      - Dispatch
+  /api/v1/commands/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Commands
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CommandInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Commands
+      tags:
+      - Dispatch
   /api/v1/departments:
     get:
       consumes:
@@ -1206,8 +764,30 @@ paths:
       - ApiKeyAuth: []
       summary: Get Department
       tags:
-      - Department
+      - Dispatch
   /api/v1/departments/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Department
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Department
+      tags:
+      - Dispatch
     get:
       consumes:
       - application/json
@@ -1229,7 +809,59 @@ paths:
       - ApiKeyAuth: []
       summary: Get Department by ID
       tags:
-      - Department
+      - Dispatch
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Department
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.DepartmentUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Department
+      tags:
+      - Dispatch
+  /api/v1/departments/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Department
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.DepartmentInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Department
+      tags:
+      - Dispatch
   /api/v1/forms/{id}:
     get:
       consumes:
@@ -1252,7 +884,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get Form
       tags:
-      - Form
+      - Form and Workflow
   /api/v1/notes:
     post:
       consumes:
@@ -1508,8 +1140,30 @@ paths:
       - ApiKeyAuth: []
       summary: Get Stations
       tags:
-      - Stations
+      - Dispatch
   /api/v1/stations/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Stations
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Stations
+      tags:
+      - Dispatch
     get:
       consumes:
       - application/json
@@ -1531,7 +1185,59 @@ paths:
       - ApiKeyAuth: []
       summary: Get Stations by id
       tags:
-      - Stations
+      - Dispatch
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Stations
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.StationUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Stations
+      tags:
+      - Dispatch
+  /api/v1/stations/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Stations
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.StationInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Stations
+      tags:
+      - Dispatch
   /api/v1/trans:
     get:
       consumes:
@@ -2087,7 +1793,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get Workflow
       tags:
-      - Workflow
+      - Form and Workflow
 schemes:
 - http
 - https

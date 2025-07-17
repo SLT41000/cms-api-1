@@ -24,7 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/AuthAPI/add": {
+        "/api/v1/auth/add": {
             "post": {
                 "security": [
                     {
@@ -63,7 +63,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/AuthAPI/login": {
+        "/api/v1/auth/login": {
             "get": {
                 "security": [
                     {
@@ -109,473 +109,6 @@ const docTemplate = `{
                         "description": "OK - Request successful",
                         "schema": {
                             "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/AuthAPI/token": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Get Token",
-                "operationId": "Login",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "grantType",
-                        "name": "grantType",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "username",
-                        "name": "username",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "password",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "scope",
-                        "name": "scope",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "clientId",
-                        "name": "clientId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "clientSecret",
-                        "name": "clientSecret",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/cases": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "List Cases",
-                "operationId": "ListCases",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "start",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "length",
-                        "name": "length",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseListData"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Create a new case",
-                "operationId": "Create a new case",
-                "parameters": [
-                    {
-                        "description": "Case data to be created",
-                        "name": "Case",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseForCreate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CreateCaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/cases/close/{id}": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Update an existing case status (close or cancel)",
-                "operationId": "Update an existing case status (close or cancel)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Case data to be update",
-                        "name": "Case",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseCloseInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateCaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/cases/detail/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Get a specify case by case code (case_id)",
-                "operationId": "Get a specify case by case code (case_id)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "case code",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/cases/search": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Search Case",
-                "operationId": "SearchCase",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "start",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "length",
-                        "name": "length",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "\"-1\"",
-                        "description": "case_status_code",
-                        "name": "css",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "case_id",
-                        "name": "cid",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "case_detail",
-                        "name": "cdl",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "command_code",
-                        "name": "cmc",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "station_code",
-                        "name": "stc",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "opened_date (date start)",
-                        "name": "fdt",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "date_to (date end)",
-                        "name": "tdt",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "user_create",
-                        "name": "uce",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "casetype_code",
-                        "name": "ctc",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "\"5-DESC\"",
-                        "description": "order_by",
-                        "name": "odb",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseListData"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/cases/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Get a specify case by record ID",
-                "operationId": "Get a specify case by record ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Delete an existing case",
-                "operationId": "Delete an existing case",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.DeleteCaseResponse"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Update an existing case",
-                "operationId": "Update an existing case",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Case data to be update",
-                        "name": "Case",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CaseForUpdate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateCaseResponse"
                         }
                     }
                 }
@@ -651,10 +184,49 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Commands"
+                    "Dispatch"
                 ],
                 "summary": "Get Commands",
                 "operationId": "Get Commands",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/commands/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Create Commands",
+                "operationId": "Create Commands",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CommandInsert"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -679,7 +251,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Commands"
+                    "Dispatch"
                 ],
                 "summary": "Get Commands by id",
                 "operationId": "Get Commands by id",
@@ -690,6 +262,85 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Delete Commands",
+                "operationId": "Delete Commands",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Update Commands",
+                "operationId": "Update Commands",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CommandUpdate"
+                        }
                     }
                 ],
                 "responses": {
@@ -716,10 +367,49 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Department"
+                    "Dispatch"
                 ],
                 "summary": "Get Department",
                 "operationId": "Get Department",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/departments/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Create Department",
+                "operationId": "Create Department",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.DepartmentInsert"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -744,7 +434,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Department"
+                    "Dispatch"
                 ],
                 "summary": "Get Department by ID",
                 "operationId": "Get Department by ID",
@@ -755,6 +445,85 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Delete Department",
+                "operationId": "Delete Department",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Update Department",
+                "operationId": "Update Department",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.DepartmentUpdate"
+                        }
                     }
                 ],
                 "responses": {
@@ -781,7 +550,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Form"
+                    "Form and Workflow"
                 ],
                 "summary": "Get Form",
                 "operationId": "Get Form",
@@ -1184,10 +953,49 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Stations"
+                    "Dispatch"
                 ],
                 "summary": "Get Stations",
                 "operationId": "Get Stations",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/stations/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Create Stations",
+                "operationId": "Create Stations",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.StationInsert"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1212,7 +1020,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Stations"
+                    "Dispatch"
                 ],
                 "summary": "Get Stations by id",
                 "operationId": "Get Stations  by id",
@@ -1223,6 +1031,85 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Delete Stations",
+                "operationId": "Delete Stations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Update Stations",
+                "operationId": "Update Stations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.StationUpdate"
+                        }
                     }
                 ],
                 "responses": {
@@ -2103,7 +1990,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Workflow"
+                    "Form and Workflow"
                 ],
                 "summary": "Get Workflow",
                 "operationId": "Get Workflow",
@@ -2128,473 +2015,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.CaseCloseInput": {
-            "type": "object",
-            "properties": {
-                "caseStatusCode": {
-                    "type": "string"
-                },
-                "closedDate": {
-                    "type": "string"
-                },
-                "modifiedDate": {
-                    "type": "string"
-                },
-                "resultCode": {
-                    "type": "string"
-                },
-                "resultDetail": {
-                    "type": "string"
-                },
-                "transImg": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Media"
-                    }
-                },
-                "userClose": {
-                    "type": "string"
-                },
-                "userModify": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.CaseDetailData": {
-            "type": "object",
-            "properties": {
-                "approvedStatus": {
-                    "type": "integer"
-                },
-                "caseDetail": {
-                    "type": "string"
-                },
-                "caseId": {
-                    "type": "string"
-                },
-                "caseLat": {
-                    "type": "string"
-                },
-                "caseLocationAddress": {
-                    "type": "string"
-                },
-                "caseLocationDetail": {
-                    "type": "string"
-                },
-                "caseLon": {
-                    "type": "string"
-                },
-                "caseStatusCode": {
-                    "type": "string"
-                },
-                "caseStatusName": {
-                    "type": "string"
-                },
-                "casetypeCode": {
-                    "type": "string"
-                },
-                "casetypeName": {
-                    "type": "string"
-                },
-                "citizenCode": {
-                    "type": "string"
-                },
-                "citizenFullname": {
-                    "type": "string"
-                },
-                "commandCode": {
-                    "type": "string"
-                },
-                "commandName": {
-                    "type": "string"
-                },
-                "createdDate": {
-                    "type": "string"
-                },
-                "departmentName": {
-                    "type": "string"
-                },
-                "destLat": {
-                    "type": "string"
-                },
-                "destLocationAddress": {
-                    "type": "string"
-                },
-                "destLocationDetail": {
-                    "type": "string"
-                },
-                "destLon": {
-                    "type": "string"
-                },
-                "extensionReceive": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mediaType": {
-                    "type": "integer"
-                },
-                "modifiedDate": {
-                    "type": "string"
-                },
-                "openedDate": {
-                    "type": "string"
-                },
-                "phoneNumber": {
-                    "type": "string"
-                },
-                "policeStationCode": {
-                    "type": "string"
-                },
-                "policeStationName": {
-                    "type": "string"
-                },
-                "priority": {
-                    "type": "integer"
-                },
-                "referCaseId": {
-                    "type": "string"
-                },
-                "responsible": {
-                    "type": "string"
-                },
-                "savedDate": {
-                    "type": "string"
-                },
-                "specialEmergency": {
-                    "type": "integer"
-                },
-                "startedDate": {
-                    "type": "string"
-                },
-                "transImg": {
-                    "type": "string"
-                },
-                "urgentAmount": {
-                    "type": "string"
-                },
-                "userCreate": {
-                    "type": "string"
-                },
-                "userCreateId": {
-                    "type": "string"
-                },
-                "userModify": {
-                    "type": "string"
-                },
-                "vOwner": {
-                    "type": "integer"
-                },
-                "vVin": {
-                    "type": "string"
-                },
-                "ways": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.CaseForCreate": {
-            "type": "object",
-            "properties": {
-                "actionProCode": {
-                    "type": "string"
-                },
-                "backdated": {
-                    "type": "integer"
-                },
-                "caseCondition": {
-                    "type": "integer"
-                },
-                "caseDetail": {
-                    "type": "string"
-                },
-                "caseDirection": {
-                    "type": "string"
-                },
-                "caseLat": {
-                    "type": "string"
-                },
-                "caseLocationAddress": {
-                    "type": "string"
-                },
-                "caseLocationDetail": {
-                    "type": "string"
-                },
-                "caseLocationType": {
-                    "type": "string"
-                },
-                "caseLon": {
-                    "type": "string"
-                },
-                "casePhoto": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Media"
-                    }
-                },
-                "caseRoute": {
-                    "type": "string"
-                },
-                "caseSla": {
-                    "type": "integer"
-                },
-                "caseStatusCode": {
-                    "type": "string"
-                },
-                "casetypeCode": {
-                    "type": "string"
-                },
-                "citizenCode": {
-                    "type": "string"
-                },
-                "closedDate": {
-                    "type": "string"
-                },
-                "commandCode": {
-                    "type": "string"
-                },
-                "createdDate": {
-                    "type": "string"
-                },
-                "destLat": {
-                    "type": "string"
-                },
-                "destLocationAddress": {
-                    "type": "string"
-                },
-                "destLocationDetail": {
-                    "type": "string"
-                },
-                "destLon": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "integer"
-                },
-                "escapeRoute": {
-                    "type": "string"
-                },
-                "extensionReceive": {
-                    "type": "string"
-                },
-                "home": {
-                    "type": "integer"
-                },
-                "mediaCode": {
-                    "type": "string"
-                },
-                "mediaType": {
-                    "type": "integer"
-                },
-                "modifiedDate": {
-                    "type": "string"
-                },
-                "needAmbulance": {
-                    "type": "integer"
-                },
-                "openedDate": {
-                    "type": "string"
-                },
-                "phoneNumber": {
-                    "type": "string"
-                },
-                "phoneNumberHide": {
-                    "type": "integer"
-                },
-                "policeStationCode": {
-                    "type": "string"
-                },
-                "priority": {
-                    "type": "integer"
-                },
-                "referCaseId": {
-                    "type": "string"
-                },
-                "specialEmergency": {
-                    "type": "integer"
-                },
-                "startedDate": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                },
-                "transImg": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Media"
-                    }
-                },
-                "userClose": {
-                    "type": "string"
-                },
-                "userCreate": {
-                    "type": "string"
-                },
-                "userModify": {
-                    "type": "string"
-                },
-                "vOwner": {
-                    "type": "integer"
-                },
-                "vVin": {
-                    "type": "string"
-                },
-                "ways": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.CaseForUpdate": {
-            "type": "object",
-            "properties": {
-                "actionProCode": {
-                    "type": "string"
-                },
-                "backdated": {
-                    "type": "integer"
-                },
-                "caseCondition": {
-                    "type": "integer"
-                },
-                "caseDetail": {
-                    "type": "string"
-                },
-                "caseDirection": {
-                    "type": "string"
-                },
-                "caseLat": {
-                    "type": "string"
-                },
-                "caseLocationAddress": {
-                    "type": "string"
-                },
-                "caseLocationDetail": {
-                    "type": "string"
-                },
-                "caseLocationType": {
-                    "type": "string"
-                },
-                "caseLon": {
-                    "type": "string"
-                },
-                "casePhoto": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Media"
-                    }
-                },
-                "caseRoute": {
-                    "type": "string"
-                },
-                "caseSla": {
-                    "type": "integer"
-                },
-                "caseStatusCode": {
-                    "type": "string"
-                },
-                "casetypeCode": {
-                    "type": "string"
-                },
-                "citizenCode": {
-                    "type": "string"
-                },
-                "closedDate": {
-                    "type": "string"
-                },
-                "commandCode": {
-                    "type": "string"
-                },
-                "createdDate": {
-                    "type": "string"
-                },
-                "destLat": {
-                    "type": "string"
-                },
-                "destLocationAddress": {
-                    "type": "string"
-                },
-                "destLocationDetail": {
-                    "type": "string"
-                },
-                "destLon": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "integer"
-                },
-                "escapeRoute": {
-                    "type": "string"
-                },
-                "extensionReceive": {
-                    "type": "string"
-                },
-                "home": {
-                    "type": "integer"
-                },
-                "mediaCode": {
-                    "type": "string"
-                },
-                "mediaType": {
-                    "type": "integer"
-                },
-                "modifiedDate": {
-                    "type": "string"
-                },
-                "needAmbulance": {
-                    "type": "integer"
-                },
-                "openedDate": {
-                    "type": "string"
-                },
-                "phoneNumber": {
-                    "type": "string"
-                },
-                "phoneNumberHide": {
-                    "type": "integer"
-                },
-                "policeStationCode": {
-                    "type": "string"
-                },
-                "priority": {
-                    "type": "integer"
-                },
-                "referCaseId": {
-                    "type": "string"
-                },
-                "specialEmergency": {
-                    "type": "integer"
-                },
-                "startedDate": {
-                    "type": "string"
-                },
-                "transImg": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Media"
-                    }
-                },
-                "userClose": {
-                    "type": "string"
-                },
-                "userCreate": {
-                    "type": "string"
-                },
-                "userModify": {
-                    "type": "string"
-                },
-                "vOwner": {
-                    "type": "integer"
-                },
-                "vVin": {
-                    "type": "string"
-                },
-                "ways": {
-                    "type": "integer"
-                }
-            }
-        },
         "model.CaseListData": {
             "type": "object",
             "properties": {
@@ -2637,23 +2057,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userModify": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.CaseResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/model.CaseDetailData"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "msg": {
-                    "type": "string"
-                },
-                "status": {
                     "type": "string"
                 }
             }
@@ -2908,6 +2311,64 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CommandInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "Active status",
+                    "type": "boolean"
+                },
+                "commId": {
+                    "description": "Community ID",
+                    "type": "string"
+                },
+                "deptId": {
+                    "description": "Department ID",
+                    "type": "string"
+                },
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "orgId": {
+                    "description": "Organization ID",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
+        "model.CommandUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "Active status",
+                    "type": "boolean"
+                },
+                "commId": {
+                    "description": "Community ID",
+                    "type": "string"
+                },
+                "deptId": {
+                    "description": "Department ID",
+                    "type": "string"
+                },
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "orgId": {
+                    "description": "Organization ID",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
         "model.CreateCaseResponse": {
             "type": "object",
             "properties": {
@@ -2942,10 +2403,48 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Media": {
+        "model.DepartmentInsert": {
             "type": "object",
             "properties": {
-                "url": {
+                "active": {
+                    "description": "Active status",
+                    "type": "boolean"
+                },
+                "deptId": {
+                    "description": "Department ID",
+                    "type": "string"
+                },
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "orgId": {
+                    "description": "Organization ID",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
+        "model.DepartmentUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "Active status",
+                    "type": "boolean"
+                },
+                "deptId": {
+                    "description": "Department ID",
+                    "type": "string"
+                },
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
                     "type": "string"
                 }
             }
@@ -3073,19 +2572,64 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UpdateCaseResponse": {
+        "model.StationInsert": {
             "type": "object",
             "properties": {
-                "desc": {
+                "active": {
+                    "description": "Active status\\",
+                    "type": "boolean"
+                },
+                "commId": {
+                    "description": "Community ID",
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
-                "msg": {
+                "deptId": {
+                    "description": "Department ID",
                     "type": "string"
                 },
-                "status": {
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "orgId": {
+                    "description": "Organization ID",
+                    "type": "string"
+                },
+                "stnId": {
+                    "description": "Station ID",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
+        "model.StationUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "Active status\\",
+                    "type": "boolean"
+                },
+                "commId": {
+                    "description": "Community ID",
+                    "type": "string"
+                },
+                "deptId": {
+                    "description": "Department ID",
+                    "type": "string"
+                },
+                "en": {
+                    "description": "English name",
+                    "type": "string"
+                },
+                "stnId": {
+                    "description": "Station ID",
+                    "type": "string"
+                },
+                "th": {
+                    "description": "Thai name",
                     "type": "string"
                 }
             }

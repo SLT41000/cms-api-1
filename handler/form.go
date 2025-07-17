@@ -13,7 +13,7 @@ import (
 
 // ListCase godoc
 // @summary Get Form
-// @tags Form
+// @tags Form and Workflow
 // @security ApiKeyAuth
 // @id Get Form
 // @accept json
@@ -91,7 +91,7 @@ func GetForm(c *gin.Context) {
 
 // ListCase godoc
 // @summary Get Workflow
-// @tags Workflow
+// @tags Form and Workflow
 // @security ApiKeyAuth
 // @id Get Workflow
 // @accept json

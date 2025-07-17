@@ -125,63 +125,6 @@ func ProtectedHandler(c *gin.Context) {
 
 }
 
-// @summary Get Token
-// @tags Authentication
-// @security ApiKeyAuth
-// @id Login
-// @accept json
-// @produce json
-// @Param grantType query string false "grantType"
-// @Param username query string true "username"
-// @Param password query string true "password"
-// @Param scope query string false "scope"
-// @Param clientId query string false "clientId"
-// @Param clientSecret query string false "clientSecret"
-// @response 200 {object} model.OutputTokenModel "OK - Request successful"
-// @Router /api/v1/AuthAPI/token [get]
-func GetToken(c *gin.Context) {
-	logger := config.GetLog()
-	username := c.Query("username")
-	password := c.Query("password")
-	conn, ctx, cancel := config.ConnectDB()
-	if conn == nil {
-		return
-	}
-	defer cancel()
-	defer conn.Close(ctx)
-	defer cancel()
-
-	var dbPassword string
-	err := conn.QueryRow(ctx, `SELECT password FROM public."uc_users" WHERE username = $1`, username).Scan(&dbPassword)
-	if err != nil {
-		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"customerName": username,
-			"message":      err.Error(),
-		})
-		return
-	}
-	if subtle.ConstantTimeCompare([]byte(dbPassword), []byte(password)) == 1 {
-		tokenString, err := CreateToken(username, "")
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "Token creation failed",
-				"message": err.Error(),
-			})
-			logger.Debug(err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"accessToken": tokenString,
-			"token_type":  "bearer",
-		})
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-	}
-
-	logger.Debug("User : " + username)
-}
-
 // Login godoc
 // @summary Login
 // @tags Authentication
@@ -193,7 +136,7 @@ func GetToken(c *gin.Context) {
 // @Param password query string true "password"
 // @Param organization query string true "organization"
 // @response 200 {object} model.OutputTokenModel "OK - Request successful"
-// @Router /api/v1/AuthAPI/login [get]
+// @Router /api/v1/auth/login [get]
 func UserLogin(c *gin.Context) {
 	logger := config.GetLog()
 	username := c.Query("username")
@@ -214,20 +157,14 @@ func UserLogin(c *gin.Context) {
 	err := conn.QueryRow(ctx, query, organization).Scan(&id)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"organization": organization,
-			"message":      err.Error(),
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
 		})
 		return
 	}
-	if id == "" {
-		logger.Debug("organization not found")
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"organization": organization,
-			"message":      "organization not found",
-		})
-		return
-	}
+
 	query = `SELECT id,"orgId", "userId", "displayName", "fullName", "phoneNumber", email, username,
 	 "passwordHash", "lastLogin", "roleId", active, "areaId", "deviceId", "pushToken", "currentLat",
 	  "currentLon", "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.users WHERE username = $1 AND active = true`
@@ -241,9 +178,10 @@ func UserLogin(c *gin.Context) {
 		&UserOpt.CreatedBy, &UserOpt.UpdatedBy)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"customerName": username,
-			"message":      err.Error(),
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
 		})
 		return
 	}
@@ -264,10 +202,15 @@ func UserLogin(c *gin.Context) {
 			logger.Debug(err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"accessToken": tokenString,
-			"token_type":  "bearer",
-			"user":        UserOpt,
+		c.JSON(http.StatusOK, model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Desc:   "",
+			Data: gin.H{
+				"accessToken": tokenString,
+				"token_type":  "bearer",
+				"user":        UserOpt,
+			},
 		})
 	} else {
 		c.JSON(http.StatusUnauthorized, model.Response{
@@ -289,7 +232,7 @@ func UserLogin(c *gin.Context) {
 // @produce json
 // @param Case body model.UserInputModel true "User to be created"
 // @response 200 {object} model.OutputTokenModel "OK - Request successful"
-// @Router /api/v1/AuthAPI/add [post]
+// @Router /api/v1/auth/add [post]
 func UserAdd(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
@@ -302,7 +245,7 @@ func UserAdd(c *gin.Context) {
 
 	var req model.UserInputModel
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.CaseTransactionCRUDResponse{
+		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
@@ -347,7 +290,7 @@ func UserAdd(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.CaseTransactionCRUDResponse{
+		c.JSON(http.StatusUnauthorized, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
@@ -357,10 +300,9 @@ func UserAdd(c *gin.Context) {
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.CaseTransactionCRUDResponse{
+	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",
-		Desc:   "Create user successfully",
-		ID:     cust.ID,
+		Desc:   "Create successfully",
 	})
 }
