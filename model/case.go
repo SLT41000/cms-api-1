@@ -244,7 +244,7 @@ type DeleteCaseResponse struct {
 	Desc   string `json:"desc"`
 }
 
-type OutputCaseType struct {
+type CaseType struct {
 	Id        string    `json:"id"`
 	TypeId    string    `json:"typeId"`
 	OrgId     string    `json:"orgId"`
@@ -257,10 +257,23 @@ type OutputCaseType struct {
 	UpdatedBy *string   `json:"updatedBy"`
 }
 
-type OutputCaseSubType struct {
+type CaseTypeInsert struct {
+	En     *string `json:"en"`
+	Th     *string `json:"th"`
+	Active bool    `json:"active"`
+}
+
+type CaseTypeUpdate struct {
+	En     *string `json:"en"`
+	Th     *string `json:"th"`
+	Active bool    `json:"active"`
+}
+
+type CaseSubType struct {
 	Id            string    `json:"id"`
 	TypeID        string    `json:"typeId"`
 	STypeID       string    `json:"sTypeId"`
+	STypeCode     string    `json:"sTypeCode"`
 	OrgID         string    `json:"orgId"`
 	EN            string    `json:"en"`
 	TH            string    `json:"th"`
@@ -274,4 +287,29 @@ type OutputCaseSubType struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 	CreatedBy     string    `json:"createdBy"`
 	UpdatedBy     string    `json:"updatedBy"`
+}
+
+type CaseSubTypeInsert struct {
+	TypeID        string   `json:"typeId"`
+	STypeCode     string   `json:"sTypeCode"`
+	EN            string   `json:"en"`
+	TH            string   `json:"th"`
+	WFID          string   `json:"wfId"`
+	CaseSLA       string   `json:"caseSla"`
+	Priority      string   `json:"priority"`
+	UserSkillList []string `json:"userSkillList"`
+	UnitPropLists []string `json:"unitPropLists"`
+	Active        bool     `json:"active"`
+}
+
+type CaseSubTypeUpdate struct {
+	STypeCode     string   `json:"sTypeCode"`
+	EN            string   `json:"en"`
+	TH            string   `json:"th"`
+	WFID          string   `json:"wfId"`
+	CaseSLA       string   `json:"caseSla"`
+	Priority      string   `json:"priority"`
+	UserSkillList []string `json:"userSkillList"`
+	UnitPropLists []string `json:"unitPropLists"`
+	Active        bool     `json:"active"`
 }

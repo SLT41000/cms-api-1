@@ -1,21 +1,85 @@
 basePath: /
 definitions:
+  model.CaseSubTypeInsert:
+    properties:
+      active:
+        type: boolean
+      caseSla:
+        type: string
+      en:
+        type: string
+      priority:
+        type: string
+      sTypeCode:
+        type: string
+      th:
+        type: string
+      typeId:
+        type: string
+      unitPropLists:
+        items:
+          type: string
+        type: array
+      userSkillList:
+        items:
+          type: string
+        type: array
+      wfId:
+        type: string
+    type: object
+  model.CaseSubTypeUpdate:
+    properties:
+      active:
+        type: boolean
+      caseSla:
+        type: string
+      en:
+        type: string
+      priority:
+        type: string
+      sTypeCode:
+        type: string
+      th:
+        type: string
+      unitPropLists:
+        items:
+          type: string
+        type: array
+      userSkillList:
+        items:
+          type: string
+        type: array
+      wfId:
+        type: string
+    type: object
+  model.CaseTypeInsert:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.CaseTypeUpdate:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
   model.CommandInsert:
     properties:
       active:
         description: Active status
         type: boolean
-      commId:
-        description: Community ID
-        type: string
       deptId:
         description: Department ID
         type: string
       en:
         description: English name
-        type: string
-      orgId:
-        description: Organization ID
         type: string
       th:
         description: Thai name
@@ -26,17 +90,11 @@ definitions:
       active:
         description: Active status
         type: boolean
-      commId:
-        description: Community ID
-        type: string
       deptId:
         description: Department ID
         type: string
       en:
         description: English name
-        type: string
-      orgId:
-        description: Organization ID
         type: string
       th:
         description: Thai name
@@ -47,14 +105,8 @@ definitions:
       active:
         description: Active status
         type: boolean
-      deptId:
-        description: Department ID
-        type: string
       en:
         description: English name
-        type: string
-      orgId:
-        description: Organization ID
         type: string
       th:
         description: Thai name
@@ -65,9 +117,6 @@ definitions:
       active:
         description: Active status
         type: boolean
-      deptId:
-        description: Department ID
-        type: string
       en:
         description: English name
         type: string
@@ -100,13 +149,6 @@ definitions:
       sender:
         type: string
     type: object
-  model.OutputTokenModel:
-    properties:
-      accessToken:
-        type: string
-      tokenType:
-        type: string
-    type: object
   model.Response:
     properties:
       data: {}
@@ -131,12 +173,6 @@ definitions:
       en:
         description: English name
         type: string
-      orgId:
-        description: Organization ID
-        type: string
-      stnId:
-        description: Station ID
-        type: string
       th:
         description: Thai name
         type: string
@@ -154,9 +190,6 @@ definitions:
         type: string
       en:
         description: English name
-        type: string
-      stnId:
-        description: Station ID
         type: string
       th:
         description: Thai name
@@ -180,49 +213,6 @@ definitions:
       contactName:
         type: string
       contactPhone:
-        type: string
-    type: object
-  model.UserInputModel:
-    properties:
-      active:
-        type: boolean
-      areaId:
-        type: string
-      createdAt:
-        type: string
-      createdBy:
-        type: string
-      currentLat:
-        type: string
-      currentLon:
-        type: string
-      deviceId:
-        type: string
-      displayName:
-        type: string
-      email:
-        type: string
-      fullName:
-        type: string
-      lastLogin:
-        type: string
-      orgId:
-        type: string
-      passwordHash:
-        type: string
-      phoneNumber:
-        type: string
-      pushToken:
-        type: string
-      roleId:
-        type: string
-      updatedAt:
-        type: string
-      updatedBy:
-        type: string
-      userId:
-        type: string
-      username:
         type: string
     type: object
   model.UserSkillInsert:
@@ -294,14 +284,14 @@ paths:
         name: Case
         required: true
         schema:
-          $ref: '#/definitions/model.UserInputModel'
+          $ref: '#/definitions/model.Response'
       produces:
       - application/json
       responses:
         "200":
           description: OK - Request successful
           schema:
-            $ref: '#/definitions/model.OutputTokenModel'
+            $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
       summary: Create User
@@ -334,7 +324,7 @@ paths:
         "200":
           description: OK - Request successful
           schema:
-            $ref: '#/definitions/model.OutputTokenModel'
+            $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
       summary: Login
@@ -354,7 +344,82 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: List Cases Sub Type
+      summary: List CasesSubType
+      tags:
+      - Cases
+  /api/v1/casesubtypes/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete CaseSubType
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete CaseSubType
+      tags:
+      - Cases
+    patch:
+      consumes:
+      - application/json
+      operationId: Update CaseSubType
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseSubTypeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update CaseSubType
+      tags:
+      - Cases
+  /api/v1/casesubtypes/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create CaseSubType
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseSubTypeInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create CaseSubType
       tags:
       - Cases
   /api/v1/casetypes:
@@ -372,6 +437,81 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: List Cases
+      tags:
+      - Cases
+  /api/v1/casetypes/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete CaseType
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete CaseType
+      tags:
+      - Cases
+    patch:
+      consumes:
+      - application/json
+      operationId: Update CaseType
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseTypeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update CaseType
+      tags:
+      - Cases
+  /api/v1/casetypes/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create CaseType
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseTypeInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create CaseType
       tags:
       - Cases
   /api/v1/commands:

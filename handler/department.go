@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -182,7 +183,9 @@ func InsertDepartment(c *gin.Context) {
 		return
 	}
 	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
+	uuid := uuid.New()
 	var id int
 	query := `
 	INSERT INTO public."sec_departments"(
@@ -192,7 +195,7 @@ func InsertDepartment(c *gin.Context) {
 	`
 
 	err := conn.QueryRow(ctx, query,
-		req.DeptID, req.OrgID, req.En, req.Th, req.Active, now,
+		uuid, orgId, req.En, req.Th, req.Active, now,
 		now, username, username).Scan(&id)
 
 	if err != nil {
@@ -251,17 +254,17 @@ func UpdateDepartment(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."sec_departments"
-	SET "deptId"=$2, , en=$3, th=$4, active=$5,
-	 "updatedAt"=$6, "updatedBy"=$7
-	WHERE id = $1 AND "orgId"=$8`
+	SET en=$2, th=$3, active=$4,
+	 "updatedAt"=$5, "updatedBy"=$6
+	WHERE id = $1 AND "orgId"=$7`
 	_, err := conn.Exec(ctx, query,
-		id, req.DeptID, req.En, req.Th, req.Active,
+		id, req.En, req.Th, req.Active,
 		now, username, orgId,
 	)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{
-			id, req.DeptID, req.En, req.Th, req.Active,
+			id, req.En, req.Th, req.Active,
 			now, username, orgId,
 		}))
 	if err != nil {

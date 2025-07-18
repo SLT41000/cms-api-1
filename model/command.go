@@ -18,8 +18,6 @@ type Command struct {
 
 type CommandInsert struct {
 	DeptID string `json:"deptId"` // Department ID
-	OrgID  string `json:"orgId"`  // Organization ID
-	CommID string `json:"commId"` // Community ID
 	En     string `json:"en"`     // English name
 	Th     string `json:"th"`     // Thai name
 	Active bool   `json:"active"` // Active status
@@ -27,8 +25,6 @@ type CommandInsert struct {
 
 type CommandUpdate struct {
 	DeptID string `json:"deptId"` // Department ID
-	OrgID  string `json:"orgId"`  // Organization ID
-	CommID string `json:"commId"` // Community ID
 	En     string `json:"en"`     // English name
 	Th     string `json:"th"`     // Thai name
 	Active bool   `json:"active"` // Active status

@@ -49,7 +49,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserInputModel"
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 ],
@@ -57,7 +57,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK - Request successful",
                         "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -108,7 +108,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK - Request successful",
                         "schema": {
-                            "$ref": "#/definitions/model.OutputTokenModel"
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -130,8 +130,128 @@ const docTemplate = `{
                 "tags": [
                     "Cases"
                 ],
-                "summary": "List Cases Sub Type",
+                "summary": "List CasesSubType",
                 "operationId": "ListCaseSubTypes",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/casesubtypes/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Create CaseSubType",
+                "operationId": "Create CaseSubType",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseSubTypeInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/casesubtypes/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Delete CaseSubType",
+                "operationId": "Delete CaseSubType",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Update CaseSubType",
+                "operationId": "Update CaseSubType",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseSubTypeUpdate"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -160,6 +280,126 @@ const docTemplate = `{
                 ],
                 "summary": "List Cases",
                 "operationId": "ListCaseTypes",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/casetypes/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Create CaseType",
+                "operationId": "Create CaseType",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseTypeInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/casetypes/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Delete CaseType",
+                "operationId": "Delete CaseType",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Update CaseType",
+                "operationId": "Update CaseType",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseTypeUpdate"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1736,6 +1976,113 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "model.CaseSubTypeInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "caseSla": {
+                    "type": "string"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "sTypeCode": {
+                    "type": "string"
+                },
+                "th": {
+                    "type": "string"
+                },
+                "typeId": {
+                    "type": "string"
+                },
+                "unitPropLists": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "userSkillList": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "wfId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseSubTypeUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "caseSla": {
+                    "type": "string"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "sTypeCode": {
+                    "type": "string"
+                },
+                "th": {
+                    "type": "string"
+                },
+                "unitPropLists": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "userSkillList": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "wfId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseTypeInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "th": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseTypeUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "th": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CommandInsert": {
             "type": "object",
             "properties": {
@@ -1743,20 +2090,12 @@ const docTemplate = `{
                     "description": "Active status",
                     "type": "boolean"
                 },
-                "commId": {
-                    "description": "Community ID",
-                    "type": "string"
-                },
                 "deptId": {
                     "description": "Department ID",
                     "type": "string"
                 },
                 "en": {
                     "description": "English name",
-                    "type": "string"
-                },
-                "orgId": {
-                    "description": "Organization ID",
                     "type": "string"
                 },
                 "th": {
@@ -1772,20 +2111,12 @@ const docTemplate = `{
                     "description": "Active status",
                     "type": "boolean"
                 },
-                "commId": {
-                    "description": "Community ID",
-                    "type": "string"
-                },
                 "deptId": {
                     "description": "Department ID",
                     "type": "string"
                 },
                 "en": {
                     "description": "English name",
-                    "type": "string"
-                },
-                "orgId": {
-                    "description": "Organization ID",
                     "type": "string"
                 },
                 "th": {
@@ -1801,16 +2132,8 @@ const docTemplate = `{
                     "description": "Active status",
                     "type": "boolean"
                 },
-                "deptId": {
-                    "description": "Department ID",
-                    "type": "string"
-                },
                 "en": {
                     "description": "English name",
-                    "type": "string"
-                },
-                "orgId": {
-                    "description": "Organization ID",
                     "type": "string"
                 },
                 "th": {
@@ -1825,10 +2148,6 @@ const docTemplate = `{
                 "active": {
                     "description": "Active status",
                     "type": "boolean"
-                },
-                "deptId": {
-                    "description": "Department ID",
-                    "type": "string"
                 },
                 "en": {
                     "description": "English name",
@@ -1878,17 +2197,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.OutputTokenModel": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "tokenType": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Response": {
             "type": "object",
             "properties": {
@@ -1923,14 +2231,6 @@ const docTemplate = `{
                     "description": "English name",
                     "type": "string"
                 },
-                "orgId": {
-                    "description": "Organization ID",
-                    "type": "string"
-                },
-                "stnId": {
-                    "description": "Station ID",
-                    "type": "string"
-                },
                 "th": {
                     "description": "Thai name",
                     "type": "string"
@@ -1954,10 +2254,6 @@ const docTemplate = `{
                 },
                 "en": {
                     "description": "English name",
-                    "type": "string"
-                },
-                "stnId": {
-                    "description": "Station ID",
                     "type": "string"
                 },
                 "th": {
@@ -1992,71 +2288,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contactPhone": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.UserInputModel": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "type": "boolean"
-                },
-                "areaId": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "createdBy": {
-                    "type": "string"
-                },
-                "currentLat": {
-                    "type": "string"
-                },
-                "currentLon": {
-                    "type": "string"
-                },
-                "deviceId": {
-                    "type": "string"
-                },
-                "displayName": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "fullName": {
-                    "type": "string"
-                },
-                "lastLogin": {
-                    "type": "string"
-                },
-                "orgId": {
-                    "type": "string"
-                },
-                "passwordHash": {
-                    "type": "string"
-                },
-                "phoneNumber": {
-                    "type": "string"
-                },
-                "pushToken": {
-                    "type": "string"
-                },
-                "roleId": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "updatedBy": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }

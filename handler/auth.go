@@ -135,7 +135,7 @@ func ProtectedHandler(c *gin.Context) {
 // @Param username query string true "username"
 // @Param password query string true "password"
 // @Param organization query string true "organization"
-// @response 200 {object} model.OutputTokenModel "OK - Request successful"
+// @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [get]
 func UserLogin(c *gin.Context) {
 	logger := config.GetLog()
@@ -230,8 +230,8 @@ func UserLogin(c *gin.Context) {
 // @id Create User
 // @accept json
 // @produce json
-// @param Case body model.UserInputModel true "User to be created"
-// @response 200 {object} model.OutputTokenModel "OK - Request successful"
+// @param Case body model.Response true "User to be created"
+// @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/add [post]
 func UserAdd(c *gin.Context) {
 	logger := config.GetLog()

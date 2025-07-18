@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -184,7 +185,9 @@ func InsertStations(c *gin.Context) {
 		return
 	}
 	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
+	uuid := uuid.New()
 	var id int
 	query := `
 	INSERT INTO public."sec_stations"(
@@ -194,7 +197,7 @@ func InsertStations(c *gin.Context) {
 	`
 
 	err := conn.QueryRow(ctx, query,
-		req.DeptID, req.OrgID, req.DeptID, req.StnID, req.En, req.Th, req.Active, now,
+		req.DeptID, orgId, req.DeptID, uuid, req.En, req.Th, req.Active, now,
 		now, username, username).Scan(&id)
 
 	if err != nil {
@@ -253,17 +256,17 @@ func UpdateStations(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."sec_departments"
-	SET "deptId"=$3, "commId"=$4, "stnId"=$5, en=$6, th=$7, active=$8,
-	 "updatedAt"=$9, "updatedBy"=$10
+	SET "deptId"=$3, "commId"=$4, en=$5, th=$6, active=$7,
+	 "updatedAt"=$8, "updatedBy"=$9
 	WHERE id = $1 AND "orgId"=$2`
 	_, err := conn.Exec(ctx, query,
-		id, orgId, req.DeptID, req.CommID, req.StnID, req.En, req.Th, req.Active,
+		id, orgId, req.DeptID, req.CommID, req.En, req.Th, req.Active,
 		now, username,
 	)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{
-			id, orgId, req.DeptID, req.CommID, req.StnID, req.En, req.Th, req.Active,
+			id, orgId, req.DeptID, req.CommID, req.En, req.Th, req.Active,
 			now, username,
 		}))
 	if err != nil {

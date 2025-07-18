@@ -2,20 +2,6 @@ package model
 
 import "time"
 
-type InputTokenModel struct {
-	GrantType    *string `json:"grantType"`
-	Scope        *string `json:"scope"`
-	Username     string  `json:"username"`
-	Password     string  `json:"password"`
-	ClientId     *string `json:"clientId"`
-	ClientSecret *string `json:"clientSecret"`
-}
-
-type OutputTokenModel struct {
-	AccessToken string `json:"accessToken"`
-	TokenType   string `json:"tokenType"`
-}
-
 type UserInputModel struct {
 	OrgID        string `json:"orgId"`
 	UserID       string `json:"userId"`
