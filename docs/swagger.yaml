@@ -124,6 +124,42 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.FormInsert:
+    properties:
+      active:
+        type: boolean
+      formColSpan:
+        type: integer
+      formFieldJson:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      formName:
+        type: string
+      locks:
+        type: boolean
+      publish:
+        type: boolean
+    type: object
+  model.FormUpdate:
+    properties:
+      active:
+        type: boolean
+      formColSpan:
+        type: integer
+      formFieldJson:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      formName:
+        type: string
+      locks:
+        type: boolean
+      publish:
+        type: boolean
+    type: object
   model.Notification:
     properties:
       caseDetail:
@@ -742,15 +778,20 @@ paths:
       summary: Create Department
       tags:
       - Dispatch
-  /api/v1/forms/{id}:
+  /api/v1/forms:
     get:
       consumes:
       - application/json
       operationId: Get Form
       parameters:
       - description: id
-        in: path
+        in: query
         name: id
+        required: true
+        type: string
+      - description: version
+        in: query
+        name: version
         required: true
         type: string
       produces:
@@ -763,6 +804,81 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Form
+      tags:
+      - Form and Workflow
+    post:
+      consumes:
+      - application/json
+      operationId: Create Form
+      parameters:
+      - description: Created Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Form
+      tags:
+      - Form and Workflow
+  /api/v1/forms/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Form
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Form
+      tags:
+      - Form and Workflow
+  /api/v1/forms/{uuid}:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Form
+      parameters:
+      - description: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Update Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Form
       tags:
       - Form and Workflow
   /api/v1/notifications/delete/{id}:

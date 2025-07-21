@@ -772,7 +772,7 @@
                 }
             }
         },
-        "/api/v1/forms/{id}": {
+        "/api/v1/forms": {
             "get": {
                 "security": [
                     {
@@ -795,8 +795,135 @@
                         "type": "string",
                         "description": "id",
                         "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version",
+                        "name": "version",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Create Form",
+                "operationId": "Create Form",
+                "parameters": [
+                    {
+                        "description": "Created Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Delete Form",
+                "operationId": "Delete Form",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/{uuid}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Form",
+                "operationId": "Update Form",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "uuid",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormUpdate"
+                        }
                     }
                 ],
                 "responses": {
@@ -2152,6 +2279,60 @@
                 "th": {
                     "description": "Thai name",
                     "type": "string"
+                }
+            }
+        },
+        "model.FormInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "formColSpan": {
+                    "type": "integer"
+                },
+                "formFieldJson": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "formName": {
+                    "type": "string"
+                },
+                "locks": {
+                    "type": "boolean"
+                },
+                "publish": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.FormUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "formColSpan": {
+                    "type": "integer"
+                },
+                "formFieldJson": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "formName": {
+                    "type": "string"
+                },
+                "locks": {
+                    "type": "boolean"
+                },
+                "publish": {
+                    "type": "boolean"
                 }
             }
         },
