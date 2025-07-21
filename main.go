@@ -73,6 +73,9 @@ func main() {
 		v1.GET("/forms", handler.GetForm)
 		v1.POST("/forms", handler.FormInsert)
 		v1.PATCH("/forms/:uuid", handler.FormUpdate)
+		v1.PATCH("/forms/active", handler.FormActive)
+		v1.PATCH("/forms/lock", handler.FormLock)
+		v1.PATCH("/forms/publish", handler.FormPublish)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
 
 		v1.GET("/casetypes", handler.ListCaseType)

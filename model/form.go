@@ -33,6 +33,20 @@ type FormInsert struct {
 	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
 }
 
+type FormActive struct {
+	Active bool   `json:"active"`
+	FormID string `json:"formId"`
+}
+
+type FormPublish struct {
+	FormID  string `json:"formId"`
+	Publish bool   `json:"publish"`
+}
+
+type FormLock struct {
+	FormID string `json:"formId"`
+	Locks  bool   `json:"locks"`
+}
 type FormUpdate struct {
 	FormName      *string                  `json:"formName"`
 	FormColSpan   int                      `json:"formColSpan"`

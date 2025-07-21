@@ -242,11 +242,11 @@ func FormUpdate(c *gin.Context) {
 	UPDATE public.form_builder
 	SET "formName"=$2, "formColSpan"=$3, active=$4, publish=$5,
 	 versions=$6, locks=$7, "updatedAt"=$8,"updatedBy"=$9
-	WHERE "formId"=$1;
+	WHERE "formId"=$1 AND "orgId"=$10;
 	`
 	_, err := conn.Exec(ctx, query, uuid,
 		req.FormName, req.FormColSpan, req.Active, req.Publish, "draft", req.Locks,
-		now, username)
+		now, username, orgId)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
@@ -301,6 +301,188 @@ func FormUpdate(c *gin.Context) {
 		}
 	}
 
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
+// @summary Update Form Publish
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Update Form Publish
+// @accept json
+// @produce json
+// @param Case body model.FormPublish true "Update Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/forms/publish [patch]
+func FormPublish(c *gin.Context) {
+
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.FormPublish
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
+
+	query := `
+	UPDATE public.form_builder
+	SET publish=$2, "updatedAt"=$3,"updatedBy"=$4
+	WHERE "formId"=$1 AND "orgId"=$5;
+	`
+	_, err := conn.Exec(ctx, query, req.FormID, req.Publish, now, username, orgId)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("Input", []any{
+			req.FormID, req.Publish, now, username, orgId,
+		}))
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
+// @summary Update Form Lock
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Update Form Lock
+// @accept json
+// @produce json
+// @param Case body model.FormLock true "Update Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/forms/lock [patch]
+func FormLock(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.FormLock
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
+
+	query := `
+	UPDATE public.form_builder
+	SET locks=$2, "updatedAt"=$3,"updatedBy"=$4
+	WHERE "formId"=$1 AND "orgId"=$5;
+	`
+	_, err := conn.Exec(ctx, query, req.FormID, req.Locks, now, username, orgId)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("Input", []any{
+			req.FormID, req.Locks, now, username, orgId,
+		}))
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
+// @summary Update Form Status
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Update Form Status
+// @accept json
+// @produce json
+// @param Case body model.FormActive true "Update Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/forms/active [patch]
+func FormActive(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.FormActive
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
+
+	query := `
+	UPDATE public.form_builder
+	SET active=$2, "updatedAt"=$3,"updatedBy"=$4
+	WHERE "formId"=$1 AND "orgId"=$5;
+	`
+	_, err := conn.Exec(ctx, query, req.FormID, req.Active, now, username, orgId)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("Input", []any{
+			req.FormID, req.Active, now, username, orgId,
+		}))
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",

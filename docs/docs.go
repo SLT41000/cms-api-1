@@ -857,6 +857,123 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/forms/active": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Form Status",
+                "operationId": "Update Form Status",
+                "parameters": [
+                    {
+                        "description": "Update Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormActive"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/lock": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Form Lock",
+                "operationId": "Update Form Lock",
+                "parameters": [
+                    {
+                        "description": "Update Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormLock"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Form Publish",
+                "operationId": "Update Form Publish",
+                "parameters": [
+                    {
+                        "description": "Update Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormPublish"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/forms/{id}": {
             "delete": {
                 "security": [
@@ -2286,6 +2403,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.FormActive": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "formId": {
+                    "type": "string"
+                }
+            }
+        },
         "model.FormInsert": {
             "type": "object",
             "properties": {
@@ -2307,6 +2435,28 @@ const docTemplate = `{
                 },
                 "locks": {
                     "type": "boolean"
+                },
+                "publish": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.FormLock": {
+            "type": "object",
+            "properties": {
+                "formId": {
+                    "type": "string"
+                },
+                "locks": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.FormPublish": {
+            "type": "object",
+            "properties": {
+                "formId": {
+                    "type": "string"
                 },
                 "publish": {
                     "type": "boolean"

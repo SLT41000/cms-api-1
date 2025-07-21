@@ -124,6 +124,13 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.FormActive:
+    properties:
+      active:
+        type: boolean
+      formId:
+        type: string
+    type: object
   model.FormInsert:
     properties:
       active:
@@ -139,6 +146,20 @@ definitions:
         type: string
       locks:
         type: boolean
+      publish:
+        type: boolean
+    type: object
+  model.FormLock:
+    properties:
+      formId:
+        type: string
+      locks:
+        type: boolean
+    type: object
+  model.FormPublish:
+    properties:
+      formId:
+        type: string
       publish:
         type: boolean
     type: object
@@ -879,6 +900,78 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update Form
+      tags:
+      - Form and Workflow
+  /api/v1/forms/active:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Form Status
+      parameters:
+      - description: Update Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormActive'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Form Status
+      tags:
+      - Form and Workflow
+  /api/v1/forms/lock:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Form Lock
+      parameters:
+      - description: Update Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormLock'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Form Lock
+      tags:
+      - Form and Workflow
+  /api/v1/forms/publish:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Form Publish
+      parameters:
+      - description: Update Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormPublish'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Form Publish
       tags:
       - Form and Workflow
   /api/v1/notifications/delete/{id}:
