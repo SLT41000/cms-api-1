@@ -46,7 +46,7 @@ func main() {
 		Period: 1 * time.Minute,
 		Limit:  50,
 	}
-
+	go handler.StartAutoDeleteScheduler()
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
 	gin.SetMode(gin.ReleaseMode)
@@ -142,12 +142,13 @@ func main() {
 
 	notifications := router.Group("/api/v1/notifications")
 	{
-		notifications.POST("/new", handler.PostNotificationCustom)
-		notifications.GET("/recipient/:username", handler.GetNotificationsByRecipient)
-		notifications.GET("/noti/:id", handler.GetNotificationByID)
-		notifications.GET("/ws", handler.WebSocketHandler)
-		notifications.PUT("/edit/:id", handler.UpdateNotificationByID)
-		notifications.DELETE("/delete/:id", handler.DeleteNotificationByID)
+
+		v1.Use(handler.ProtectedHandler)
+		notifications.GET("/register", handler.WebSocketHandler)
+		notifications.POST("/", handler.CreateNotifications)
+		notifications.GET("/:orgId/:username", handler.GetNotificationsForUser)
+		notifications.PUT("/:id", handler.UpdateNotification)
+		notifications.DELETE("/:id", handler.DeleteNotification)
 	}
 	logger := config.GetLog()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

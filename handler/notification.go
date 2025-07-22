@@ -1,39 +1,27 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
 	"math/rand"
 	"net/http"
-	"net/smtp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype" // Import pgtype to handle nullable fields
 )
 
-// genNotificationID สร้าง ID แบบ timestamp + nanoseconds
-func genNotificationID() string {
-	currentTime := time.Now()
-	year := currentTime.Format("06")
-	month := currentTime.Format("01") // ใช้ Format("01") ง่ายกว่า int()
-	day := currentTime.Format("02")
-	hour := currentTime.Format("15")
-	minute := currentTime.Format("04")
-	second := currentTime.Format("05")
-	millisecond := currentTime.Format("0000000") // nanoseconds -> microseconds (อาจต้องปรับถ้าใช้ Format)
+// --- Helper Functions ---
 
-	timestamp := "D" + year + month + day + hour + minute + second + millisecond
-	return timestamp
-}
-
-func randomFromSlice(arr []string) string {
-	return arr[rand.Intn(len(arr))]
-}
-
+// RandomString generates a random string of a fixed length.
 func RandomString(n int) string {
-	letters := []rune("abcdefghijklmnopqrstuvwxyz")
+	letters := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 	s := make([]rune, n)
 	for i := range s {
 		s[i] = letters[rand.Intn(len(letters))]
@@ -41,86 +29,219 @@ func RandomString(n int) string {
 	return string(s)
 }
 
-// sendEmailNotification ส่งอีเมลแจ้งเตือน
-func sendEmailNotification(to, subject, body string) error {
-	from := "your_email@gmail.com"    // เปลี่ยนเป็นอีเมลผู้ส่ง
-	password := "your_email_password" // เปลี่ยนเป็นรหัสผ่านอีเมล
-	host := "smtp.gmail.com"
-	port := "587"
-	addr := host + ":" + port
+// --- API Handlers ---
 
-	auth := smtp.PlainAuth("", from, password, host)
-	msg := []byte("To: " + to + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
-		"\r\n" +
-		body + "\r\n")
-
-	return smtp.SendMail(addr, auth, from, []string{to}, msg)
-}
-
-// GetNotificationByID godoc
-// @Summary Get notification by ID from database
+// CreateNotifications godoc
+// @Summary Create one or more new notifications
+// @Description Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects.
 // @Tags Notifications
+// @security ApiKeyAuth
+// @Accept json
 // @Produce json
-// @Param id path string true "Notification ID"
-// @Success 200 {object} model.Notification
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/v1/notifications/noti/{id} [get]
-func GetNotificationByID(c *gin.Context) {
-	id := c.Param("id")
+// @Param notifications body []model.Notification true "A JSON array of notification objects. The `data` field should be an array of key-value objects, e.g., `\"data\": [{\"key\": \"caseId\", \"value\": \"C1122\"}]`"
+// @Success 201 {array} model.Notification "Notifications created successfully"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 500 {object} map[string]string "Internal server error (e.g., database transaction failure)"
+// @Router /api/v1/notifications [post]
+func CreateNotifications(c *gin.Context) {
+	var inputs []model.Notification
+	if err := c.ShouldBindJSON(&inputs); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
+		return
+	}
+
+	if len(inputs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "notification array cannot be empty"})
+		return
+	}
+
+	orgId := inputs[0].OrgID
+
 	conn, ctx, cancel := config.ConnectDB()
 	defer cancel()
 	defer conn.Close(ctx)
 
-	var notification model.Notification
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction", "detail": err.Error()})
+		return
+	}
+	defer tx.Rollback(ctx)
 
-	err := conn.QueryRow(ctx, `
-	SELECT id, "caseId", "caseType", "caseDetail", recipient, sender, message, "eventType", "createdAt", read, "redirectUrl"
-	FROM notifications
-	WHERE id = $1
+	var createdNotifications []model.Notification
+
+	for _, input := range inputs {
+		// UPDATED: Create notification object based on the new model
+		noti := model.Notification{
+			OrgID:       orgId,
+			SenderType:  input.SenderType,
+			Sender:      input.Sender,      // Changed from SenderID
+			SenderPhoto: input.SenderPhoto, // New field
+			Message:     input.Message,
+			EventType:   input.EventType,
+			RedirectUrl: input.RedirectUrl,
+			Data:        input.Data,
+			CreatedAt:   time.Now(),
+			CreatedBy:   input.CreatedBy, // New field
+			ExpiredAt:   input.ExpiredAt, // New field
+			Recipients:  input.Recipients,
+		}
+
+		recipientsJSON, err := json.Marshal(noti.Recipients)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process recipients", "detail": err.Error()})
+			return
+		}
+		dataJSON, err := json.Marshal(noti.Data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process custom data", "detail": err.Error()})
+			return
+		}
+
+		// UPDATED: SQL INSERT statement to match the new model and database schema
+		err = tx.QueryRow(ctx, `
+            INSERT INTO notifications 
+            ("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
+        `, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
+			noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database insert failed", "detail": err.Error()})
+			return
+		}
+
+		log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
+
+		// 🔔 Broadcast a copy that still contains recipients
+		notiCopy := noti // shallow copy
+		go BroadcastNotification(notiCopy)
+
+		// 📝 Add to the response to be returned
+		createdNotifications = append(createdNotifications, noti)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "transaction commit failed", "detail": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, createdNotifications)
+}
+
+// UpdateNotification godoc
+// @Summary Update an existing notification
+// @Description Updates the content of a specific notification by its ID.
+// @Tags Notifications
+// @security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path integer true "Notification ID"
+// @Param notification body model.Notification true "Notification object with fields to update."
+// @Success 200 {object} model.Notification "Notification updated successfully"
+// @Failure 400 {object} map[string]string "Invalid request body or ID"
+// @Failure 404 {object} map[string]string "Notification not found"
+// @Failure 500 {object} map[string]string "Database error"
+// @Router /api/v1/notifications/{id} [put]
+func UpdateNotification(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification ID format"})
+		return
+	}
+
+	var input model.Notification
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
+		return
+	}
+
+	recipientsJSON, err := json.Marshal(input.Recipients)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process recipients", "detail": err.Error()})
+		return
+	}
+	dataJSON, err := json.Marshal(input.Data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process custom data", "detail": err.Error()})
+		return
+	}
+
+	conn, ctx, cancel := config.ConnectDB()
+	defer cancel()
+	defer conn.Close(ctx)
+
+	// UPDATED: SQL UPDATE statement to include new updatable fields like expiredAt
+	tag, err := conn.Exec(ctx, `
+        UPDATE notifications
+        SET "message" = $1, "eventType" = $2, "redirectUrl" = $3, "recipients" = $4, "data" = $5, "expiredAt" = $6
+        WHERE "id" = $7
+    `, input.Message, input.EventType, input.RedirectUrl, recipientsJSON, dataJSON, input.ExpiredAt, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database update failed", "detail": err.Error()})
+		return
+	}
+
+	if tag.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found with the given ID"})
+		return
+	}
+
+	var updatedNoti model.Notification
+	var recipientsStr, dataStr []byte
+	// FIX: Use pgtype for nullable fields to prevent scan errors
+	var senderPhoto, createdBy pgtype.Text
+	var expiredAt pgtype.Timestamptz
+
+	// UPDATED: SQL SELECT to retrieve all fields from the new model
+	err = conn.QueryRow(ctx, `
+		SELECT "id", "orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data" 
+		FROM notifications WHERE "id" = $1
 	`, id).Scan(
-		&notification.ID,
-		&notification.CaseID,
-		&notification.CaseType,
-		&notification.CaseDetail,
-		&notification.Recipient,
-		&notification.Sender,
-		&notification.Message,
-		&notification.EventType,
-		&notification.CreatedAt,
-		&notification.Read,
-		&notification.RedirectURL,
+		&updatedNoti.ID, &updatedNoti.OrgID, &updatedNoti.SenderType, &updatedNoti.Sender, &senderPhoto, &updatedNoti.Message,
+		&updatedNoti.EventType, &updatedNoti.RedirectUrl, &updatedNoti.CreatedAt, &createdBy, &expiredAt, &recipientsStr, &dataStr,
 	)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "notification not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated notification", "detail": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, notification)
+	// FIX: Assign values from pgtype variables to the struct if they are valid (not NULL)
+	if senderPhoto.Valid {
+		updatedNoti.SenderPhoto = senderPhoto.String
+	}
+	if createdBy.Valid {
+		updatedNoti.CreatedBy = createdBy.String
+	}
+	if expiredAt.Valid {
+		updatedNoti.ExpiredAt = expiredAt.Time
+	}
+
+	json.Unmarshal(recipientsStr, &updatedNoti.Recipients)
+	json.Unmarshal(dataStr, &updatedNoti.Data)
+
+	c.JSON(http.StatusOK, updatedNoti)
 }
 
-// GetNotificationsByRecipient godoc
-// @Summary Get notifications received by username
+// DeleteNotification godoc
+// @Summary Delete a notification
+// @Description Deletes a notification by its ID.
 // @Tags Notifications
+// @security ApiKeyAuth
 // @Produce json
-// @Param username path string true "Username of the recipient"
-// @Success 200 {array} model.Notification
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/v1/notifications/recipient/{username} [get]
-func GetNotificationsByRecipient(c *gin.Context) {
-	username := c.Param("username")
-	log.Println("Recipient param:", username)
-
-	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username cannot be empty"})
+// @Param id path integer true "Notification ID"
+// @Success 200 {object} map[string]string "Message confirming deletion"
+// @Failure 404 {object} map[string]string "Notification not found"
+// @Failure 500 {object} map[string]string "Database error"
+// @Router /api/v1/notifications/{id} [delete]
+func DeleteNotification(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification ID format"})
 		return
 	}
 
@@ -128,15 +249,133 @@ func GetNotificationsByRecipient(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
-	rows, err := conn.Query(ctx, `
-		SELECT id, "caseId", "caseType", "caseDetail", recipient, sender, message, "eventType", "createdAt", read, "redirectUrl"
-		FROM notifications
-		WHERE recipient = $1
-		ORDER BY "createdAt" DESC
-	`, username)
+	tag, err := conn.Exec(ctx, `DELETE FROM notifications WHERE "id" = $1`, id)
 	if err != nil {
-		log.Println("DB query error:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database delete failed", "detail": err.Error()})
+		return
+	}
+
+	if tag.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found with the given ID"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "notification deleted successfully", "id": id})
+}
+
+// GetNotificationsForUser godoc
+// @Summary Get all notifications for a specific user
+// @Description Retrieves all notifications intended for a user by their username and organization ID.
+// @Tags Notifications
+// @security ApiKeyAuth
+// @Produce json
+// @Param orgId path string true "Organization ID of the user"
+// @Param username path string true "Username to fetch notifications for"
+// @Success 200 {array} model.Notification
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Database error"
+// @Router /api/v1/notifications/{orgId}/{username} [get]
+func GetNotificationsForUser(c *gin.Context) {
+	orgId := c.Param("orgId")
+	username := c.Param("username")
+	log.Printf("Fetching notifications for username: %s in org: %s", username, orgId)
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not connect to the database"})
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	// Step 1: Get the user's full profile using their username and orgId.
+	var userProfile model.Um_User
+	err := conn.QueryRow(ctx, `SELECT "empId", "orgId", "roleId", "deptId", "stnId", "commId" FROM um_users WHERE "username" = $1 AND "orgId" = $2 AND "active" = true`, username, orgId).Scan(
+		&userProfile.EmpID, &userProfile.OrgID, &userProfile.RoleID, &userProfile.DeptID, &userProfile.StnID, &userProfile.CommID,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found in the specified organization"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch user profile", "detail": err.Error()})
+		return
+	}
+
+	// Step 2: Build query conditions and arguments safely.
+	conditions := []string{}
+	args := []interface{}{userProfile.OrgID} // $1 is always orgId
+
+	// Helper function to create a JSON string for a recipient rule.
+	createRecipientJSON := func(recipientType, value string) (string, error) {
+		recipient := []model.Recipient{{Type: recipientType, Value: value}}
+		jsonBytes, err := json.Marshal(recipient)
+		return string(jsonBytes), err
+	}
+
+	// Condition for EMP_ID
+	if empIdJson, err := createRecipientJSON("empId", userProfile.EmpID); err == nil {
+		args = append(args, empIdJson)
+		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+	}
+
+	// Condition for ROLE_ID
+	if userProfile.RoleID != "" {
+		if roleIdJson, err := createRecipientJSON("roleId", userProfile.RoleID); err == nil {
+			args = append(args, roleIdJson)
+			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+		}
+	}
+
+	// Condition for DEPARTMENT_ID
+	if userProfile.DeptID != "" {
+		if deptIdJson, err := createRecipientJSON("deptId", userProfile.DeptID); err == nil {
+			args = append(args, deptIdJson)
+			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+		}
+	}
+
+	// Condition for STATION_ID
+	if userProfile.StnID != "" {
+		if stnIdJson, err := createRecipientJSON("stnId", userProfile.StnID); err == nil {
+			args = append(args, stnIdJson)
+			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+		}
+	}
+
+	// Condition for COMMUNITY_ID
+	if userProfile.CommID != "" {
+		if commIdJson, err := createRecipientJSON("commId", userProfile.CommID); err == nil {
+			args = append(args, commIdJson)
+			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+		}
+	}
+
+	// Condition for ORG_ID (everyone in the organization)
+	if orgIdJson, err := createRecipientJSON("orgId", userProfile.OrgID); err == nil {
+		args = append(args, orgIdJson)
+		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+	}
+
+	// Condition for USERNAME (userName)
+	if usernameJson, err := createRecipientJSON("username", username); err == nil {
+		args = append(args, usernameJson)
+		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+	}
+
+	fullCondition := strings.Join(conditions, " OR ")
+
+	// UPDATED: SQL SELECT to retrieve all fields from the new model
+	query := fmt.Sprintf(`
+        SELECT "id", "orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data" 
+        FROM notifications
+        WHERE "orgId" = $1 AND (%s)
+        ORDER BY "createdAt" DESC
+    `, fullCondition)
+
+	rows, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query notifications", "detail": err.Error(), "query": query})
 		return
 	}
 	defer rows.Close()
@@ -144,199 +383,93 @@ func GetNotificationsByRecipient(c *gin.Context) {
 	var notifications []model.Notification
 	for rows.Next() {
 		var n model.Notification
-		err := rows.Scan(
-			&n.ID,
-			&n.CaseID,
-			&n.CaseType,
-			&n.CaseDetail,
-			&n.Recipient,
-			&n.Sender,
-			&n.Message,
-			&n.EventType,
-			&n.CreatedAt,
-			&n.Read,
-			&n.RedirectURL,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "scan error: " + err.Error()})
-			return
+		var recipientsStr, dataStr []byte
+		// FIX: Use pgtype for nullable fields to prevent scan errors
+		var senderPhoto, createdBy pgtype.Text
+		var expiredAt pgtype.Timestamptz
+
+		// UPDATED: Scan to accommodate all fields from the new model
+
+		var redirectUrl pgtype.Text // เพิ่มตัวแปรสำหรับรองรับ nullable
+
+		if err := rows.Scan(
+			&n.ID, &n.OrgID, &n.SenderType, &n.Sender, &senderPhoto, &n.Message,
+			&n.EventType, &redirectUrl, &n.CreatedAt, &createdBy, &expiredAt, &recipientsStr, &dataStr,
+		); err != nil {
+			log.Printf("Error scanning notification row: %v", err)
+			continue
 		}
+
+		// assign redirectUrl ถ้ามีค่า
+		if redirectUrl.Valid {
+			n.RedirectUrl = redirectUrl.String
+		}
+
+		if senderPhoto.Valid {
+			n.SenderPhoto = senderPhoto.String
+		}
+		if createdBy.Valid {
+			n.CreatedBy = createdBy.String
+		}
+		if expiredAt.Valid {
+			n.ExpiredAt = expiredAt.Time
+		}
+
+		json.Unmarshal(recipientsStr, &n.Recipients)
+		json.Unmarshal(dataStr, &n.Data)
 		notifications = append(notifications, n)
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error iterating notification rows", "detail": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, notifications)
 }
 
-// PostNotificationCustom godoc
+// --- Background Job for Auto-Deletion ---
 
-// @Summary Create notification (partial input)
-// @Description Create a notification by providing only partial fields. The remaining fields (e.g., ID, caseId, createdAt) will be generated automatically.
-// @Tags Notifications
-// @Accept json
-// @Produce json
-// @Param notification body model.Notification true "Partial Notification Input (Do not include: id, caseId, createdAt)"
-// @Success 200 {object} model.Notification
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/v1/notifications/new [post]
-func PostNotificationCustom(c *gin.Context) {
-	var input model.Notification
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
-		return
-	}
-
-	noti := model.Notification{
-		ID:          genNotificationID(),
-		CaseID:      RandomString(10),
-		CaseType:    input.CaseType,
-		CaseDetail:  input.CaseDetail,
-		Recipient:   input.Recipient,
-		Sender:      input.Sender,
-		Message:     input.Message,
-		EventType:   input.EventType,
-		CreatedAt:   time.Now(), // Generate automatically
-		Read:        false,
-		RedirectURL: input.RedirectURL,
-	}
+// DeleteExpiredNotifications connects to the database and deletes all notifications
+// where the 'expiredAt' timestamp is in the past.
+func DeleteExpiredNotifications() {
+	log.Println("Scheduler: Running job to delete expired notifications...")
 
 	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		log.Println("Scheduler Error: could not connect to the database")
+		return
+	}
 	defer cancel()
 	defer conn.Close(ctx)
 
-	_, err := conn.Exec(ctx, `
-		INSERT INTO notifications 
-		(id, "caseId", "caseType", "caseDetail", recipient, sender, message, "eventType", "createdAt", read, "redirectUrl")
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-	`, noti.ID, noti.CaseID, noti.CaseType, noti.CaseDetail,
-		noti.Recipient, noti.Sender, noti.Message, noti.EventType,
-		noti.CreatedAt, noti.Read, noti.RedirectURL)
-
+	// Delete notifications where expiredAt is not NULL and is older than the current time
+	tag, err := conn.Exec(ctx, `DELETE FROM notifications WHERE "expiredAt" IS NOT NULL AND "expiredAt" < NOW()`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "insert error", "detail": err.Error()})
+		log.Printf("Scheduler Error: database delete failed: %v", err)
 		return
 	}
 
-	// 🔔 Send to WebSocket recipient in real-time
-	SendNotificationToRecipient(noti)
+	if tag.RowsAffected() > 0 {
+		log.Printf("Scheduler: Successfully deleted %d expired notifications.", tag.RowsAffected())
+	} else {
+		log.Println("Scheduler: No expired notifications to delete.")
+	}
+}
 
-	// 📨 ส่งอีเมลแจ้งเตือน (สมมติ recipient เป็นอีเมล)
-	if noti.Recipient != "" {
-		emailSubject := "New Notification: " + noti.EventType
-		emailBody := noti.Message
-		err := sendEmailNotification(noti.Recipient, emailSubject, emailBody)
-		if err != nil {
-			log.Println("Failed to send email:", err)
+// StartAutoDeleteScheduler starts a ticker that runs the DeleteExpiredNotifications
+// function at a regular interval (e.g., every hour).
+func StartAutoDeleteScheduler() {
+	log.Println("Starting background scheduler for auto-deleting notifications...")
+	// Run the cleanup job every 1 hour.
+	ticker := time.NewTicker(1 * time.Hour)
+
+	// Run forever in the background
+	go func() {
+		for {
+			// Wait for the ticker to fire
+			<-ticker.C
+			// Run the deletion job
+			DeleteExpiredNotifications()
 		}
-	}
-
-	c.JSON(http.StatusOK, noti)
-}
-
-// @Summary edit notification (partial input)
-// @Description เเก้ไข Notification
-// @Tags Notifications
-// @Accept json
-// @Produce json
-// @Param notification body model.Notification true "Partial Notification Input"
-// @Success 200 {object} model.Notification
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/v1/notifications/edit/{id} [put]
-func UpdateNotificationByID(c *gin.Context) {
-	id := c.Param("id")
-	var input model.Notification
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON", "detail": err.Error()})
-		return
-	}
-
-	conn, ctx, cancel := config.ConnectDB()
-	defer cancel()
-	defer conn.Close(ctx)
-
-	var exists bool
-	err := conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM notifications WHERE id = $1)`, id).Scan(&exists)
-	if err != nil || !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found"})
-		return
-	}
-
-	_, err = conn.Exec(ctx, `
-       	UPDATE notifications 
-	SET recipient = $1, sender = $2, message = $3, "eventType" = $4, read = $5,
-		"redirectUrl" = $6, "caseType" = $7, "caseDetail" = $8
-	WHERE id = $9
-    `, input.Recipient, input.Sender, input.Message, input.EventType,
-		input.Read, input.RedirectURL, input.CaseType, input.CaseDetail, id)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed", "detail": err.Error()})
-		return
-	}
-
-	var updated model.Notification
-	err = conn.QueryRow(ctx, `
-       	SELECT id, "caseId", "caseType", "caseDetail", recipient, sender, message, "eventType", "createdAt", read, "redirectUrl"
-	FROM notifications
-	WHERE id = $1
-    `, id).Scan(
-		&updated.ID,
-		&updated.CaseID,
-		&updated.CaseType,
-		&updated.CaseDetail,
-		&updated.Recipient,
-		&updated.Sender,
-		&updated.Message,
-		&updated.EventType,
-		&updated.CreatedAt,
-		&updated.Read,
-		&updated.RedirectURL,
-	)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated", "detail": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, updated)
-}
-
-// @Summary delete notification by id
-// @Description ลบ Notification ตาม id
-// @Tags Notifications
-// @Produce json
-// @Param id path string true "Notification ID"
-// @Success 200 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/v1/notifications/delete/{id} [delete]
-func DeleteNotificationByID(c *gin.Context) {
-	id := c.Param("id")
-
-	conn, ctx, cancel := config.ConnectDB()
-	defer cancel()
-	defer conn.Close(ctx)
-
-	// ตรวจสอบว่า notification มีอยู่จริงก่อน
-	var exists bool
-	err := conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM notifications WHERE id = $1)`, id).Scan(&exists)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error", "detail": err.Error()})
-		return
-	}
-	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found"})
-		return
-	}
-
-	// ลบ notification
-	_, err = conn.Exec(ctx, `DELETE FROM notifications WHERE id = $1`, id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "delete error", "detail": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "notification deleted successfully", "id": id})
+	}()
 }
