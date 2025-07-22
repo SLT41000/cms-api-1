@@ -10,18 +10,18 @@ type Um_User struct {
 	DisplayName           string     `json:"displayName"`
 	Title                 string     `json:"title"`
 	FirstName             string     `json:"firstName"`
-	MiddleName            string     `json:"middleName"` // Nullable
+	MiddleName            string     `json:"middleName"`
 	LastName              string     `json:"lastName"`
 	CitizenID             string     `json:"citizenId"`
-	Bod                   time.Time  `json:"bod"` // Date of Birth
+	Bod                   time.Time  `json:"bod"`
 	Blood                 string     `json:"blood"`
 	Gender                string     `json:"gender"`
-	MobileNo              string     `json:"mobileNo"` // Nullable
-	Address               string     `json:"address"`  // JSON object
-	Photo                 *string    `json:"photo"`    // Nullable string
+	MobileNo              string     `json:"mobileNo"`
+	Address               string     `json:"address"`
+	Photo                 *string    `json:"photo"`
 	Username              string     `json:"username"`
 	Password              string     `json:"password"`
-	Email                 string     `json:"email"` // Nullable
+	Email                 string     `json:"email"`
 	RoleID                string     `json:"roleId"`
 	UserType              string     `json:"userType"`
 	EmpID                 string     `json:"empId"`
@@ -29,12 +29,12 @@ type Um_User struct {
 	CommID                string     `json:"commId"`
 	StnID                 string     `json:"stnId"`
 	Active                bool       `json:"active"`
-	ActivationToken       *string    `json:"activationToken"`       // Nullable
-	LastActivationRequest int        `json:"lastActivationRequest"` // Nullable
-	LostPasswordRequest   int        `json:"lostPasswordRequest"`   // Nullable
-	SignupStamp           int        `json:"signupStamp"`           // Nullable
+	ActivationToken       *string    `json:"activationToken"`
+	LastActivationRequest int        `json:"lastActivationRequest"`
+	LostPasswordRequest   int        `json:"lostPasswordRequest"`
+	SignupStamp           int        `json:"signupStamp"`
 	IsLogin               bool       `json:"islogin"`
-	LastLogin             *time.Time `json:"lastLogin"` // Nullable
+	LastLogin             *time.Time `json:"lastLogin"`
 	CreatedAt             time.Time  `json:"createdAt"`
 	UpdatedAt             time.Time  `json:"updatedAt"`
 	CreatedBy             string     `json:"createdBy"`
@@ -52,7 +52,7 @@ type UserInput struct {
 	Blood                 string     `json:"blood"`
 	Gender                int        `json:"gender"`
 	MobileNo              string     `json:"mobileNo"`
-	Address               string     `json:"address"` // Assumes JSON column
+	Address               string     `json:"address"`
 	Photo                 *string    `json:"photo"`
 	Username              string     `json:"username"`
 	Password              string     `json:"password"`
