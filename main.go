@@ -65,7 +65,7 @@ func main() {
 	auth := router.Group("/api/v1/auth")
 	{
 		auth.GET("/login", handler.UserLogin)
-		auth.POST("/add", handler.UserAdd)
+		auth.POST("/add", handler.UserAddAuth)
 	}
 	v1 := router.Group("/api/v1")
 	{
@@ -106,6 +106,7 @@ func main() {
 		v1.DELETE("/stations/:id", handler.DeleteStations)
 
 		v1.GET("/users", handler.GetUmUserList)
+		v1.POST("/users/add", handler.UserAdd)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)

@@ -252,6 +252,68 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.UserAdminInput:
+    properties:
+      activationToken:
+        type: string
+      active:
+        type: boolean
+      address:
+        description: Assumes JSON column
+        type: string
+      blood:
+        type: string
+      bod:
+        type: string
+      citizenId:
+        type: string
+      commId:
+        type: string
+      deptId:
+        type: string
+      displayName:
+        type: string
+      email:
+        type: string
+      empId:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: integer
+      islogin:
+        type: boolean
+      lastActivationRequest:
+        type: integer
+      lastLogin:
+        type: string
+      lastName:
+        type: string
+      lostPasswordRequest:
+        type: integer
+      middleName:
+        type: string
+      mobileNo:
+        type: string
+      orgId:
+        type: string
+      password:
+        type: string
+      photo:
+        type: string
+      roleId:
+        type: string
+      signupStamp:
+        type: integer
+      stnId:
+        type: string
+      title:
+        type: string
+      userType:
+        type: integer
+      username:
+        type: string
+    type: object
   model.UserContactInsert:
     properties:
       contactAddr: {}
@@ -270,6 +332,64 @@ definitions:
       contactName:
         type: string
       contactPhone:
+        type: string
+    type: object
+  model.UserInput:
+    properties:
+      active:
+        type: boolean
+      address:
+        description: Assumes JSON column
+        type: string
+      blood:
+        type: string
+      bod:
+        type: string
+      citizenId:
+        type: string
+      commId:
+        type: string
+      deptId:
+        type: string
+      displayName:
+        type: string
+      email:
+        type: string
+      empId:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: integer
+      islogin:
+        type: boolean
+      lastActivationRequest:
+        type: integer
+      lastLogin:
+        type: string
+      lastName:
+        type: string
+      lostPasswordRequest:
+        type: integer
+      middleName:
+        type: string
+      mobileNo:
+        type: string
+      password:
+        type: string
+      photo:
+        type: string
+      roleId:
+        type: string
+      signupStamp:
+        type: integer
+      stnId:
+        type: string
+      title:
+        type: string
+      userType:
+        type: integer
+      username:
         type: string
     type: object
   model.UserSkillInsert:
@@ -334,14 +454,14 @@ paths:
     post:
       consumes:
       - application/json
-      operationId: Create User
+      operationId: Create User Auth
       parameters:
       - description: User to be created
         in: body
         name: Case
         required: true
         schema:
-          $ref: '#/definitions/model.Response'
+          $ref: '#/definitions/model.UserAdminInput'
       produces:
       - application/json
       responses:
@@ -351,7 +471,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Create User
+      summary: Create User Auth
       tags:
       - Authentication
   /api/v1/auth/login:
@@ -392,6 +512,17 @@ paths:
       consumes:
       - application/json
       operationId: ListCaseSubTypes
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -484,6 +615,17 @@ paths:
       consumes:
       - application/json
       operationId: ListCaseTypes
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -576,6 +718,17 @@ paths:
       consumes:
       - application/json
       operationId: Get Commands
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -690,6 +843,17 @@ paths:
       consumes:
       - application/json
       operationId: Get Department
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -1171,6 +1335,17 @@ paths:
       consumes:
       - application/json
       operationId: Get Stations
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -1285,6 +1460,17 @@ paths:
       consumes:
       - application/json
       operationId: Get User
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -1320,6 +1506,30 @@ paths:
       summary: Get User by Id
       tags:
       - User
+  /api/v1/users/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create User
+      parameters:
+      - description: User to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create User
+      tags:
+      - User
   /api/v1/users/username/{username}:
     get:
       consumes:
@@ -1348,6 +1558,17 @@ paths:
       consumes:
       - application/json
       operationId: Get User with contacts
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -1462,6 +1683,17 @@ paths:
       consumes:
       - application/json
       operationId: Get User with skills
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
@@ -1576,6 +1808,17 @@ paths:
       consumes:
       - application/json
       operationId: Get User with socials
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:

@@ -4,6 +4,7 @@ import (
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,8 @@ import (
 // @id Get Stations
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/stations [get]
 func GetStation(c *gin.Context) {
@@ -30,13 +33,24 @@ func GetStation(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT  id,"orgId", "deptId", "commId", "stnId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.sec_stations WHERE "orgId"=$1 LIMIT 1000`
+	FROM public.sec_stations WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{

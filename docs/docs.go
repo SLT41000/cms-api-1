@@ -40,8 +40,8 @@ const docTemplate = `{
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Create User",
-                "operationId": "Create User",
+                "summary": "Create User Auth",
+                "operationId": "Create User Auth",
                 "parameters": [
                     {
                         "description": "User to be created",
@@ -49,7 +49,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Response"
+                            "$ref": "#/definitions/model.UserAdminInput"
                         }
                     }
                 ],
@@ -132,6 +132,22 @@ const docTemplate = `{
                 ],
                 "summary": "List CasesSubType",
                 "operationId": "ListCaseSubTypes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -280,6 +296,22 @@ const docTemplate = `{
                 ],
                 "summary": "List Cases",
                 "operationId": "ListCaseTypes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -428,6 +460,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get Commands",
                 "operationId": "Get Commands",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -611,6 +659,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get Department",
                 "operationId": "Get Department",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1365,6 +1429,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get Stations",
                 "operationId": "Get Stations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1548,6 +1628,61 @@ const docTemplate = `{
                 ],
                 "summary": "Get User",
                 "operationId": "Get User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create User",
+                "operationId": "Create User",
+                "parameters": [
+                    {
+                        "description": "User to be created",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserInput"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1650,6 +1785,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get User with contacts",
                 "operationId": "Get User with contacts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -1833,6 +1984,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get User with skills",
                 "operationId": "Get User with skills",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -2016,6 +2183,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get User with socials",
                 "operationId": "Get User with socials",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -2593,6 +2776,99 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UserAdminInput": {
+            "type": "object",
+            "properties": {
+                "activationToken": {
+                    "type": "string"
+                },
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "description": "Assumes JSON column",
+                    "type": "string"
+                },
+                "blood": {
+                    "type": "string"
+                },
+                "bod": {
+                    "type": "string"
+                },
+                "citizenId": {
+                    "type": "string"
+                },
+                "commId": {
+                    "type": "string"
+                },
+                "deptId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "empId": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "islogin": {
+                    "type": "boolean"
+                },
+                "lastActivationRequest": {
+                    "type": "integer"
+                },
+                "lastLogin": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "lostPasswordRequest": {
+                    "type": "integer"
+                },
+                "middleName": {
+                    "type": "string"
+                },
+                "mobileNo": {
+                    "type": "string"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "roleId": {
+                    "type": "string"
+                },
+                "signupStamp": {
+                    "type": "integer"
+                },
+                "stnId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "userType": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "model.UserContactInsert": {
             "type": "object",
             "properties": {
@@ -2619,6 +2895,93 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contactPhone": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UserInput": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "description": "Assumes JSON column",
+                    "type": "string"
+                },
+                "blood": {
+                    "type": "string"
+                },
+                "bod": {
+                    "type": "string"
+                },
+                "citizenId": {
+                    "type": "string"
+                },
+                "commId": {
+                    "type": "string"
+                },
+                "deptId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "empId": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "islogin": {
+                    "type": "boolean"
+                },
+                "lastActivationRequest": {
+                    "type": "integer"
+                },
+                "lastLogin": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "lostPasswordRequest": {
+                    "type": "integer"
+                },
+                "middleName": {
+                    "type": "string"
+                },
+                "mobileNo": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "roleId": {
+                    "type": "string"
+                },
+                "signupStamp": {
+                    "type": "integer"
+                },
+                "stnId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "userType": {
+                    "type": "integer"
+                },
+                "username": {
                     "type": "string"
                 }
             }

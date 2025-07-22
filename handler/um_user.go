@@ -4,6 +4,7 @@ import (
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,8 @@ import (
 // @id Get User
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users [get]
 func GetUmUserList(c *gin.Context) {
@@ -29,12 +32,29 @@ func GetUmUserList(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.um_users WHERE "orgId"=$1 LIMIT 1000`
+
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+	logger.Debug(`Query`, zap.Any("start", start))
+	logger.Debug(`Query`, zap.Any("length", length))
+	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod,
+	blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId",
+	"deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest",
+	"signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.um_users 
+	WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -88,12 +108,14 @@ func GetUmUserList(c *gin.Context) {
 		)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
+			errorMsg = err.Error()
 			response := model.Response{
 				Status: "-1",
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
 			c.JSON(http.StatusInternalServerError, response)
+			return
 		}
 		userList = append(userList, u)
 	}
@@ -327,6 +349,98 @@ func GetUmUserById(c *gin.Context) {
 	}
 }
 
+// Login godoc
+// @summary Create User
+// @tags User
+// @security ApiKeyAuth
+// @id Create User
+// @accept json
+// @produce json
+// @param Case body model.UserInput true "User to be created"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/add [post]
+func UserAdd(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.UserInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// now req is ready to use
+
+	var enc string
+	var err error
+	var id int
+	enc, err = encrypt(req.Password)
+	if err != nil {
+		return
+	}
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+	tokenString := GetVariableFromToken(c, "tokenString")
+	now := time.Now()
+	query := `
+		INSERT INTO public.um_users(
+		"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender,
+		"mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId",
+		"commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest",
+		"signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy"
+			)
+	VALUES (
+		$1, $2, $3, $4, $5, $6, $7,
+		$8, $9, $10, $11,
+		$12, $13, $14, $15, $16,
+		$17, $18, $19, $20, $21, 
+		$22, $23, $24, $25, $26,
+		$27, $28, $29, $30, $31, 
+		$32, $33
+	)
+	RETURNING id;
+	`
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{req}))
+	logger.Debug(`Encrypt Password :` + enc)
+	err = conn.QueryRow(ctx, query,
+		orgId, req.DisplayName, req.Title, req.FirstName, req.MiddleName,
+		req.LastName, req.CitizenID, req.Bod, req.Bod, req.Blood,
+		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
+		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
+		req.Active, tokenString, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
+		req.IsLogin, req.LastLogin, now, now, username, username,
+	).Scan(&id)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Create successfully",
+	})
+}
+
 // Stations godoc
 // @summary Get User with skills
 // @tags User
@@ -334,6 +448,8 @@ func GetUmUserById(c *gin.Context) {
 // @id Get User with skills
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills [get]
 func GetUserWithSkills(c *gin.Context) {
@@ -345,12 +461,24 @@ func GetUserWithSkills(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+
 	query := `SELECT "orgId", "userName", "skillId", active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.um_user_with_skills WHERE "orgId"=$1`
+	FROM public.um_user_with_skills WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -661,6 +789,8 @@ func DeleteUserWithSkills(c *gin.Context) {
 // @id Get User with contacts
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_contacts [get]
 func GetUserWithContacts(c *gin.Context) {
@@ -673,12 +803,24 @@ func GetUserWithContacts(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	defer cancel()
 	defer conn.Close(ctx)
+
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+
 	query := `SELECT  "orgId", username, "contactName", "contactPhone", "contactAddr", "createdAt", "updatedAt", "createdBy", "updatedBy" 	
-	FROM public.um_user_contacts WHERE "orgId"=$1 LIMIT 1000`
+	FROM public.um_user_contacts WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -988,6 +1130,8 @@ func DeleteUserWithContacts(c *gin.Context) {
 // @id Get User with socials
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_socials [get]
 func GetUserWithSocials(c *gin.Context) {
@@ -1000,12 +1144,24 @@ func GetUserWithSocials(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+
 	query := `SELECT  "orgId", username, "socialType", "socialId", "socialName", "createdAt", "updatedAt", "createdBy", "updatedBy" 	
-	FROM public.um_user_with_socials AND "orgId"=$1 LIMIT 1000`
+	FROM public.um_user_with_socials WHERE "orgId"=$1 
+	LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{

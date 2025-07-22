@@ -117,7 +117,7 @@ func ProtectedHandler(c *gin.Context) {
 			)
 			c.Set("username", username)
 			c.Set("orgId", orgId)
-
+			c.Set("tokenString", tokenString)
 			c.Next()
 			return
 		}
@@ -165,17 +165,21 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT id,"orgId", "userId", "displayName", "fullName", "phoneNumber", email, username,
-	 "passwordHash", "lastLogin", "roleId", active, "areaId", "deviceId", "pushToken", "currentLat",
-	  "currentLon", "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.users WHERE username = $1 AND active = true`
+	query = `SELECT id,"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood,
+	 gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId",
+	  "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin,
+	   "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	   FROM public.um_users WHERE username = $1 AND active = true`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
-	var UserOpt model.User
+	var UserOpt model.Um_User
 	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
-		&UserOpt.OrgID, &UserOpt.UserID, &UserOpt.DisplayName, &UserOpt.FullName, &UserOpt.PhoneNumber, &UserOpt.Email,
-		&UserOpt.Username, &UserOpt.PasswordHash, &UserOpt.LastLogin, &UserOpt.RoleID, &UserOpt.Active, &UserOpt.AreaID,
-		&UserOpt.DeviceID, &UserOpt.PushToken, &UserOpt.CurrentLat, &UserOpt.CurrentLon, &UserOpt.CreatedAt, &UserOpt.UpdatedAt,
-		&UserOpt.CreatedBy, &UserOpt.UpdatedBy)
+		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
+		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
+		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
+		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
+		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
+		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy)
 	if err != nil {
 		logger.Debug(err.Error())
 		c.JSON(http.StatusUnauthorized, model.Response{
@@ -186,7 +190,7 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 	var dec string
-	dec, err = decrypt(UserOpt.PasswordHash)
+	dec, err = decrypt(UserOpt.Password)
 	if err != nil {
 		logger.Debug(err.Error())
 		return
@@ -224,16 +228,16 @@ func UserLogin(c *gin.Context) {
 }
 
 // Login godoc
-// @summary Create User
+// @summary Create User Auth
 // @tags Authentication
 // @security ApiKeyAuth
-// @id Create User
+// @id Create User Auth
 // @accept json
 // @produce json
-// @param Case body model.Response true "User to be created"
+// @param Case body model.UserAdminInput true "User to be created"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/add [post]
-func UserAdd(c *gin.Context) {
+func UserAddAuth(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
@@ -241,9 +245,8 @@ func UserAdd(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
 
-	var req model.UserInputModel
+	var req model.UserAdminInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
@@ -259,22 +262,26 @@ func UserAdd(c *gin.Context) {
 	var enc string
 	var err error
 	var id int
-	enc, err = encrypt(req.PasswordHash)
+	enc, err = encrypt(req.Password)
 	if err != nil {
 		return
 	}
-
+	now := time.Now()
 	query := `
-		INSERT INTO public.users(
-		"orgId", "userId", "displayName", "fullName", "phoneNumber", email, username, "passwordHash"
-		, "lastLogin", "roleId", active, "areaId", "deviceId", "pushToken", "currentLat", "currentLon"
-		, "createdAt", "updatedAt", "createdBy", "updatedBy"
+		INSERT INTO public.um_users(
+		"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender,
+		"mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId",
+		"commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest",
+		"signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy"
 			)
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7,
 		$8, $9, $10, $11,
 		$12, $13, $14, $15, $16,
-		$17, $18, $19, $20
+		$17, $18, $19, $20, $21, 
+		$22, $23, $24, $25, $26,
+		$27, $28, $29, $30, $31, 
+		$32, $33
 	)
 	RETURNING id;
 	`
@@ -282,10 +289,12 @@ func UserAdd(c *gin.Context) {
 	logger.Debug(`request input`, zap.Any("Input", []any{req}))
 	logger.Debug(`Encrypt Password :` + enc)
 	err = conn.QueryRow(ctx, query,
-		req.OrgID, req.UserID, req.DisplayName, req.FullName, req.PhoneNumber,
-		req.Email, req.Username, enc, req.LastLogin, req.RoleID,
-		req.Active, req.AreaID, req.DeviceID, req.PushToken, req.CurrentLat,
-		req.CurrentLon, req.CreatedAt, req.UpdatedAt, req.CreatedBy, req.UpdatedBy,
+		req.OrgID, req.DisplayName, req.Title, req.FirstName, req.MiddleName,
+		req.LastName, req.CitizenID, req.Bod, req.Blood,
+		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
+		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
+		req.Active, req.ActivationToken, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
+		req.IsLogin, req.LastLogin, now, now, "system", "system",
 	).Scan(&id)
 
 	if err != nil {
