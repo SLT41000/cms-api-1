@@ -898,7 +898,7 @@ paths:
     get:
       consumes:
       - application/json
-      operationId: Get Department
+      operationId: Get UserSkill
       parameters:
       - default: 0
         description: start
@@ -919,14 +919,14 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Get Department
+      summary: Get UserSkill
       tags:
       - Dispatch
   /api/v1/departments/{id}:
     delete:
       consumes:
       - application/json
-      operationId: Delete Department
+      operationId: Delete UserSkill
       parameters:
       - description: id
         in: path
@@ -942,13 +942,13 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Delete Department
+      summary: Delete UserSkill
       tags:
       - Dispatch
     get:
       consumes:
       - application/json
-      operationId: Get Department by ID
+      operationId: Get UserSkill by ID
       parameters:
       - description: id
         in: path
@@ -964,13 +964,13 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Get Department by ID
+      summary: Get UserSkill by ID
       tags:
       - Dispatch
     patch:
       consumes:
       - application/json
-      operationId: Update Department
+      operationId: Update UserSkill
       parameters:
       - description: id
         in: path
@@ -982,7 +982,7 @@ paths:
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.DepartmentUpdate'
+          $ref: '#/definitions/model.UserSkillUpdate'
       produces:
       - application/json
       responses:
@@ -992,21 +992,21 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update Department
+      summary: Update UserSkill
       tags:
       - Dispatch
   /api/v1/departments/add:
     post:
       consumes:
       - application/json
-      operationId: Create Department
+      operationId: Create UserSkill
       parameters:
       - description: Create Data
         in: body
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.DepartmentInsert'
+          $ref: '#/definitions/model.UserSkillInsert'
       produces:
       - application/json
       responses:
@@ -1016,7 +1016,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Create Department
+      summary: Create UserSkill
       tags:
       - Dispatch
   /api/v1/forms:
@@ -1540,6 +1540,28 @@ paths:
       tags:
       - User
   /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete User
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User
+      tags:
+      - User
     get:
       consumes:
       - application/json

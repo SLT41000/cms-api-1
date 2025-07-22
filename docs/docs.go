@@ -657,8 +657,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Get Department",
-                "operationId": "Get Department",
+                "summary": "Get UserSkill",
+                "operationId": "Get UserSkill",
                 "parameters": [
                     {
                         "type": "integer",
@@ -701,8 +701,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Create Department",
-                "operationId": "Create Department",
+                "summary": "Create UserSkill",
+                "operationId": "Create UserSkill",
                 "parameters": [
                     {
                         "description": "Create Data",
@@ -710,7 +710,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.DepartmentInsert"
+                            "$ref": "#/definitions/model.UserSkillInsert"
                         }
                     }
                 ],
@@ -740,8 +740,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Get Department by ID",
-                "operationId": "Get Department by ID",
+                "summary": "Get UserSkill by ID",
+                "operationId": "Get UserSkill by ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -775,8 +775,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Delete Department",
-                "operationId": "Delete Department",
+                "summary": "Delete UserSkill",
+                "operationId": "Delete UserSkill",
                 "parameters": [
                     {
                         "type": "integer",
@@ -810,8 +810,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Update Department",
-                "operationId": "Update Department",
+                "summary": "Update UserSkill",
+                "operationId": "Update UserSkill",
                 "parameters": [
                     {
                         "type": "integer",
@@ -826,7 +826,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.DepartmentUpdate"
+                            "$ref": "#/definitions/model.UserSkillUpdate"
                         }
                     }
                 ],
@@ -1748,6 +1748,41 @@ const docTemplate = `{
                 ],
                 "summary": "Get User by Id",
                 "operationId": "Get User by Id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete User",
+                "operationId": "Delete User",
                 "parameters": [
                     {
                         "type": "integer",

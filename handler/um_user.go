@@ -158,7 +158,7 @@ func GetUmUserByUsername(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	query := `SELECT id, "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.um_users WHERE username=$1 AND "orgId"=$2`
 
 	var rows pgx.Rows
@@ -179,72 +179,32 @@ func GetUmUserByUsername(c *gin.Context) {
 	defer rows.Close()
 	var errorMsg string
 	var u model.Um_User
-
-	err = rows.Scan(
-		&u.OrgID,
-		&u.DisplayName,
-		&u.Title,
-		&u.FirstName,
-		&u.MiddleName,
-		&u.LastName,
-		&u.CitizenID,
-		&u.Bod,
-		&u.Blood,
-		&u.Gender,
-		&u.MobileNo,
-		&u.Address,
-		&u.Photo,
-		&u.Username,
-		&u.Password,
-		&u.Email,
-		&u.RoleID,
-		&u.UserType,
-		&u.EmpID,
-		&u.DeptID,
-		&u.CommID,
-		&u.StnID,
-		&u.Active,
-		&u.ActivationToken,
-		&u.LastActivationRequest,
-		&u.LostPasswordRequest,
-		&u.SignupStamp,
-		&u.IsLogin,
-		&u.LastLogin,
-		&u.CreatedAt,
-		&u.UpdatedAt,
-		&u.CreatedBy,
-		&u.UpdatedBy,
-	)
-	if err != nil {
-		errorMsg = err.Error()
-		logger.Warn("Scan failed", zap.Error(err))
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
+	if rows.Next() {
+		err = rows.Scan(&u.ID,
+			&u.OrgID, &u.DisplayName, &u.Title, &u.FirstName, &u.MiddleName, &u.LastName, &u.CitizenID, &u.Bod, &u.Blood,
+			&u.Gender, &u.MobileNo, &u.Address, &u.Photo, &u.Username, &u.Password, &u.Email, &u.RoleID, &u.UserType,
+			&u.EmpID, &u.DeptID, &u.CommID, &u.StnID, &u.Active, &u.ActivationToken, &u.LastActivationRequest,
+			&u.LostPasswordRequest, &u.SignupStamp, &u.IsLogin, &u.LastLogin, &u.CreatedAt, &u.UpdatedAt, &u.CreatedBy, &u.UpdatedBy,
+		)
+		if err != nil {
+			errorMsg = err.Error()
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+			return
 		}
-		c.JSON(http.StatusInternalServerError, response)
-		return
 	}
-
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   u,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
-		return
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
 	}
+	c.JSON(http.StatusOK, response)
 }
 
 // Stations godoc
@@ -521,6 +481,48 @@ func UserUpdate(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
+	})
+}
+
+// Login godoc
+// @summary Delete User
+// @tags User
+// @security ApiKeyAuth
+// @id Delete User
+// @accept json
+// @produce json
+// @Param id path int true "id"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/{id} [delete]
+func UserDelete(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	id := c.Param("id")
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `DELETE FROM public."um_users" WHERE id = $1 AND "orgId"=$2`
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err := conn.Exec(ctx, query, id, orgId)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
 	})
 }
 
