@@ -10,18 +10,18 @@ type Um_User struct {
 	DisplayName           string     `json:"displayName"`
 	Title                 string     `json:"title"`
 	FirstName             string     `json:"firstName"`
-	MiddleName            string     `json:"middleName"`
+	MiddleName            *string    `json:"middleName"`
 	LastName              string     `json:"lastName"`
 	CitizenID             string     `json:"citizenId"`
 	Bod                   time.Time  `json:"bod"`
 	Blood                 string     `json:"blood"`
 	Gender                string     `json:"gender"`
-	MobileNo              string     `json:"mobileNo"`
-	Address               string     `json:"address"`
+	MobileNo              *string    `json:"mobileNo"`
+	Address               *string    `json:"address"`
 	Photo                 *string    `json:"photo"`
 	Username              string     `json:"username"`
 	Password              string     `json:"password"`
-	Email                 string     `json:"email"`
+	Email                 *string    `json:"email"`
 	RoleID                string     `json:"roleId"`
 	UserType              string     `json:"userType"`
 	EmpID                 string     `json:"empId"`
@@ -30,9 +30,9 @@ type Um_User struct {
 	StnID                 string     `json:"stnId"`
 	Active                bool       `json:"active"`
 	ActivationToken       *string    `json:"activationToken"`
-	LastActivationRequest int        `json:"lastActivationRequest"`
-	LostPasswordRequest   int        `json:"lostPasswordRequest"`
-	SignupStamp           int        `json:"signupStamp"`
+	LastActivationRequest *int64     `json:"lastActivationRequest"`
+	LostPasswordRequest   *int64     `json:"lostPasswordRequest"`
+	SignupStamp           *int64     `json:"signupStamp"`
 	IsLogin               bool       `json:"islogin"`
 	LastLogin             *time.Time `json:"lastLogin"`
 	CreatedAt             time.Time  `json:"createdAt"`
@@ -50,7 +50,7 @@ type UserInput struct {
 	CitizenID             string     `json:"citizenId"`
 	Bod                   time.Time  `json:"bod"`
 	Blood                 string     `json:"blood"`
-	Gender                int        `json:"gender"`
+	Gender                *int64     `json:"gender"`
 	MobileNo              string     `json:"mobileNo"`
 	Address               string     `json:"address"`
 	Photo                 *string    `json:"photo"`
@@ -58,15 +58,15 @@ type UserInput struct {
 	Password              string     `json:"password"`
 	Email                 string     `json:"email"`
 	RoleID                string     `json:"roleId"`
-	UserType              int        `json:"userType"`
+	UserType              *int64     `json:"userType"`
 	EmpID                 string     `json:"empId"`
 	DeptID                string     `json:"deptId"`
 	CommID                string     `json:"commId"`
 	StnID                 string     `json:"stnId"`
 	Active                bool       `json:"active"`
-	LastActivationRequest int        `json:"lastActivationRequest"`
-	LostPasswordRequest   int        `json:"lostPasswordRequest"`
-	SignupStamp           int        `json:"signupStamp"`
+	LastActivationRequest *int64     `json:"lastActivationRequest"`
+	LostPasswordRequest   *int64     `json:"lostPasswordRequest"`
+	SignupStamp           *int64     `json:"signupStamp"`
 	IsLogin               bool       `json:"islogin"`
 	LastLogin             *time.Time `json:"lastLogin"`
 }
@@ -78,9 +78,9 @@ type UserUpdate struct {
 	MiddleName            string     `json:"middleName"`
 	LastName              string     `json:"lastName"`
 	CitizenID             string     `json:"citizenId"`
-	Bod                   time.Time  `json:"bod"`
+	Bod                   string     `json:"bod"`
 	Blood                 string     `json:"blood"`
-	Gender                int        `json:"gender"`
+	Gender                *int64     `json:"gender"`
 	MobileNo              string     `json:"mobileNo"`
 	Address               string     `json:"address"`
 	Photo                 *string    `json:"photo"`
@@ -88,15 +88,15 @@ type UserUpdate struct {
 	Password              string     `json:"password"`
 	Email                 string     `json:"email"`
 	RoleID                string     `json:"roleId"`
-	UserType              int        `json:"userType"`
+	UserType              *int64     `json:"userType"`
 	EmpID                 string     `json:"empId"`
 	DeptID                string     `json:"deptId"`
 	CommID                string     `json:"commId"`
 	StnID                 string     `json:"stnId"`
 	Active                bool       `json:"active"`
-	LastActivationRequest int        `json:"lastActivationRequest"`
-	LostPasswordRequest   int        `json:"lostPasswordRequest"`
-	SignupStamp           int        `json:"signupStamp"`
+	LastActivationRequest *int64     `json:"lastActivationRequest"`
+	LostPasswordRequest   *int64     `json:"lostPasswordRequest"`
+	SignupStamp           *int64     `json:"signupStamp"`
 	IsLogin               bool       `json:"islogin"`
 	LastLogin             *time.Time `json:"lastLogin"`
 }

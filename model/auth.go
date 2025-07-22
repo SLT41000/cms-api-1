@@ -50,7 +50,7 @@ type UserAdminInput struct {
 	MiddleName            string     `json:"middleName"`
 	LastName              string     `json:"lastName"`
 	CitizenID             string     `json:"citizenId"`
-	Bod                   time.Time  `json:"bod"`
+	Bod                   string     `json:"bod"`
 	Blood                 string     `json:"blood"`
 	Gender                int        `json:"gender"`
 	MobileNo              string     `json:"mobileNo"`

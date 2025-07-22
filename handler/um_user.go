@@ -45,7 +45,7 @@ func GetUmUserList(c *gin.Context) {
 	}
 	logger.Debug(`Query`, zap.Any("start", start))
 	logger.Debug(`Query`, zap.Any("length", length))
-	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod,
+	query := `SELECT "id","orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod,
 	blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId",
 	"deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest",
 	"signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
@@ -72,6 +72,7 @@ func GetUmUserList(c *gin.Context) {
 	for rows.Next() {
 		rowIndex++
 		err := rows.Scan(
+			&u.ID,
 			&u.OrgID,
 			&u.DisplayName,
 			&u.Title,
@@ -463,7 +464,7 @@ func UserUpdate(c *gin.Context) {
 
 	var req model.UserUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
