@@ -71,6 +71,36 @@ type UserInput struct {
 	LastLogin             *time.Time `json:"lastLogin"`
 }
 
+type UserUpdate struct {
+	DisplayName           string     `json:"displayName"`
+	Title                 string     `json:"title"`
+	FirstName             string     `json:"firstName"`
+	MiddleName            string     `json:"middleName"`
+	LastName              string     `json:"lastName"`
+	CitizenID             string     `json:"citizenId"`
+	Bod                   time.Time  `json:"bod"`
+	Blood                 string     `json:"blood"`
+	Gender                int        `json:"gender"`
+	MobileNo              string     `json:"mobileNo"`
+	Address               string     `json:"address"`
+	Photo                 *string    `json:"photo"`
+	Username              string     `json:"username"`
+	Password              string     `json:"password"`
+	Email                 string     `json:"email"`
+	RoleID                string     `json:"roleId"`
+	UserType              int        `json:"userType"`
+	EmpID                 string     `json:"empId"`
+	DeptID                string     `json:"deptId"`
+	CommID                string     `json:"commId"`
+	StnID                 string     `json:"stnId"`
+	Active                bool       `json:"active"`
+	LastActivationRequest int        `json:"lastActivationRequest"`
+	LostPasswordRequest   int        `json:"lostPasswordRequest"`
+	SignupStamp           int        `json:"signupStamp"`
+	IsLogin               bool       `json:"islogin"`
+	LastLogin             *time.Time `json:"lastLogin"`
+}
+
 type UserContact struct {
 	OrgID        string    `json:"orgId"`
 	Username     string    `json:"username"`

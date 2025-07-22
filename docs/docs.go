@@ -1765,6 +1765,50 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update User",
+                "operationId": "Update User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/users_with_contacts": {
@@ -2906,7 +2950,6 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "address": {
-                    "description": "Assumes JSON column",
                     "type": "string"
                 },
                 "blood": {
@@ -3051,6 +3094,92 @@ const docTemplate = `{
                 },
                 "updatedBy": {
                     "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UserUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "type": "string"
+                },
+                "blood": {
+                    "type": "string"
+                },
+                "bod": {
+                    "type": "string"
+                },
+                "citizenId": {
+                    "type": "string"
+                },
+                "commId": {
+                    "type": "string"
+                },
+                "deptId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "empId": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "islogin": {
+                    "type": "boolean"
+                },
+                "lastActivationRequest": {
+                    "type": "integer"
+                },
+                "lastLogin": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "lostPasswordRequest": {
+                    "type": "integer"
+                },
+                "middleName": {
+                    "type": "string"
+                },
+                "mobileNo": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "roleId": {
+                    "type": "string"
+                },
+                "signupStamp": {
+                    "type": "integer"
+                },
+                "stnId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "userType": {
+                    "type": "integer"
                 },
                 "username": {
                     "type": "string"

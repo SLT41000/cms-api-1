@@ -339,7 +339,6 @@ definitions:
       active:
         type: boolean
       address:
-        description: Assumes JSON column
         type: string
       blood:
         type: string
@@ -435,6 +434,63 @@ definitions:
         type: string
       updatedBy:
         type: string
+      username:
+        type: string
+    type: object
+  model.UserUpdate:
+    properties:
+      active:
+        type: boolean
+      address:
+        type: string
+      blood:
+        type: string
+      bod:
+        type: string
+      citizenId:
+        type: string
+      commId:
+        type: string
+      deptId:
+        type: string
+      displayName:
+        type: string
+      email:
+        type: string
+      empId:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: integer
+      islogin:
+        type: boolean
+      lastActivationRequest:
+        type: integer
+      lastLogin:
+        type: string
+      lastName:
+        type: string
+      lostPasswordRequest:
+        type: integer
+      middleName:
+        type: string
+      mobileNo:
+        type: string
+      password:
+        type: string
+      photo:
+        type: string
+      roleId:
+        type: string
+      signupStamp:
+        type: integer
+      stnId:
+        type: string
+      title:
+        type: string
+      userType:
+        type: integer
       username:
         type: string
     type: object
@@ -1504,6 +1560,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get User by Id
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update User
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data Update
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User
       tags:
       - User
   /api/v1/users/add:

@@ -107,6 +107,7 @@ func main() {
 
 		v1.GET("/users", handler.GetUmUserList)
 		v1.POST("/users/add", handler.UserAdd)
+		v1.PATCH("/users/:id", handler.UserUpdate)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)

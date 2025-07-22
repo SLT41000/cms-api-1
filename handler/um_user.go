@@ -441,6 +441,88 @@ func UserAdd(c *gin.Context) {
 	})
 }
 
+// Login godoc
+// @summary Update User
+// @tags User
+// @security ApiKeyAuth
+// @id Update User
+// @accept json
+// @produce json
+// @Param id path int true "id"
+// @param Body body model.UserUpdate true "Data Update"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/{id} [patch]
+func UserUpdate(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.UserUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// now req is ready to use
+
+	var enc string
+	var err error
+	id := c.Param("id")
+	enc, err = encrypt(req.Password)
+	if err != nil {
+		return
+	}
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+	now := time.Now()
+	query := `
+	UPDATE public.um_users
+	SET "displayName"=$1, title=$2, "firstName"=$3, "middleName"=$4, "lastName"=$5, "citizenId"=$6,
+	bod=$7, blood=$8, gender=$9, "mobileNo"=$10, address=$11, photo=$12, username=$13, password=$14, email=$15, "roleId"=$16,
+	"userType"=$17, "empId"=$18, "deptId"=$19, "commId"=$20, "stnId"=$21, active=$22,
+	"lastActivationRequest"=$23, "lostPasswordRequest"=$24, "signupStamp"=$25, islogin=$26, "lastLogin"=$27,
+	"updatedAt"=$28,"updatedBy"=$29 WHERE id = $30 AND "orgId"=$31`
+
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("Input", []any{req}))
+	logger.Debug(`Encrypt Password :` + enc)
+	_, err = conn.Exec(ctx, query,
+		req.DisplayName, req.Title, req.FirstName, req.MiddleName,
+		req.LastName, req.CitizenID, req.Bod, req.Bod, req.Blood,
+		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
+		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
+		req.Active, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
+		req.IsLogin, req.LastLogin, now, username, id, orgId,
+	)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
 // Stations godoc
 // @summary Get User with skills
 // @tags User
