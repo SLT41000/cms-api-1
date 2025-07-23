@@ -53,7 +53,10 @@ func main() {
 	router := gin.Default()
 	// router.Use(cors.Default())
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://example.com"},
+		AllowOrigins: []string{
+			"http://localhost:5173",             // dev
+			"https://cms-sigma-woad.vercel.app", // production frontend
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
