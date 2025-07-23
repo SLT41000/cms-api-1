@@ -105,13 +105,6 @@ func main() {
 		v1.PATCH("/stations/:id", handler.UpdateStations)
 		v1.DELETE("/stations/:id", handler.DeleteStations)
 
-		v1.GET("/users", handler.GetUmUserList)
-		v1.POST("/users/add", handler.UserAdd)
-		v1.PATCH("/users/:id", handler.UserUpdate)
-		v1.DELETE("/users/:id", handler.UserDelete)
-		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
-		v1.GET("/users/:id", handler.GetUmUserById)
-
 		v1.GET("/role", handler.GetRole)
 		v1.GET("/role/:id", handler.GetRolebyId)
 		v1.POST("/role/add", handler.InsertRole)
@@ -124,6 +117,12 @@ func main() {
 		v1.PATCH("/role_permission/:roleId", handler.UpdateRolePermission)
 		v1.DELETE("/role_permission/:id", handler.DeleteRolePermission)
 
+		v1.GET("/users", handler.GetUmUserList)
+		v1.POST("/users/add", handler.UserAdd)
+		v1.PATCH("/users/:id", handler.UserUpdate)
+		v1.DELETE("/users/:id", handler.UserDelete)
+		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
+		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)
 		v1.POST("/users_with_skills/add", handler.InsertUserWithSkills)

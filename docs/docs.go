@@ -3462,6 +3462,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.RolePermissionBody"
                     }
+                },
+                "roleId": {
+                    "type": "string"
                 }
             }
         },

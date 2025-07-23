@@ -263,6 +263,8 @@ definitions:
         items:
           $ref: '#/definitions/model.RolePermissionBody'
         type: array
+      roleId:
+        type: string
     type: object
   model.RolePermissionUpdate:
     properties:
