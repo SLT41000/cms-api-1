@@ -13,18 +13,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// ListRole godoc
-// @summary Get Role
+// ListSkill godoc
+// @summary Get Skill
 // @tags User
 // @security ApiKeyAuth
-// @id Get Role
+// @id Get Skill
 // @accept json
 // @produce json
 // @Param start query int false "start" default(0)
 // @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/role [get]
-func GetRole(c *gin.Context) {
+// @Router /api/v1/skill [get]
+func GetSkill(c *gin.Context) {
 	logger := config.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
 	conn, ctx, cancel := config.ConnectDB()
@@ -43,8 +43,8 @@ func GetRole(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
-	query := `SELECT id, "orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_roles WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	query := `SELECT id,"orgId", "skillId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.um_skills WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
@@ -60,13 +60,13 @@ func GetRole(c *gin.Context) {
 	}
 	defer rows.Close()
 	var errorMsg string
-	var Role model.Role
-	var RoleList []model.Role
+	var Skill model.Skill
+	var SkillList []model.Skill
 	rowIndex := 0
 	for rows.Next() {
 		rowIndex++
-		err := rows.Scan(&Role.ID, &Role.OrgID, &Role.RoleName,
-			&Role.Active, &Role.CreatedAt, &Role.UpdatedAt, &Role.CreatedBy, &Role.UpdatedBy)
+		err := rows.Scan(&Skill.ID, &Skill.OrgID, &Skill.SkillID, &Skill.En, &Skill.Th,
+			&Skill.Active, &Skill.CreatedAt, &Skill.UpdatedAt, &Skill.CreatedBy, &Skill.UpdatedBy)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -76,7 +76,7 @@ func GetRole(c *gin.Context) {
 			}
 			c.JSON(http.StatusInternalServerError, response)
 		}
-		RoleList = append(RoleList, Role)
+		SkillList = append(SkillList, Skill)
 	}
 	if errorMsg != "" {
 		response := model.Response{
@@ -89,24 +89,24 @@ func GetRole(c *gin.Context) {
 		response := model.Response{
 			Status: "0",
 			Msg:    "Success",
-			Data:   RoleList,
+			Data:   SkillList,
 			Desc:   "",
 		}
 		c.JSON(http.StatusOK, response)
 	}
 }
 
-// ListRole godoc
-// @summary Get Role by ID
+// ListSkill godoc
+// @summary Get Skill by ID
 // @tags User
 // @security ApiKeyAuth
-// @id Get Role by ID
+// @id Get Skill by ID
 // @accept json
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id" "id"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/role/{id} [get]
-func GetRolebyId(c *gin.Context) {
+// @Router /api/v1/skill/{id} [get]
+func GetSkillbyId(c *gin.Context) {
 	logger := config.GetLog()
 	id := c.Param("id")
 	conn, ctx, cancel := config.ConnectDB()
@@ -116,8 +116,8 @@ func GetRolebyId(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT id, "orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_roles WHERE id = $1 AND "orgId"=$2`
+	query := `SELECT id,"orgId", "skillId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.um_skills WHERE "skillId" = $1 AND "orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query),
@@ -136,9 +136,9 @@ func GetRolebyId(c *gin.Context) {
 	}
 	defer rows.Close()
 	var errorMsg string
-	var Role model.Role
-	err = rows.Scan(&Role.ID, &Role.OrgID, &Role.RoleName,
-		&Role.Active, &Role.CreatedAt, &Role.UpdatedAt, &Role.CreatedBy, &Role.UpdatedBy)
+	var Skill model.Skill
+	err = rows.Scan(&Skill.ID, &Skill.OrgID, &Skill.SkillID, &Skill.En, &Skill.Th,
+		&Skill.Active, &Skill.CreatedAt, &Skill.UpdatedAt, &Skill.CreatedBy, &Skill.UpdatedBy)
 	if err != nil {
 		logger.Warn("Scan failed", zap.Error(err))
 		errorMsg = err.Error()
@@ -162,23 +162,23 @@ func GetRolebyId(c *gin.Context) {
 		response := model.Response{
 			Status: "0",
 			Msg:    "Success",
-			Data:   Role,
+			Data:   Skill,
 			Desc:   "",
 		}
 		c.JSON(http.StatusOK, response)
 	}
 }
 
-// @summary Create Role
-// @id Create Role
+// @summary Create Skill
+// @id Create Skill
 // @security ApiKeyAuth
 // @tags User
 // @accept json
 // @produce json
-// @param Body body model.RoleInsert true "Create Data"
+// @param Body body model.SkillInsert true "Create Data"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/role/add [post]
-func InsertRole(c *gin.Context) {
+// @Router /api/v1/skill/add [post]
+func InsertSkill(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
@@ -188,7 +188,7 @@ func InsertRole(c *gin.Context) {
 	defer conn.Close(ctx)
 	defer cancel()
 
-	var req model.RoleInsert
+	var req model.SkillInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
@@ -204,14 +204,14 @@ func InsertRole(c *gin.Context) {
 	uuid := uuid.New()
 	var id int
 	query := `
-	INSERT INTO public."um_roles"(
-	id,"orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	INSERT INTO public."um_skills"(
+	"orgId", "skillId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	RETURNING id ;
 	`
 
-	err := conn.QueryRow(ctx, query, uuid,
-		orgId, req.RoleName, req.Active, now,
+	err := conn.QueryRow(ctx, query,
+		orgId, uuid, req.En, req.Th, req.Active, now,
 		now, username, username).Scan(&id)
 
 	if err != nil {
@@ -234,17 +234,17 @@ func InsertRole(c *gin.Context) {
 
 }
 
-// @summary Update Role
-// @id Update Role
+// @summary Update Skill
+// @id Update Skill
 // @security ApiKeyAuth
 // @accept json
 // @produce json
 // @tags User
 // @Param id path int true "id"
-// @param Body body model.RoleUpdate true "Update data"
+// @param Body body model.SkillUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/role/{id} [patch]
-func UpdateRole(c *gin.Context) {
+// @Router /api/v1/skill/{id} [patch]
+func UpdateSkill(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
@@ -256,7 +256,7 @@ func UpdateRole(c *gin.Context) {
 
 	id := c.Param("id")
 
-	var req model.RoleUpdate
+	var req model.SkillUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
 		c.JSON(http.StatusBadRequest, model.Response{
@@ -269,18 +269,18 @@ func UpdateRole(c *gin.Context) {
 	now := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `UPDATE public."um_roles"
-	SET roleName=$2, active=$3,
-	 "updatedAt"=$4, "updatedBy"=$5
-	WHERE id = $1 AND "orgId"=$6`
+	query := `UPDATE public."um_skills"
+	SET en=$2, th=$3, active=$4,
+	 "updatedAt"=$5, "updatedBy"=$6
+	WHERE id = $1 AND "orgId"=$7`
 	_, err := conn.Exec(ctx, query,
-		id, req.RoleName, req.Active,
+		id, req.En, req.Th, req.Active,
 		now, username, orgId,
 	)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{
-			id, req.RoleName, req.Active,
+			id, req.En, req.Th, req.Active,
 			now, username, orgId,
 		}))
 	if err != nil {
@@ -302,16 +302,16 @@ func UpdateRole(c *gin.Context) {
 	})
 }
 
-// @summary Delete Role
-// @id Delete Role
+// @summary Delete Skill
+// @id Delete Skill
 // @security ApiKeyAuth
 // @accept json
 // @tags User
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/role/{id} [delete]
-func DeleteRole(c *gin.Context) {
+// @Router /api/v1/skill/{id} [delete]
+func DeleteSkill(c *gin.Context) {
 
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
@@ -323,7 +323,7 @@ func DeleteRole(c *gin.Context) {
 	defer cancel()
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
-	query := `DELETE FROM public."um_roles" WHERE id = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."um_skills" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {

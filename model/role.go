@@ -1,28 +1,26 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
-type Skill struct {
-	ID        string    `json:"id"`
-	OrgID     string    `json:"orgId" db:"org_id"`
-	SkillID   string    `json:"skillId" db:"skill_id"`
-	En        string    `json:"en" db:"en"`
-	Th        string    `json:"th" db:"th"`
-	Active    bool      `json:"active" db:"active"`
-	CreatedAt time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
-	CreatedBy string    `json:"createdBy" db:"created_by"`
-	UpdatedBy string    `json:"updatedBy" db:"updated_by"`
+type Role struct {
+	ID        string    `json:"id" gorm:"primaryKey;autoIncrement"`
+	OrgID     string    `json:"orgId" gorm:"column:orgId"`
+	RoleName  string    `json:"roleName" gorm:"column:roleName"`
+	Active    bool      `json:"active" gorm:"column:active"`
+	CreatedAt time.Time `json:"createdAt" gorm:"column:createdAt"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"column:updatedAt"`
+	CreatedBy string    `json:"createdBy" gorm:"column:createdBy"`
+	UpdatedBy string    `json:"updatedBy" gorm:"column:updatedBy"`
 }
 
-type SkillInsert struct {
-	En     string `json:"en" db:"en"`
-	Th     string `json:"th" db:"th"`
-	Active bool   `json:"active" db:"active"`
+type RoleInsert struct {
+	RoleName string `json:"roleName" gorm:"column:roleName"`
+	Active   bool   `json:"active" gorm:"column:active"`
 }
 
-type SkillUpdate struct {
-	En     string `json:"en" db:"en"`
-	Th     string `json:"th" db:"th"`
-	Active bool   `json:"active" db:"active"`
+type RoleUpdate struct {
+	RoleName string `json:"roleName" gorm:"column:roleName"`
+	Active   bool   `json:"active" gorm:"column:active"`
 }

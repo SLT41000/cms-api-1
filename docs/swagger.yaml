@@ -100,6 +100,13 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.Data:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   model.DepartmentInsert:
     properties:
       active:
@@ -183,27 +190,47 @@ definitions:
     type: object
   model.Notification:
     properties:
-      caseDetail:
-        type: string
-      caseId:
-        type: string
-      caseType:
-        type: string
       createdAt:
         type: string
+      createdBy:
+        description: เพิ่มใหม่
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/model.Data'
+        type: array
       eventType:
         type: string
-      id:
+      expiredAt:
+        description: เพิ่มใหม่
         type: string
+      id:
+        type: integer
       message:
         type: string
-      read:
-        type: boolean
-      recipient:
+      orgId:
         type: string
-      redirectURL:
+      recipients:
+        description: ใช้ตอนสร้างเท่านั้น
+        items:
+          $ref: '#/definitions/model.Recipient'
+        type: array
+      redirectUrl:
         type: string
       sender:
+        type: string
+      senderPhoto:
+        description: เพิ่มใหม่
+        type: string
+      senderType:
+        description: '"SYSTEM" or "USER"'
+        type: string
+    type: object
+  model.Recipient:
+    properties:
+      type:
+        type: string
+      value:
         type: string
     type: object
   model.Response:
@@ -214,6 +241,59 @@ definitions:
       msg:
         type: string
       status:
+        type: string
+    type: object
+  model.RoleInsert:
+    properties:
+      active:
+        type: boolean
+      roleName:
+        type: string
+    type: object
+  model.RolePermissionBody:
+    properties:
+      active:
+        type: boolean
+      permId:
+        type: string
+    type: object
+  model.RolePermissionInsert:
+    properties:
+      permId:
+        items:
+          $ref: '#/definitions/model.RolePermissionBody'
+        type: array
+    type: object
+  model.RolePermissionUpdate:
+    properties:
+      permId:
+        items:
+          $ref: '#/definitions/model.RolePermissionBody'
+        type: array
+    type: object
+  model.RoleUpdate:
+    properties:
+      active:
+        type: boolean
+      roleName:
+        type: string
+    type: object
+  model.SkillInsert:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.SkillUpdate:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
         type: string
     type: object
   model.StationInsert:
@@ -898,7 +978,7 @@ paths:
     get:
       consumes:
       - application/json
-      operationId: Get UserSkill
+      operationId: Get Department
       parameters:
       - default: 0
         description: start
@@ -919,14 +999,14 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Get UserSkill
+      summary: Get Department
       tags:
       - Dispatch
   /api/v1/departments/{id}:
     delete:
       consumes:
       - application/json
-      operationId: Delete UserSkill
+      operationId: Delete Department
       parameters:
       - description: id
         in: path
@@ -942,13 +1022,13 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Delete UserSkill
+      summary: Delete Department
       tags:
       - Dispatch
     get:
       consumes:
       - application/json
-      operationId: Get UserSkill by ID
+      operationId: Get Department by ID
       parameters:
       - description: id
         in: path
@@ -964,13 +1044,13 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Get UserSkill by ID
+      summary: Get Department by ID
       tags:
       - Dispatch
     patch:
       consumes:
       - application/json
-      operationId: Update UserSkill
+      operationId: Update Department
       parameters:
       - description: id
         in: path
@@ -982,7 +1062,7 @@ paths:
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.UserSkillUpdate'
+          $ref: '#/definitions/model.DepartmentUpdate'
       produces:
       - application/json
       responses:
@@ -992,21 +1072,21 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update UserSkill
+      summary: Update Department
       tags:
       - Dispatch
   /api/v1/departments/add:
     post:
       consumes:
       - application/json
-      operationId: Create UserSkill
+      operationId: Create Department
       parameters:
       - description: Create Data
         in: body
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.UserSkillInsert'
+          $ref: '#/definitions/model.DepartmentInsert'
       produces:
       - application/json
       responses:
@@ -1016,7 +1096,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Create UserSkill
+      summary: Create Department
       tags:
       - Dispatch
   /api/v1/forms:
@@ -1194,81 +1274,95 @@ paths:
       summary: Update Form Publish
       tags:
       - Form and Workflow
-  /api/v1/notifications/delete/{id}:
-    delete:
-      description: ลบ Notification ตาม id
-      parameters:
-      - description: Notification ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: delete notification by id
-      tags:
-      - Notifications
-  /api/v1/notifications/edit/{id}:
-    put:
-      consumes:
-      - application/json
-      description: เเก้ไข Notification
-      parameters:
-      - description: Partial Notification Input
-        in: body
-        name: notification
-        required: true
-        schema:
-          $ref: '#/definitions/model.Notification'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Notification'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: edit notification (partial input)
-      tags:
-      - Notifications
-  /api/v1/notifications/new:
+  /api/v1/notifications:
     post:
       consumes:
       - application/json
-      description: Create a notification by providing only partial fields. The remaining
-        fields (e.g., ID, caseId, createdAt) will be generated automatically.
+      description: Creates a batch of notifications, saves them to the database in
+        a single transaction, and broadcasts each one to relevant online users. The
+        input should be a JSON array of notification objects.
       parameters:
-      - description: 'Partial Notification Input (Do not include: id, caseId, createdAt)'
+      - description: A JSON array of notification objects. The `data` field should
+          be an array of key-value objects, e.g., `\
+        in: body
+        name: notifications
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/model.Notification'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Notifications created successfully
+          schema:
+            items:
+              $ref: '#/definitions/model.Notification'
+            type: array
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error (e.g., database transaction failure)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create one or more new notifications
+      tags:
+      - Notifications
+  /api/v1/notifications/{id}:
+    delete:
+      description: Deletes a notification by its ID.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message confirming deletion
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Notification not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a notification
+      tags:
+      - Notifications
+    put:
+      consumes:
+      - application/json
+      description: Updates the content of a specific notification by its ID.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Notification object with fields to update.
         in: body
         name: notification
         required: true
@@ -1278,58 +1372,43 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Notification updated successfully
           schema:
             $ref: '#/definitions/model.Notification'
         "400":
-          description: Bad Request
+          description: Invalid request body or ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Notification not found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Database error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Create notification (partial input)
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing notification
       tags:
       - Notifications
-  /api/v1/notifications/noti/{id}:
+  /api/v1/notifications/{orgId}/{username}:
     get:
+      description: Retrieves all notifications intended for a user by their username
+        and organization ID.
       parameters:
-      - description: Notification ID
+      - description: Organization ID of the user
         in: path
-        name: id
+        name: orgId
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Notification'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get notification by ID from database
-      tags:
-      - Notifications
-  /api/v1/notifications/recipient/{username}:
-    get:
-      parameters:
-      - description: Username of the recipient
+      - description: Username to fetch notifications for
         in: path
         name: username
         required: true
@@ -1343,49 +1422,417 @@ paths:
             items:
               $ref: '#/definitions/model.Notification'
             type: array
-        "400":
-          description: Bad Request
+        "404":
+          description: User not found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Database error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Get notifications received by username
+      security:
+      - ApiKeyAuth: []
+      summary: Get all notifications for a specific user
       tags:
       - Notifications
-  /api/v1/notifications/ws:
+  /api/v1/notifications/register:
     get:
-      description: Opens a WebSocket connection and listens for a username from the
-        client to register for real-time notifications.
-      parameters:
-      - description: Username used to establish WebSocket connection
-        in: query
-        name: username
-        required: true
-        type: string
+      description: Establishes a WebSocket connection. The client must send a JSON
+        message with `orgId` and `username` to register the session.
       responses:
         "101":
-          description: Switching Protocols (WebSocket Upgrade)
+          description: Switching Protocols
         "400":
-          description: Missing or invalid username query parameter
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+          description: Bad Request (invalid registration message)
+        "404":
+          description: Not Found (User not found)
         "500":
-          description: Internal server error or WebSocket upgrade failed
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: WebSocket endpoint for real-time notifications by username
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: WebSocket endpoint for real-time notifications
       tags:
       - Notifications
+  /api/v1/role:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Role
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Role
+      tags:
+      - User
+  /api/v1/role/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Role
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Role
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get Role by ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Role by ID
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Role
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RoleUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Role
+      tags:
+      - User
+  /api/v1/role/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Role
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RoleInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Role
+      tags:
+      - User
+  /api/v1/role_permission:
+    get:
+      consumes:
+      - application/json
+      operationId: Get RolePermission
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get RolePermission
+      tags:
+      - User
+  /api/v1/role_permission/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete RolePermission
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete RolePermission
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get RolePermission by ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get RolePermission by ID
+      tags:
+      - User
+  /api/v1/role_permission/{roleId}:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update RolePermission
+      parameters:
+      - description: roleId
+        in: path
+        name: roleId
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RolePermissionUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update RolePermission
+      tags:
+      - User
+  /api/v1/role_permission/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create RolePermission
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RolePermissionInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create RolePermission
+      tags:
+      - User
+  /api/v1/skill:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Skill
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Skill
+      tags:
+      - User
+  /api/v1/skill/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Skill
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Skill
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      operationId: Get Skill by ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Skill by ID
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Skill
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.SkillUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Skill
+      tags:
+      - User
+  /api/v1/skill/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Skill
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.SkillInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Skill
+      tags:
+      - User
   /api/v1/stations:
     get:
       consumes:

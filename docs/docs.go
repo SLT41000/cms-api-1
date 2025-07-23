@@ -657,8 +657,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Get UserSkill",
-                "operationId": "Get UserSkill",
+                "summary": "Get Department",
+                "operationId": "Get Department",
                 "parameters": [
                     {
                         "type": "integer",
@@ -701,8 +701,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Create UserSkill",
-                "operationId": "Create UserSkill",
+                "summary": "Create Department",
+                "operationId": "Create Department",
                 "parameters": [
                     {
                         "description": "Create Data",
@@ -710,7 +710,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserSkillInsert"
+                            "$ref": "#/definitions/model.DepartmentInsert"
                         }
                     }
                 ],
@@ -740,8 +740,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Get UserSkill by ID",
-                "operationId": "Get UserSkill by ID",
+                "summary": "Get Department by ID",
+                "operationId": "Get Department by ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -775,8 +775,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Delete UserSkill",
-                "operationId": "Delete UserSkill",
+                "summary": "Delete Department",
+                "operationId": "Delete Department",
                 "parameters": [
                     {
                         "type": "integer",
@@ -810,8 +810,8 @@ const docTemplate = `{
                 "tags": [
                     "Dispatch"
                 ],
-                "summary": "Update UserSkill",
-                "operationId": "Update UserSkill",
+                "summary": "Update Department",
+                "operationId": "Update Department",
                 "parameters": [
                     {
                         "type": "integer",
@@ -826,7 +826,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UserSkillUpdate"
+                            "$ref": "#/definitions/model.DepartmentUpdate"
                         }
                     }
                 ],
@@ -1121,111 +1121,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notifications/delete/{id}": {
-            "delete": {
-                "description": "ลบ Notification ตาม id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "delete notification by id",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Notification ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/notifications/edit/{id}": {
-            "put": {
-                "description": "เเก้ไข Notification",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "edit notification (partial input)",
-                "parameters": [
-                    {
-                        "description": "Partial Notification Input",
-                        "name": "notification",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.Notification"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Notification"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/notifications/new": {
+        "/api/v1/notifications": {
             "post": {
-                "description": "Create a notification by providing only partial fields. The remaining fields (e.g., ID, caseId, createdAt) will be generated automatically.",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1235,10 +1138,108 @@ const docTemplate = `{
                 "tags": [
                     "Notifications"
                 ],
-                "summary": "Create notification (partial input)",
+                "summary": "Create one or more new notifications",
                 "parameters": [
                     {
-                        "description": "Partial Notification Input (Do not include: id, caseId, createdAt)",
+                        "description": "A JSON array of notification objects. The ` + "`" + `data` + "`" + ` field should be an array of key-value objects, e.g., ` + "`" + `\\",
+                        "name": "notifications",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Notification"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Notifications created successfully",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Notification"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error (e.g., database transaction failure)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/register": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Establishes a WebSocket connection. The client must send a JSON message with ` + "`" + `orgId` + "`" + ` and ` + "`" + `username` + "`" + ` to register the session.",
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "WebSocket endpoint for real-time notifications",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid registration message)"
+                    },
+                    "404": {
+                        "description": "Not Found (User not found)"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates the content of a specific notification by its ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Update an existing notification",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Notification object with fields to update.",
                         "name": "notification",
                         "in": "body",
                         "required": true,
@@ -1249,13 +1250,22 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Notification updated successfully",
                         "schema": {
                             "$ref": "#/definitions/model.Notification"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body or ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Notification not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1264,7 +1274,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Database error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1273,20 +1283,24 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/v1/notifications/noti/{id}": {
-            "get": {
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a notification by its ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notifications"
                 ],
-                "summary": "Get notification by ID from database",
+                "summary": "Delete a notification",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Notification ID",
                         "name": "id",
                         "in": "path",
@@ -1295,13 +1309,16 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Message confirming deletion",
                         "schema": {
-                            "$ref": "#/definitions/model.Notification"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Notification not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1310,7 +1327,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Database error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1321,19 +1338,32 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notifications/recipient/{username}": {
+        "/api/v1/notifications/{orgId}/{username}": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves all notifications intended for a user by their username and organization ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notifications"
                 ],
-                "summary": "Get notifications received by username",
+                "summary": "Get all notifications for a specific user",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Username of the recipient",
+                        "description": "Organization ID of the user",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username to fetch notifications for",
                         "name": "username",
                         "in": "path",
                         "required": true
@@ -1349,8 +1379,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "404": {
+                        "description": "User not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1359,7 +1389,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Database error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1370,42 +1400,600 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notifications/ws": {
+        "/api/v1/role": {
             "get": {
-                "description": "Opens a WebSocket connection and listens for a username from the client to register for real-time notifications.",
-                "tags": [
-                    "Notifications"
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
                 ],
-                "summary": "WebSocket endpoint for real-time notifications by username",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get Role",
+                "operationId": "Get Role",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Username used to establish WebSocket connection",
-                        "name": "username",
-                        "in": "query",
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create Role",
+                "operationId": "Create Role",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RoleInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get Role by ID",
+                "operationId": "Get Role by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "101": {
-                        "description": "Switching Protocols (WebSocket Upgrade)"
-                    },
-                    "400": {
-                        "description": "Missing or invalid username query parameter",
+                    "200": {
+                        "description": "OK - Request successful",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/model.Response"
                         }
-                    },
-                    "500": {
-                        "description": "Internal server error or WebSocket upgrade failed",
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete Role",
+                "operationId": "Delete Role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update Role",
+                "operationId": "Update Role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RoleUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role_permission": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get RolePermission",
+                "operationId": "Get RolePermission",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role_permission/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create RolePermission",
+                "operationId": "Create RolePermission",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RolePermissionInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role_permission/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get RolePermission by ID",
+                "operationId": "Get RolePermission by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete RolePermission",
+                "operationId": "Delete RolePermission",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role_permission/{roleId}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update RolePermission",
+                "operationId": "Update RolePermission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "roleId",
+                        "name": "roleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RolePermissionUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/skill": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get Skill",
+                "operationId": "Get Skill",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/skill/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create Skill",
+                "operationId": "Create Skill",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.SkillInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/skill/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get Skill by ID",
+                "operationId": "Get Skill by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete Skill",
+                "operationId": "Delete Skill",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update Skill",
+                "operationId": "Update Skill",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.SkillUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -2631,6 +3219,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Data": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "model.DepartmentInsert": {
             "type": "object",
             "properties": {
@@ -2755,37 +3354,65 @@ const docTemplate = `{
         "model.Notification": {
             "type": "object",
             "properties": {
-                "caseDetail": {
-                    "type": "string"
-                },
-                "caseId": {
-                    "type": "string"
-                },
-                "caseType": {
-                    "type": "string"
-                },
                 "createdAt": {
                     "type": "string"
+                },
+                "createdBy": {
+                    "description": "เพิ่มใหม่",
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Data"
+                    }
                 },
                 "eventType": {
                     "type": "string"
                 },
-                "id": {
+                "expiredAt": {
+                    "description": "เพิ่มใหม่",
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "message": {
                     "type": "string"
                 },
-                "read": {
-                    "type": "boolean"
-                },
-                "recipient": {
+                "orgId": {
                     "type": "string"
                 },
-                "redirectURL": {
+                "recipients": {
+                    "description": "ใช้ตอนสร้างเท่านั้น",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Recipient"
+                    }
+                },
+                "redirectUrl": {
                     "type": "string"
                 },
                 "sender": {
+                    "type": "string"
+                },
+                "senderPhoto": {
+                    "description": "เพิ่มใหม่",
+                    "type": "string"
+                },
+                "senderType": {
+                    "description": "\"SYSTEM\" or \"USER\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Recipient": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }
@@ -2801,6 +3428,89 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RoleInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "roleName": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RolePermissionBody": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "permId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RolePermissionInsert": {
+            "type": "object",
+            "properties": {
+                "permId": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RolePermissionBody"
+                    }
+                }
+            }
+        },
+        "model.RolePermissionUpdate": {
+            "type": "object",
+            "properties": {
+                "permId": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RolePermissionBody"
+                    }
+                }
+            }
+        },
+        "model.RoleUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "roleName": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SkillInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "th": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SkillUpdate": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "en": {
+                    "type": "string"
+                },
+                "th": {
                     "type": "string"
                 }
             }

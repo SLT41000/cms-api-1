@@ -111,6 +111,19 @@ func main() {
 		v1.DELETE("/users/:id", handler.UserDelete)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.GET("/users/:id", handler.GetUmUserById)
+
+		v1.GET("/role", handler.GetRole)
+		v1.GET("/role/:id", handler.GetRolebyId)
+		v1.POST("/role/add", handler.InsertRole)
+		v1.PATCH("/role/:id", handler.UpdateRole)
+		v1.DELETE("/role/:id", handler.DeleteRole)
+
+		v1.GET("/role_permission", handler.GetRolePermission)
+		v1.GET("/role_permission/:id", handler.GetRolePermissionbyId)
+		v1.POST("/role_permission/add", handler.InsertRolePermission)
+		v1.PATCH("/role_permission/:roleId", handler.UpdateRolePermission)
+		v1.DELETE("/role_permission/:id", handler.DeleteRolePermission)
+
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)
 		v1.POST("/users_with_skills/add", handler.InsertUserWithSkills)
@@ -127,7 +140,6 @@ func main() {
 		v1.PATCH("/users_with_socials/:id", handler.UpdateUserWithSocials)
 		v1.DELETE("/users_with_socials/:id", handler.DeleteUserWithSocials)
 	}
-
 	// cases := router.Group("/api/v1/cases")
 	// {
 	// 	cases.Use(handler.ProtectedHandler)
