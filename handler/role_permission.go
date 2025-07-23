@@ -43,7 +43,7 @@ func GetRolePermission(c *gin.Context) {
 		length = 1000
 	}
 	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_permissions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	FROM public.um_role_with_permissions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
@@ -114,16 +114,29 @@ func GetRolePermissionbyId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_permissions WHERE id = $1 AND "orgId"=$2`
 
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query),
-		zap.Any("Input", []any{
-			id, orgId,
-		}))
-	rows, err := conn.Query(ctx, query, id, orgId)
+	orgId := GetVariableFromToken(c, "orgId")
+
+	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.um_role_with_permissions WHERE id = $1 AND "orgId" = $2`
+
+	logger.Debug("Query", zap.String("query", query),
+		zap.Any("Input", []any{id, orgId}),
+	)
+
+	var RolePermission model.RolePermission
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
+		&RolePermission.ID,
+		&RolePermission.OrgID,
+		&RolePermission.RoleID,
+		&RolePermission.PermID,
+		&RolePermission.Active,
+		&RolePermission.CreatedAt,
+		&RolePermission.UpdatedAt,
+		&RolePermission.CreatedBy,
+		&RolePermission.UpdatedBy,
+	)
+
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -133,39 +146,15 @@ func GetRolePermissionbyId(c *gin.Context) {
 		})
 		return
 	}
-	defer rows.Close()
-	var errorMsg string
-	var RolePermission model.RolePermission
-	err = rows.Scan(&RolePermission.ID, &RolePermission.OrgID, &RolePermission.RoleID, &RolePermission.PermID,
-		&RolePermission.Active, &RolePermission.CreatedAt, &RolePermission.UpdatedAt, &RolePermission.CreatedBy, &RolePermission.UpdatedBy)
-	if err != nil {
-		logger.Warn("Scan failed", zap.Error(err))
-		errorMsg = err.Error()
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
 
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   RolePermission,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   RolePermission,
+		Desc:   "",
 	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // @summary Create RolePermission
@@ -185,7 +174,9 @@ func InsertRolePermission(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
 
 	var req model.RolePermissionInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -197,32 +188,41 @@ func InsertRolePermission(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
-	now := time.Now()
-	var id int
-	query := `
-	INSERT INTO public."um_permissions"(
-	"orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	RETURNING id ;
-	`
 
-	err := conn.QueryRow(ctx, query,
-		orgId, "", req.PermID, "", now, now, username, username).Scan(&id)
+	for i, item := range req.PermID {
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+		// logger.Debug("JsonArray", zap.Any("active", item.Active))
+		// logger.Debug("JsonArray", zap.Any("permId", item.PermID))
 
-	if err != nil {
-		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		logger.Warn("Insert failed", zap.Error(err))
-		return
+		var id int
+		query := `
+		INSERT INTO public."um_role_with_permissions"(
+		"orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id ;
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		err := conn.QueryRow(ctx, query,
+			orgId, req.RoleID, item.PermID, item.Active, now, now, username, username).Scan(&id)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+
 	}
 
-	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",
@@ -251,7 +251,7 @@ func UpdateRolePermission(c *gin.Context) {
 	defer conn.Close(ctx)
 	defer cancel()
 
-	id := c.Param("id")
+	id := c.Param("roleId")
 
 	var req model.RolePermissionUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -266,7 +266,13 @@ func UpdateRolePermission(c *gin.Context) {
 	now := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `DELETE FROM public."um_permissions" WHERE "roleId" = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."um_role_with_permissions" WHERE "roleId" = $1 AND "orgId"=$2`
+
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{
+			id, orgId,
+		}))
+
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
@@ -282,29 +288,38 @@ func UpdateRolePermission(c *gin.Context) {
 		zap.String("query", query),
 		zap.Any("Input", []any{id, orgId}))
 
-	query = `UPDATE public."um_permissions"
-	SET roleName=$2, active=$3,
-	 "updatedAt"=$4, "updatedBy"=$5
-	WHERE id = $1 AND "orgId"=$6`
-	_, err = conn.Exec(ctx, query,
-		id, "", "",
-		now, username, orgId,
-	)
-	logger.Debug("Update Case SQL Args",
-		zap.String("query", query),
-		zap.Any("Input", []any{
-			id, "req.RoleID", "req.Active",
-			now, username, orgId,
-		}))
-	if err != nil {
-		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		logger.Warn("Update failed", zap.Error(err))
-		return
+	for i, item := range req.PermID {
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+		// logger.Debug("JsonArray", zap.Any("active", item.Active))
+		// logger.Debug("JsonArray", zap.Any("permId", item.PermID))
+
+		var id int
+		query := `
+		INSERT INTO public."um_role_with_permissions"(
+		"orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id ;
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		err := conn.QueryRow(ctx, query,
+			orgId, id, item.PermID, item.Active, now, now, username, username).Scan(&id)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+
 	}
 
 	// Continue logic...
@@ -336,7 +351,7 @@ func DeleteRolePermission(c *gin.Context) {
 	defer cancel()
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
-	query := `DELETE FROM public."um_permissions" WHERE id = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."um_role_with_permissions" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
