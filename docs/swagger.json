@@ -1410,7 +1410,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get Role",
                 "operationId": "Get Role",
@@ -1454,7 +1454,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Create Role",
                 "operationId": "Create Role",
@@ -1493,7 +1493,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get Role by ID",
                 "operationId": "Get Role by ID",
@@ -1528,7 +1528,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Delete Role",
                 "operationId": "Delete Role",
@@ -1563,7 +1563,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Update Role",
                 "operationId": "Update Role",
@@ -1609,7 +1609,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get RolePermission",
                 "operationId": "Get RolePermission",
@@ -1653,7 +1653,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Create RolePermission",
                 "operationId": "Create RolePermission",
@@ -1692,7 +1692,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get RolePermission by ID",
                 "operationId": "Get RolePermission by ID",
@@ -1727,7 +1727,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Delete RolePermission",
                 "operationId": "Delete RolePermission",
@@ -1764,7 +1764,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Update RolePermission",
                 "operationId": "Update RolePermission",

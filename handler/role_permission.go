@@ -14,7 +14,7 @@ import (
 
 // ListRolePermission godoc
 // @summary Get RolePermission
-// @tags User
+// @tags Role
 // @security ApiKeyAuth
 // @id Get RolePermission
 // @accept json
@@ -97,7 +97,7 @@ func GetRolePermission(c *gin.Context) {
 
 // ListRolePermission godoc
 // @summary Get RolePermission by ID
-// @tags User
+// @tags Role
 // @security ApiKeyAuth
 // @id Get RolePermission by ID
 // @accept json
@@ -160,7 +160,7 @@ func GetRolePermissionbyId(c *gin.Context) {
 // @summary Create RolePermission
 // @id Create RolePermission
 // @security ApiKeyAuth
-// @tags User
+// @tags Role
 // @accept json
 // @produce json
 // @param Body body model.RolePermissionInsert true "Create Data"
@@ -236,7 +236,7 @@ func InsertRolePermission(c *gin.Context) {
 // @security ApiKeyAuth
 // @accept json
 // @produce json
-// @tags User
+// @tags Role
 // @Param roleId path string true "roleId"
 // @param Body body model.RolePermissionUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
@@ -334,7 +334,7 @@ func UpdateRolePermission(c *gin.Context) {
 // @id Delete RolePermission
 // @security ApiKeyAuth
 // @accept json
-// @tags User
+// @tags Role
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.Response "OK - Request successful"

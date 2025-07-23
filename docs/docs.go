@@ -1414,7 +1414,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get Role",
                 "operationId": "Get Role",
@@ -1458,7 +1458,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Create Role",
                 "operationId": "Create Role",
@@ -1497,7 +1497,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get Role by ID",
                 "operationId": "Get Role by ID",
@@ -1532,7 +1532,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Delete Role",
                 "operationId": "Delete Role",
@@ -1567,7 +1567,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Update Role",
                 "operationId": "Update Role",
@@ -1613,7 +1613,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get RolePermission",
                 "operationId": "Get RolePermission",
@@ -1657,7 +1657,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Create RolePermission",
                 "operationId": "Create RolePermission",
@@ -1696,7 +1696,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Get RolePermission by ID",
                 "operationId": "Get RolePermission by ID",
@@ -1731,7 +1731,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Delete RolePermission",
                 "operationId": "Delete RolePermission",
@@ -1768,7 +1768,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Role"
                 ],
                 "summary": "Update RolePermission",
                 "operationId": "Update RolePermission",

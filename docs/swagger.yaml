@@ -1486,7 +1486,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get Role
       tags:
-      - User
+      - Role
   /api/v1/role/{id}:
     delete:
       consumes:
@@ -1509,7 +1509,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete Role
       tags:
-      - User
+      - Role
     get:
       consumes:
       - application/json
@@ -1531,7 +1531,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get Role by ID
       tags:
-      - User
+      - Role
     patch:
       consumes:
       - application/json
@@ -1559,7 +1559,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update Role
       tags:
-      - User
+      - Role
   /api/v1/role/add:
     post:
       consumes:
@@ -1583,7 +1583,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create Role
       tags:
-      - User
+      - Role
   /api/v1/role_permission:
     get:
       consumes:
@@ -1611,7 +1611,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get RolePermission
       tags:
-      - User
+      - Role
   /api/v1/role_permission/{id}:
     delete:
       consumes:
@@ -1634,7 +1634,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete RolePermission
       tags:
-      - User
+      - Role
     get:
       consumes:
       - application/json
@@ -1656,7 +1656,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get RolePermission by ID
       tags:
-      - User
+      - Role
   /api/v1/role_permission/{roleId}:
     patch:
       consumes:
@@ -1685,7 +1685,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update RolePermission
       tags:
-      - User
+      - Role
   /api/v1/role_permission/add:
     post:
       consumes:
@@ -1709,7 +1709,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create RolePermission
       tags:
-      - User
+      - Role
   /api/v1/skill:
     get:
       consumes:
