@@ -25,9 +25,10 @@ func GetVariableFromToken(c *gin.Context, varname string) interface{} {
 	return var_return
 }
 
-func CreateToken(username string, orgId string) (string, error) {
+func CreateToken(username string, orgId string) (string, string, error) {
 
 	var secretKey = []byte(os.Getenv("TOKEN_SECRET_KEY"))
+	var refreshKey = []byte(os.Getenv("REFRESH_TOKEN_KEY"))
 	TimeoutStr := os.Getenv("TOKEN_TIMEOUT")
 	timeoutInt, _ := strconv.Atoi(TimeoutStr)
 	var TIMEOUT = time.Minute * time.Duration(timeoutInt)
@@ -40,14 +41,48 @@ func CreateToken(username string, orgId string) (string, error) {
 
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
-		return "", err
+		return "", "", err
+	}
+	TimeoutStr = os.Getenv("REFRESH_TOKEN_TIMEOUT")
+	timeoutInt, _ = strconv.Atoi(TimeoutStr)
+	TIMEOUT = time.Minute * time.Duration(timeoutInt)
+	refreshtoken := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"username": username,
+			"orgId":    orgId,
+			"exp":      time.Now().Add(TIMEOUT).Unix(),
+		})
+
+	refreshtokenString, err := refreshtoken.SignedString(refreshKey)
+	if err != nil {
+		return "", "", err
 	}
 
-	return tokenString, nil
+	return tokenString, refreshtokenString, nil
 }
 
 func verifyToken(tokenString string) (*jwt.Token, error) {
 	var secretKey = []byte(os.Getenv("TOKEN_SECRET_KEY"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return token, nil
+}
+
+func verifyRefreshToken(tokenString string) (*jwt.Token, error) {
+	var secretKey = []byte(os.Getenv("REFRESH_TOKEN_KEY"))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -197,7 +232,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
-		tokenString, err := CreateToken(username, id)
+		tokenString, refreshtoken, err := CreateToken(username, id)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "Token creation failed",
@@ -211,9 +246,10 @@ func UserLogin(c *gin.Context) {
 			Msg:    "Success",
 			Desc:   "",
 			Data: gin.H{
-				"accessToken": tokenString,
-				"token_type":  "bearer",
-				"user":        UserOpt,
+				"accessToken":  tokenString,
+				"refreshToken": refreshtoken,
+				"token_type":   "bearer",
+				"user":         UserOpt,
 			},
 		})
 	} else {
@@ -314,4 +350,67 @@ func UserAddAuth(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Create successfully",
 	})
+}
+
+// Login godoc
+// @summary Refresh Token
+// @tags Authentication
+// @security ApiKeyAuth
+// @id Refresh Token
+// @accept json
+// @produce json
+// @param Case body model.RefreshInput true "Body"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/auth/refresh [post]
+func RefreshToken(c *gin.Context) {
+	logger := config.GetLog()
+	var req model.RefreshInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	parsedToken, err := verifyRefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   err.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+		username, uOK := claims["username"].(string)
+		orgId, orgOK := claims["orgId"].(string)
+
+		if uOK && orgOK {
+			tokenString, _, err := CreateToken(username, orgId)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "Token creation failed",
+					"message": err.Error(),
+				})
+				logger.Debug(err.Error())
+				return
+			}
+			c.JSON(http.StatusOK, model.Response{
+				Status: "0",
+				Msg:    "Success",
+				Desc:   "",
+				Data: gin.H{
+					"accessToken": tokenString,
+					// "refreshToken": refreshtoken,
+					"token_type": "bearer",
+				},
+			})
+
+		}
+	}
 }

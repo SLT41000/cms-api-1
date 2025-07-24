@@ -114,6 +114,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh Token",
+                "operationId": "Refresh Token",
+                "parameters": [
+                    {
+                        "description": "Body",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RefreshInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/casesubtypes": {
             "get": {
                 "security": [
@@ -2332,8 +2371,8 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Update User",
-                "operationId": "Update User",
+                "summary": "Update User By Username",
+                "operationId": "Update User By Username",
                 "parameters": [
                     {
                         "type": "string",
@@ -3457,6 +3496,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RefreshInput": {
+            "type": "object",
+            "properties": {
+                "refreshToken": {
                     "type": "string"
                 }
             }

@@ -73,3 +73,7 @@ type UserAdminInput struct {
 	IsLogin               bool       `json:"islogin"`
 	LastLogin             *time.Time `json:"lastLogin"`
 }
+
+type RefreshInput struct {
+	RefreshToken string `json:"refreshToken"`
+}

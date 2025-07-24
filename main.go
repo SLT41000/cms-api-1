@@ -69,6 +69,7 @@ func main() {
 	{
 		auth.GET("/login", handler.UserLogin)
 		auth.POST("/add", handler.UserAddAuth)
+		auth.POST("/refresh", handler.RefreshToken)
 	}
 	v1 := router.Group("/api/v1")
 	{

@@ -485,10 +485,10 @@ func UserUpdate(c *gin.Context) {
 }
 
 // Login godoc
-// @summary Update User
+// @summary Update User By Username
 // @tags User
 // @security ApiKeyAuth
-// @id Update User
+// @id Update User By Username
 // @accept json
 // @produce json
 // @Param username path string true "username"
