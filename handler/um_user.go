@@ -158,8 +158,16 @@ func GetUmUserByUsername(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT id, "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_users WHERE username=$1 AND "orgId"=$2`
+	query := `
+	SELECT t1."id",t1."orgId", t1."displayName", t1.title, t1."firstName", t1."middleName", t1."lastName",
+		t1."citizenId", t1.bod, t1.blood, t1.gender, t1."mobileNo", t1.address, t1.photo, t1.username, t1.password,
+		t1.email, t1."roleId", t1."userType", t1."empId", t1."deptId", t1."commId", t1."stnId", t1.active,
+		t1."activationToken",t1."lastActivationRequest", t1."lostPasswordRequest", t1."signupStamp",
+		t1.islogin, t1."lastLogin",t1."createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy",t2.name,t3."roleName"
+		FROM public.um_users t1
+		JOIN public.organizations t2 ON t1."orgId" = t2.id
+		JOIN public.um_roles t3 ON t1."roleId" = t3.id
+		WHERE t1.username=$1 AND t1."orgId"=$2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query),
@@ -184,7 +192,8 @@ func GetUmUserByUsername(c *gin.Context) {
 			&u.OrgID, &u.DisplayName, &u.Title, &u.FirstName, &u.MiddleName, &u.LastName, &u.CitizenID, &u.Bod, &u.Blood,
 			&u.Gender, &u.MobileNo, &u.Address, &u.Photo, &u.Username, &u.Password, &u.Email, &u.RoleID, &u.UserType,
 			&u.EmpID, &u.DeptID, &u.CommID, &u.StnID, &u.Active, &u.ActivationToken, &u.LastActivationRequest,
-			&u.LostPasswordRequest, &u.SignupStamp, &u.IsLogin, &u.LastLogin, &u.CreatedAt, &u.UpdatedAt, &u.CreatedBy, &u.UpdatedBy,
+			&u.LostPasswordRequest, &u.SignupStamp, &u.IsLogin, &u.LastLogin, &u.CreatedAt, &u.UpdatedAt,
+			&u.CreatedBy, &u.UpdatedBy, &u.OrgName, &u.RoleName,
 		)
 		if err != nil {
 			errorMsg = err.Error()

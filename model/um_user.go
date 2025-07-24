@@ -7,6 +7,7 @@ import (
 type Um_User struct {
 	ID                    string     `json:"id"`
 	OrgID                 string     `json:"orgId"`
+	OrgName               string     `json:"orgName"`
 	DisplayName           string     `json:"displayName"`
 	Title                 string     `json:"title"`
 	FirstName             string     `json:"firstName"`
@@ -23,6 +24,7 @@ type Um_User struct {
 	Password              string     `json:"password"`
 	Email                 *string    `json:"email"`
 	RoleID                string     `json:"roleId"`
+	RoleName              string     `json:"roleName"`
 	UserType              string     `json:"userType"`
 	EmpID                 string     `json:"empId"`
 	DeptID                string     `json:"deptId"`
