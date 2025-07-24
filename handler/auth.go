@@ -264,6 +264,116 @@ func UserLogin(c *gin.Context) {
 }
 
 // Login godoc
+// @summary Login User Post
+// @tags Authentication
+// @security ApiKeyAuth
+// @id Login User Post
+// @accept json
+// @produce json
+// @param Body body model.Login true "Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/auth/login [post]
+func UserLoginPost(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.Login
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("Update failed", zap.Error(err))
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	organization := req.Organization
+	username := req.Username
+	password := req.Password
+	var id string
+	query := `SELECT id FROM public.organizations WHERE name = $1`
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("organization", organization))
+	err := conn.QueryRow(ctx, query, organization).Scan(&id)
+	if err != nil {
+		logger.Debug(err.Error())
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	query = `SELECT id,"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood,
+	 gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId",
+	  "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin,
+	   "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	   FROM public.um_users WHERE username = $1 AND active = true`
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`request input`, zap.Any("username", username))
+	var UserOpt model.Um_User
+	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
+		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
+		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
+		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
+		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
+		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
+		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy)
+	if err != nil {
+		logger.Debug(err.Error())
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	var dec string
+	dec, err = decrypt(UserOpt.Password)
+	if err != nil {
+		logger.Debug(err.Error())
+		return
+	}
+
+	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
+		tokenString, refreshtoken, err := CreateToken(username, id)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Token creation failed",
+				"message": err.Error(),
+			})
+			logger.Debug(err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Desc:   "",
+			Data: gin.H{
+				"accessToken":  tokenString,
+				"refreshToken": refreshtoken,
+				"token_type":   "bearer",
+				"user":         UserOpt,
+			},
+		})
+	} else {
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "",
+			Desc:   "Invalid credentials",
+		})
+	}
+
+	logger.Debug("User : " + username)
+}
+
+// Login godoc
 // @summary Create User Auth
 // @tags Authentication
 // @security ApiKeyAuth

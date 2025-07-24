@@ -77,3 +77,9 @@ type UserAdminInput struct {
 type RefreshInput struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
+type Login struct {
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Organization string `json:"organization"`
+}
