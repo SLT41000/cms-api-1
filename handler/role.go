@@ -103,7 +103,7 @@ func GetRole(c *gin.Context) {
 // @id Get Role by ID
 // @accept json
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role/{id} [get]
 func GetRolebyId(c *gin.Context) {
@@ -119,12 +119,21 @@ func GetRolebyId(c *gin.Context) {
 	query := `SELECT id, "orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.um_roles WHERE id = $1 AND "orgId"=$2`
 
-	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query),
 		zap.Any("Input", []any{
 			id, orgId,
 		}))
-	rows, err := conn.Query(ctx, query, id, orgId)
+	var Role model.Role
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
+		&Role.ID,
+		&Role.OrgID,
+		&Role.RoleName,
+		&Role.Active,
+		&Role.CreatedAt,
+		&Role.UpdatedAt,
+		&Role.CreatedBy,
+		&Role.UpdatedBy,
+	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -134,39 +143,15 @@ func GetRolebyId(c *gin.Context) {
 		})
 		return
 	}
-	defer rows.Close()
-	var errorMsg string
-	var Role model.Role
-	err = rows.Scan(&Role.ID, &Role.OrgID, &Role.RoleName,
-		&Role.Active, &Role.CreatedAt, &Role.UpdatedAt, &Role.CreatedBy, &Role.UpdatedBy)
-	if err != nil {
-		logger.Warn("Scan failed", zap.Error(err))
-		errorMsg = err.Error()
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
 
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   Role,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   Role,
+		Desc:   "",
 	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // @summary Create Role
@@ -240,7 +225,7 @@ func InsertRole(c *gin.Context) {
 // @accept json
 // @produce json
 // @tags Role
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @param Body body model.RoleUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role/{id} [patch]
@@ -308,7 +293,7 @@ func UpdateRole(c *gin.Context) {
 // @accept json
 // @tags Role
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role/{id} [delete]
 func DeleteRole(c *gin.Context) {

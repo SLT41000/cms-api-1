@@ -1542,7 +1542,7 @@ const docTemplate = `{
                 "operationId": "Get Role by ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1577,7 +1577,7 @@ const docTemplate = `{
                 "operationId": "Delete Role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1612,7 +1612,7 @@ const docTemplate = `{
                 "operationId": "Update Role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
