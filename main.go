@@ -57,8 +57,8 @@ func main() {
 			"http://localhost:5173",             // dev
 			"https://cms-sigma-woad.vercel.app", // production frontend
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE , PATCH"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
