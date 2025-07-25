@@ -76,6 +76,7 @@ func main() {
 	{
 		v1.Use(handler.ProtectedHandler)
 		v1.GET("/forms", handler.GetForm)
+		v1.GET("/forms/getAllForms", handler.GetAllForm)
 		v1.POST("/forms", handler.FormInsert)
 		v1.PATCH("/forms/:uuid", handler.FormUpdate)
 		v1.PATCH("/forms/active", handler.FormActive)

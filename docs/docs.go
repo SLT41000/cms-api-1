@@ -1036,6 +1036,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/forms/getAllForms": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Get All Form",
+                "operationId": "Get All Form",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ResponseDataFormList"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/forms/lock": {
             "patch": {
                 "security": [
@@ -3471,6 +3499,42 @@ const docTemplate = `{
                 }
             }
         },
+        "model.FormsManager": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "formColSpan": {
+                    "type": "integer"
+                },
+                "formFieldJson": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "formId": {
+                    "type": "string"
+                },
+                "formName": {
+                    "type": "string"
+                },
+                "locks": {
+                    "type": "boolean"
+                },
+                "publish": {
+                    "type": "boolean"
+                },
+                "versions": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Login": {
             "type": "object",
             "properties": {
@@ -3563,6 +3627,26 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {},
+                "desc": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ResponseDataFormList": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.FormsManager"
+                    }
+                },
                 "desc": {
                     "type": "string"
                 },

@@ -9,6 +9,18 @@ type Form struct {
 	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
 }
 
+type FormsManager struct {
+	Form
+	Active    bool      `json:"active"`
+	Publish   bool      `json:"publish"`
+	Versions  string    `json:"versions"`
+	Locks     bool      `json:"locks"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy string    `json:"createdBy"`
+	UpdatedBy string    `json:"updatedBy"`
+}
+
 type FormBuilder struct {
 	OrgID       string    `json:"orgId"`
 	FormID      string    `json:"formId"`

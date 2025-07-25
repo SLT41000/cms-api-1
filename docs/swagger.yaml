@@ -188,6 +188,30 @@ definitions:
       publish:
         type: boolean
     type: object
+  model.FormsManager:
+    properties:
+      active:
+        type: boolean
+      createdBy:
+        type: string
+      formColSpan:
+        type: integer
+      formFieldJson:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      formId:
+        type: string
+      formName:
+        type: string
+      locks:
+        type: boolean
+      publish:
+        type: boolean
+      versions:
+        type: string
+    type: object
   model.Login:
     properties:
       organization:
@@ -250,6 +274,19 @@ definitions:
   model.Response:
     properties:
       data: {}
+      desc:
+        type: string
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  model.ResponseDataFormList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.FormsManager'
+        type: array
       desc:
         type: string
       msg:
@@ -1287,6 +1324,23 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update Form Status
+      tags:
+      - Form and Workflow
+  /api/v1/forms/getAllForms:
+    get:
+      consumes:
+      - application/json
+      operationId: Get All Form
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ResponseDataFormList'
+      security:
+      - ApiKeyAuth: []
+      summary: Get All Form
       tags:
       - Form and Workflow
   /api/v1/forms/lock:

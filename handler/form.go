@@ -91,6 +91,106 @@ func GetForm(c *gin.Context) {
 	}
 }
 
+// @summary Get All Form
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Get All Form
+// @accept json
+// @produce json
+// @response 200 {object} model.ResponseDataFormList
+// @Router /api/v1/forms/getAllForms [get]
+func GetAllForm(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	orgId := GetVariableFromToken(c, "orgId")
+	if orgId == "" {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Invalid token",
+			Desc:   "orgId not found in token",
+		})
+		return
+	}
+	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
+			  ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
+			  FROM public.form_builder 
+			  INNER JOIN public.form_elements 
+			  ON form_builder."formId" = form_elements."formId" 
+			  WHERE form_builder."orgId" = $1`
+
+	logger.Debug("Query", zap.String("query", query))
+
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var forms []model.FormsManager
+
+	for rows.Next() {
+		var rawJSON []byte
+		var form model.FormsManager
+
+		err := rows.Scan(
+			&form.FormId,
+			&form.Versions,
+			&form.Active,
+			&form.Publish,
+			&form.FormName,
+			&form.Locks,
+			&form.FormColSpan,
+			&rawJSON,
+			&form.CreatedBy,
+			&form.CreatedAt,
+			&form.UpdatedAt,
+			&form.UpdatedBy,
+		)
+
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			continue
+		}
+
+		var field map[string]interface{}
+		if err := json.Unmarshal(rawJSON, &field); err != nil {
+			logger.Warn("Unmarshal field failed", zap.Error(err))
+			continue
+		}
+
+		form.FormFieldJson = []map[string]interface{}{field}
+		forms = append(forms, form)
+		// logger.Debug("Row data", zap.Any("form", form))
+	}
+
+	if len(forms) == 0 {
+		c.JSON(http.StatusNotFound, model.Response{
+			Status: "-1",
+			Msg:    "No data found",
+			Data:   nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   forms,
+	})
+}
+
 // @summary Create Form
 // @tags Form and Workflow
 // @security ApiKeyAuth

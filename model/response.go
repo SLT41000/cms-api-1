@@ -6,3 +6,10 @@ type Response struct {
 	Data   interface{} `json:"data,omitempty"`
 	Desc   string      `json:"desc"`
 }
+
+type ResponseDataFormList struct {
+	Status string         `json:"status"`
+	Msg    string         `json:"msg"`
+	Data   []FormsManager `json:"data"`
+	Desc   string         `json:"desc"`
+}
