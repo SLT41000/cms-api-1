@@ -265,6 +265,24 @@ definitions:
         description: '"SYSTEM" or "USER"'
         type: string
     type: object
+  model.PermissionInsert:
+    properties:
+      active:
+        type: boolean
+      groupName:
+        type: string
+      permName:
+        type: string
+    type: object
+  model.PermissionUpdate:
+    properties:
+      active:
+        type: boolean
+      groupName:
+        type: string
+      permName:
+        type: string
+    type: object
   model.Recipient:
     properties:
       type:
@@ -1580,6 +1598,131 @@ paths:
       summary: WebSocket endpoint for real-time notifications
       tags:
       - Notifications
+  /api/v1/permission:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Permission
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Permission
+      tags:
+      - Permission
+  /api/v1/permission/{permId}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Permission
+      parameters:
+      - description: permId
+        in: path
+        name: permId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Permission
+      tags:
+      - Permission
+    get:
+      consumes:
+      - application/json
+      operationId: Get Permission by id
+      parameters:
+      - description: permId
+        in: path
+        name: permId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Permission by id
+      tags:
+      - Permission
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Permission
+      parameters:
+      - description: permId
+        in: path
+        name: permId
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PermissionUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Permission
+      tags:
+      - Permission
+  /api/v1/permission/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Permission
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PermissionInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Permission
+      tags:
+      - Permission
   /api/v1/role:
     get:
       consumes:

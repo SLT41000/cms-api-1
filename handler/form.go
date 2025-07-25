@@ -782,7 +782,6 @@ func GetWorkFlowList(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
-		logger.Debug("WF", zap.Any("id", &WfId))
 		switch rowsType {
 		case "nodes":
 			field, err := unmarshalToMap(rawJSON)

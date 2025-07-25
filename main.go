@@ -118,6 +118,12 @@ func main() {
 		v1.PATCH("/role/:id", handler.UpdateRole)
 		v1.DELETE("/role/:id", handler.DeleteRole)
 
+		v1.GET("/permission", handler.GetPermission)
+		v1.GET("/permission/:permId", handler.GetPermissionById)
+		v1.POST("/permission/add", handler.InsertPermission)
+		v1.PATCH("/permission/:permId", handler.UpdatePermission)
+		v1.DELETE("/permission/:permId", handler.DeletePermission)
+
 		v1.GET("/role_permission", handler.GetRolePermission)
 		v1.GET("/role_permission/:id", handler.GetRolePermissionbyId)
 		v1.POST("/role_permission/add", handler.InsertRolePermission)
