@@ -118,14 +118,13 @@ func GetAllForm(c *gin.Context) {
 		return
 	}
 	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
-	form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
-			  ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
-			  FROM public.form_builder 
-			  INNER JOIN public.form_elements 
-			  ON form_builder."formId" = form_elements."formId" 
-			  WHERE form_builder."orgId" = $1
-			  ORDER BY form_builder."formId"
-			  `
+    form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
+              ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
+              FROM public.form_builder 
+              INNER JOIN public.form_elements 
+              ON form_builder."formId" = form_elements."formId" 
+              WHERE form_builder."orgId" = $1
+              ORDER BY public.form_elements."eleNumber" ASC`
 
 	logger.Debug("Query", zap.String("query", query))
 
