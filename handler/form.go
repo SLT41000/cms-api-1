@@ -117,12 +117,15 @@ func GetAllForm(c *gin.Context) {
 		})
 		return
 	}
-	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
+	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
+	form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
 			  ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
 			  FROM public.form_builder 
 			  INNER JOIN public.form_elements 
 			  ON form_builder."formId" = form_elements."formId" 
-			  WHERE form_builder."orgId" = $1`
+			  WHERE form_builder."orgId" = $1
+			  ORDER BY form_builder."formId"
+			  `
 
 	logger.Debug("Query", zap.String("query", query))
 
@@ -175,6 +178,18 @@ func GetAllForm(c *gin.Context) {
 		// logger.Debug("Row data", zap.Any("form", form))
 	}
 
+	var result []model.FormsManager
+	formMap := make(map[string]int)
+	for _, form := range forms {
+		if idx, exists := formMap[*form.FormName]; exists {
+			result[idx].FormFieldJson = append(result[idx].FormFieldJson, form.FormFieldJson...)
+		} else {
+			result = append(result, form)
+			formMap[*form.FormName] = len(result) - 1
+			logger.Debug("DEBUG", zap.Any("formMap", formMap))
+		}
+	}
+
 	if len(forms) == 0 {
 		c.JSON(http.StatusNotFound, model.Response{
 			Status: "-1",
@@ -187,7 +202,7 @@ func GetAllForm(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",
-		Data:   forms,
+		Data:   result,
 	})
 }
 

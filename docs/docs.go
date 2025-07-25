@@ -3505,6 +3505,9 @@ const docTemplate = `{
                 "active": {
                     "type": "boolean"
                 },
+                "createdAt": {
+                    "type": "string"
+                },
                 "createdBy": {
                     "type": "string"
                 },
@@ -3529,6 +3532,12 @@ const docTemplate = `{
                 },
                 "publish": {
                     "type": "boolean"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "updatedBy": {
+                    "type": "string"
                 },
                 "versions": {
                     "type": "string"
