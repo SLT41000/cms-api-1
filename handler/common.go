@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -115,4 +116,22 @@ func decrypt(ciphertextBase64 string) (string, error) {
 		return "", err
 	}
 	return string(plaintext), nil
+}
+
+func unmarshalToMap(data []byte) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func unmarshalToSliceOfMaps(data []byte) ([]map[string]interface{}, error) {
+	var result []map[string]interface{}
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

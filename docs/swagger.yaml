@@ -2632,6 +2632,23 @@ paths:
       summary: Create User with socials
       tags:
       - User
+  /api/v1/workflows:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Workflow List
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Workflow List
+      tags:
+      - Form and Workflow
   /api/v1/workflows/{id}:
     get:
       consumes:

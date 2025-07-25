@@ -118,13 +118,14 @@ func GetAllForm(c *gin.Context) {
 		return
 	}
 	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
-    form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
-              ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
-              FROM public.form_builder 
-              INNER JOIN public.form_elements 
-              ON form_builder."formId" = form_elements."formId" 
-              WHERE form_builder."orgId" = $1
-              ORDER BY public.form_elements."eleNumber" ASC`
+	form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
+			  ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
+			  FROM public.form_builder 
+			  INNER JOIN public.form_elements 
+			  ON form_builder."formId" = form_elements."formId" 
+			  WHERE form_builder."orgId" = $1
+			  ORDER BY form_builder."formId"
+			  `
 
 	logger.Debug("Query", zap.String("query", query))
 
@@ -676,25 +677,27 @@ func GetWorkFlow(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, response)
 		}
 
-		if rowsType == "nodes" {
-			var field map[string]interface{}
-			if err := json.Unmarshal(rawJSON, &field); err != nil {
-				logger.Debug(string(rawJSON))
-				logger.Warn("unmarshal field failed", zap.Error(err))
+		switch rowsType {
+		case "nodes":
+			field, err := unmarshalToMap(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal nodes failed", zap.Error(err))
 				continue
 			}
 			NodesArray = append(NodesArray, field)
-			workflow.Nodes = NodesArray
-		} else {
-			var field []map[string]interface{}
-			if err := json.Unmarshal(rawJSON, &field); err != nil {
-				logger.Debug(string(rawJSON))
-				logger.Warn("unmarshal field failed", zap.Error(err))
+		case "connections":
+			fields, err := unmarshalToSliceOfMaps(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal connections failed", zap.Error(err))
 				continue
 			}
-			ConnectionArray = append(ConnectionArray, field...)
-			workflow.Connections = ConnectionArray
+			ConnectionArray = append(ConnectionArray, fields...)
+		default:
+			logger.Warn("Unknown rowsType", zap.String("rowsType", rowsType))
+			continue
 		}
+		workflow.Nodes = NodesArray
+		workflow.Connections = ConnectionArray
 		workflow.MetaData = workflowMetaData
 	}
 	if errorMsg != "" {
@@ -714,4 +717,121 @@ func GetWorkFlow(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, response)
 	}
+}
+
+// @summary Get Workflow List
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Get Workflow List
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/workflows [get]
+func GetWorkFlowList(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT wf_definitions."wfId","type","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
+	FROM public.wf_definitions Inner join public.wf_nodes
+	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_nodes."orgId"=$1`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var errorMsg string
+	var WfId string
+	var workflowList []model.WorkFlow
+	var workflowMetaData model.WorkFlowMetadata
+	rowIndex := 0
+
+	// Temporary maps to store nodes/connections grouped by WfId
+	workflowNodesMap := make(map[string][]map[string]interface{})
+	workflowConnectionsMap := make(map[string][]map[string]interface{})
+	workflowMetaMap := make(map[string]model.WorkFlowMetadata)
+
+	for rows.Next() {
+		rowIndex++
+		var rawJSON []byte
+		var rowsType string
+		err := rows.Scan(&WfId, &rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
+			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Data:   nil,
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+		logger.Debug("WF", zap.Any("id", &WfId))
+		switch rowsType {
+		case "nodes":
+			field, err := unmarshalToMap(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal nodes failed", zap.Error(err))
+				continue
+			}
+			workflowNodesMap[WfId] = append(workflowNodesMap[WfId], field)
+		case "connections":
+			fields, err := unmarshalToSliceOfMaps(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal connections failed", zap.Error(err))
+				continue
+			}
+			workflowConnectionsMap[WfId] = append(workflowConnectionsMap[WfId], fields...)
+		default:
+			logger.Warn("Unknown rowsType", zap.String("rowsType", rowsType))
+			continue
+		}
+
+		// Store metadata (assuming same metadata per workflowId)
+		workflowMetaMap[WfId] = workflowMetaData
+	}
+
+	uniqueWfIDs := make(map[string]bool)
+	for id := range workflowNodesMap {
+		uniqueWfIDs[id] = true
+	}
+	for id := range workflowConnectionsMap {
+		uniqueWfIDs[id] = true
+	}
+	for id := range workflowMetaMap {
+		uniqueWfIDs[id] = true
+	}
+	for wfId := range uniqueWfIDs {
+		workflow := model.WorkFlow{
+			Nodes:       workflowNodesMap[wfId],       // could be nil
+			Connections: workflowConnectionsMap[wfId], // could be nil
+			MetaData:    workflowMetaMap[wfId],
+		}
+		workflowList = append(workflowList, workflow)
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   workflowList,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
 }
