@@ -1115,6 +1115,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/form/casesubtype": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Get Form by Casesubtype",
+                "operationId": "Get Form by Casesubtype",
+                "parameters": [
+                    {
+                        "description": "Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormByCasesubtype"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/forms": {
             "get": {
                 "security": [
@@ -4090,6 +4129,14 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "formId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.FormByCasesubtype": {
+            "type": "object",
+            "properties": {
+                "caseSubType": {
                     "type": "string"
                 }
             }

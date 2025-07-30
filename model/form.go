@@ -81,3 +81,7 @@ type WorkFlowMetadata struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type FormByCasesubtype struct {
+	CaseSubType *string `json:"caseSubType"`
+}

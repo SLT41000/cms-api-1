@@ -444,7 +444,7 @@ func UserUpdate(c *gin.Context) {
 	logger.Debug(`Encrypt Password :` + enc)
 	_, err = conn.Exec(ctx, query,
 		req.DisplayName, req.Title, req.FirstName, req.MiddleName,
-		req.LastName, req.CitizenID, req.Bod, req.Bod, req.Blood,
+		req.LastName, req.CitizenID, req.Bod, req.Blood,
 		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
 		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
 		req.Active, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,

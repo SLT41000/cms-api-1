@@ -833,3 +833,114 @@ func GetWorkFlowList(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 }
+
+// @summary Get Form by Casesubtype
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Get Form by Casesubtype
+// @accept json
+// @produce json
+// @param Case body model.FormByCasesubtype true "Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/form/casesubtype [post]
+func GetFormByCaseSubType(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.FormByCasesubtype
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	var wfId string
+	orgId := GetVariableFromToken(c, "orgId")
+	// username := GetVariableFromToken(c, "username")
+	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1`
+	logger.Debug(`Query`, zap.String("query", query))
+	err := conn.QueryRow(ctx, query, orgId).Scan(&wfId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	query = `SELECT t1."wfId",t1."title",t2."data" 
+	FROM public.wf_definitions t1 
+	INNER JOIN public.wf_nodes t2 
+	ON t1."wfId"=t2."wfId" AND t1."versions" = t2."versions"
+	WHERE t1."wfId" = $1 AND t1."orgId"=$2`
+	logger.Debug(`Query`, zap.String("query", query))
+
+	var rows pgx.Rows
+	rows, err = conn.Query(ctx, query, wfId, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var errorMsg string
+	var NodesArray []map[string]interface{}
+	var ConnectionArray []map[string]interface{}
+	var workflow model.WorkFlow
+	var workflowMetaData model.WorkFlowMetadata
+	rowIndex := 0
+	for rows.Next() {
+		rowIndex++
+		var rawJSON []byte
+		var rowsType string
+		err := rows.Scan(&rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
+			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Data:   workflow,
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+		}
+
+		switch rowsType {
+		case "nodes":
+			field, err := unmarshalToMap(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal nodes failed", zap.Error(err))
+				continue
+			}
+			NodesArray = append(NodesArray, field)
+		case "connections":
+			fields, err := unmarshalToSliceOfMaps(rawJSON)
+			if err != nil {
+				logger.Warn("Unmarshal connections failed", zap.Error(err))
+				continue
+			}
+			ConnectionArray = append(ConnectionArray, fields...)
+		default:
+			logger.Warn("Unknown rowsType", zap.String("rowsType", rowsType))
+			continue
+		}
+		workflow.Nodes = NodesArray
+		workflow.Connections = ConnectionArray
+		workflow.MetaData = workflowMetaData
+	}
+}
