@@ -1491,30 +1491,6 @@ paths:
       summary: Create Department
       tags:
       - Dispatch
-  /api/v1/form/casesubtype:
-    post:
-      consumes:
-      - application/json
-      operationId: Get Form by Casesubtype
-      parameters:
-      - description: Data
-        in: body
-        name: Case
-        required: true
-        schema:
-          $ref: '#/definitions/model.FormByCasesubtype'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Get Form by Casesubtype
-      tags:
-      - Form and Workflow
   /api/v1/forms:
     get:
       consumes:
@@ -1640,6 +1616,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update Form Status
+      tags:
+      - Form and Workflow
+  /api/v1/forms/casesubtype:
+    post:
+      consumes:
+      - application/json
+      operationId: Get Form by Casesubtype
+      parameters:
+      - description: Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormByCasesubtype'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Form by Casesubtype
       tags:
       - Form and Workflow
   /api/v1/forms/getAllForms:

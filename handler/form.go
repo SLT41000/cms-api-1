@@ -5,6 +5,7 @@ import (
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -842,7 +843,7 @@ func GetWorkFlowList(c *gin.Context) {
 // @produce json
 // @param Case body model.FormByCasesubtype true "Data"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/form/casesubtype [post]
+// @Router /api/v1/forms/casesubtype [post]
 func GetFormByCaseSubType(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
@@ -866,7 +867,10 @@ func GetFormByCaseSubType(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	// username := GetVariableFromToken(c, "username")
 	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1`
-	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{
+			orgId,
+		}))
 	err := conn.QueryRow(ctx, query, orgId).Scan(&wfId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -878,12 +882,14 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT t1."wfId",t1."title",t2."data" 
+	query = `SELECT t2."type",t2."data" 
 	FROM public.wf_definitions t1 
 	INNER JOIN public.wf_nodes t2 
 	ON t1."wfId"=t2."wfId" AND t1."versions" = t2."versions"
 	WHERE t1."wfId" = $1 AND t1."orgId"=$2`
-	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
+		wfId, orgId,
+	}))
 
 	var rows pgx.Rows
 	rows, err = conn.Query(ctx, query, wfId, orgId)
@@ -897,25 +903,19 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	var errorMsg string
-	var NodesArray []map[string]interface{}
-	var ConnectionArray []map[string]interface{}
-	var workflow model.WorkFlow
-	var workflowMetaData model.WorkFlowMetadata
 	rowIndex := 0
+	var formName string
 	for rows.Next() {
 		rowIndex++
 		var rawJSON []byte
 		var rowsType string
-		err := rows.Scan(&rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
-			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt)
+		err := rows.Scan(&rowsType, &rawJSON)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
 				Status: "-1",
 				Msg:    "Failed",
-				Data:   workflow,
-				Desc:   errorMsg,
+				Desc:   err.Error(),
 			}
 			c.JSON(http.StatusInternalServerError, response)
 		}
@@ -927,20 +927,94 @@ func GetFormByCaseSubType(c *gin.Context) {
 				logger.Warn("Unmarshal nodes failed", zap.Error(err))
 				continue
 			}
-			NodesArray = append(NodesArray, field)
-		case "connections":
-			fields, err := unmarshalToSliceOfMaps(rawJSON)
-			if err != nil {
-				logger.Warn("Unmarshal connections failed", zap.Error(err))
-				continue
+			if data, ok := field["data"].(map[string]interface{}); ok {
+				logger.Debug("JSON", zap.Any("field", field))
+				if label, ok := data["label"].(string); ok {
+					lowerLabel := strings.ToLower(label)
+					if strings.HasPrefix(lowerLabel, "start") {
+						continue
+					} else {
+						if config, ok := data["config"].(map[string]interface{}); ok {
+							if formVal, ok := config["form"]; ok {
+								if formStr, ok := formVal.(string); ok {
+									formName = formStr
+								} else {
+									logger.Debug("form is not a string")
+								}
+							} else {
+								logger.Debug("form key not found in config")
+							}
+						} else {
+							logger.Debug("config not found or wrong type")
+						}
+					}
+				}
 			}
-			ConnectionArray = append(ConnectionArray, fields...)
-		default:
-			logger.Warn("Unknown rowsType", zap.String("rowsType", rowsType))
-			continue
+
 		}
-		workflow.Nodes = NodesArray
-		workflow.Connections = ConnectionArray
-		workflow.MetaData = workflowMetaData
+		if formName != "" {
+			break
+		}
 	}
+	logger.Debug(formName)
+	rows.Close()
+	query = `SELECT t1."formId",t1."formName",t1."formColSpan",t2."eleData" 
+	FROM public.form_builder t1
+	INNER JOIN public.form_elements t2
+	ON t1."formId"=t2."formId" AND t2."versions"=t1."versions"
+	WHERE t1."formId" = $1 AND t1."orgId"=$2 `
+
+	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
+		formName, orgId,
+	}))
+	rows, err = conn.Query(ctx, query, formName, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var formFields []map[string]interface{}
+	var form model.Form
+	for rows.Next() {
+		var rawJSON []byte
+		err := rows.Scan(&form.FormId, &form.FormName, &form.FormColSpan, &rawJSON)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			c.JSON(http.StatusOK, response)
+			return
+		}
+
+		var field map[string]interface{}
+		if err := json.Unmarshal(rawJSON, &field); err != nil {
+			logger.Warn("unmarshal field failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			c.JSON(http.StatusOK, response)
+			return
+		}
+
+		formFields = append(formFields, field)
+		form.FormFieldJson = formFields
+	}
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   form,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
 }

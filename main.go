@@ -82,6 +82,7 @@ func main() {
 		v1.PATCH("/forms/active", handler.FormActive)
 		v1.PATCH("/forms/lock", handler.FormLock)
 		v1.PATCH("/forms/publish", handler.FormPublish)
+		v1.POST("/forms/casesubtype", handler.GetFormByCaseSubType)
 		v1.GET("/workflows", handler.GetWorkFlowList)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
 
