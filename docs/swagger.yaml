@@ -2650,6 +2650,29 @@ paths:
       summary: Create User with skill
       tags:
       - User
+  /api/v1/users_with_skills/skillId/{skillId}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with skills by skillId
+      parameters:
+      - description: skillId
+        in: path
+        name: skillId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with skills by skill id
+      tags:
+      - User
   /api/v1/users_with_socials:
     get:
       consumes:

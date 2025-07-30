@@ -780,6 +780,90 @@ func GetUserWithSkillsById(c *gin.Context) {
 
 }
 
+// Stations godoc
+// @summary Get User with skills by skill id
+// @tags User
+// @security ApiKeyAuth
+// @id Get User with skills by skillId
+// @Param skillId path string true "skillId"
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users_with_skills/skillId/{skillId} [get]
+func GetUserWithSkillsBySkillId(c *gin.Context) {
+	logger := config.GetLog()
+	skillId := c.Param("skillId")
+	orgId := GetVariableFromToken(c, "orgId")
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	query := `SELECT "orgId", "userName", "skillId", active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
+	FROM public.um_user_with_skills WHERE "skillId" = $1 AND "orgId" = $2`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, skillId, orgId)
+	var userList []model.UserSkill
+	var u model.UserSkill
+	var errorMsg string
+	rowIndex := 0
+	for rows.Next() {
+		rowIndex++
+		err := rows.Scan(
+			&u.OrgID,
+			&u.UserName,
+			&u.SkillID,
+			&u.Active,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+			&u.CreatedBy,
+			&u.UpdatedBy,
+		)
+
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		userList = append(userList, u)
+	}
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	// 	logger.Warn("Scan failed", zap.Error(err))
+	// 	response := model.Response{
+	// 		Status: "-1",
+	// 		Msg:    "Failed",
+	// 		Desc:   err.Error(),
+	// 	}
+	// 	c.JSON(http.StatusInternalServerError, response)
+	// 	return
+	// }
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   userList,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+}
+
 // @summary Create User with skill
 // @id Create User with skill
 // @security ApiKeyAuth

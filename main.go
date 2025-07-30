@@ -139,6 +139,7 @@ func main() {
 		v1.PATCH("/users/username/:username", handler.UserUpdateByUsername)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)
+		v1.GET("/users_with_skills/skillId/:skillId", handler.GetUserWithSkillsBySkillId)
 		v1.POST("/users_with_skills/add", handler.InsertUserWithSkills)
 		v1.PATCH("/users_with_skills/:id", handler.UpdateUserWithSkills)
 		v1.DELETE("/users_with_skills/:id", handler.DeleteUserWithSkills)

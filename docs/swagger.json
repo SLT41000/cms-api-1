@@ -3059,6 +3059,43 @@
                 }
             }
         },
+        "/api/v1/users_with_skills/skillId/{skillId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User with skills by skill id",
+                "operationId": "Get User with skills by skillId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "skillId",
+                        "name": "skillId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users_with_skills/{id}": {
             "get": {
                 "security": [
