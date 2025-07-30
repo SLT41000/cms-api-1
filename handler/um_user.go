@@ -239,22 +239,9 @@ func GetUmUserById(c *gin.Context) {
 	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
 	FROM public.um_users WHERE id=$1 AND "orgId"=$2`
 
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, id, orgId)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	defer rows.Close()
-	var errorMsg string
 	var u model.Um_User
-	err = rows.Scan(
+	logger.Debug(`Query`, zap.String("query", query))
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
 		&u.OrgID,
 		&u.DisplayName,
 		&u.Title,
@@ -290,33 +277,23 @@ func GetUmUserById(c *gin.Context) {
 		&u.UpdatedBy,
 	)
 	if err != nil {
-		logger.Warn("Scan failed", zap.Error(err))
-		errorMsg = err.Error()
-		response := model.Response{
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
 		return
 	}
 
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   u,
-			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
 	}
+	c.JSON(http.StatusOK, response)
+
 }
 
 // Login godoc
