@@ -31,28 +31,433 @@ func Process(function string, key string, status string, input interface{}, outp
 	return fmt.Sprintf("[%s][%s][%s][%s][%s]", function, key, status, string(inputJSON), string(outputJSON))
 }
 
-// func genCaseID() string {
-// 	currentTime := time.Now()
-// 	year := currentTime.Format("06")                                 // "25" for 2025
-// 	month := fmt.Sprintf("%02d", int(currentTime.Month()))           // "06" for June
-// 	day := fmt.Sprintf("%02d", currentTime.Day())                    // "10" for 10th
-// 	hour := fmt.Sprintf("%02d", currentTime.Hour())                  // "15" for 3 PM
-// 	minute := fmt.Sprintf("%02d", currentTime.Minute())              // "04"
-// 	second := fmt.Sprintf("%02d", currentTime.Second())              // "05"
-// 	millisecond := fmt.Sprintf("%07d", currentTime.Nanosecond()/1e3) // "1234567" (nanoseconds → microseconds)
+func genCaseID() string {
+	currentTime := time.Now()
+	year := currentTime.Format("06")                                 // "25" for 2025
+	month := fmt.Sprintf("%02d", int(currentTime.Month()))           // "06" for June
+	day := fmt.Sprintf("%02d", currentTime.Day())                    // "10" for 10th
+	hour := fmt.Sprintf("%02d", currentTime.Hour())                  // "15" for 3 PM
+	minute := fmt.Sprintf("%02d", currentTime.Minute())              // "04"
+	second := fmt.Sprintf("%02d", currentTime.Second())              // "05"
+	millisecond := fmt.Sprintf("%07d", currentTime.Nanosecond()/1e3) // "1234567" (nanoseconds → microseconds)
 
-// 	// Combine into DYYMMDDHHMMSSNNNNNNN format
-// 	timestamp := fmt.Sprintf("D%s%s%s%s%s%s%s",
-// 		year,
-// 		month,
-// 		day,
-// 		hour,
-// 		minute,
-// 		second,
-// 		millisecond,
-// 	)
-// 	return timestamp
-// }
+	// Combine into DYYMMDDHHMMSSNNNNNNN format
+	timestamp := fmt.Sprintf("D%s%s%s%s%s%s%s",
+		year,
+		month,
+		day,
+		hour,
+		minute,
+		second,
+		millisecond,
+	)
+	return timestamp
+}
+
+// ListCase godoc
+// @summary List Cases
+// @tags Cases
+// @security ApiKeyAuth
+// @id ListCase
+// @accept json
+// @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/case [get]
+func ListCase(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	logger.Debug(`Query`, zap.String("query", query))
+
+	rows, err := conn.Query(ctx, query, orgId, length, start)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.Case
+	var errorMsg string
+	for rows.Next() {
+		var cusCase model.Case
+		err := rows.Scan(
+			&cusCase.ID,
+			&cusCase.OrgID,
+			&cusCase.CaseID,
+			&cusCase.CaseVersion,
+			&cusCase.ReferCaseID,
+			&cusCase.CaseTypeID,
+			&cusCase.CaseSTypeID,
+			&cusCase.Priority,
+			&cusCase.Source,
+			&cusCase.DeviceID,
+			&cusCase.PhoneNo,
+			&cusCase.PhoneNoHide,
+			&cusCase.CaseDetail,
+			&cusCase.ExtReceive,
+			&cusCase.StatusID,
+			&cusCase.CaseLat,
+			&cusCase.CaseLon,
+			&cusCase.CaseLocAddr,
+			&cusCase.CaseLocAddrDecs,
+			&cusCase.CountryID,
+			&cusCase.ProvID,
+			&cusCase.DistID,
+			&cusCase.CaseDuration,
+			&cusCase.CreatedDate,
+			&cusCase.StartedDate,
+			&cusCase.CommandedDate,
+			&cusCase.ReceivedDate,
+			&cusCase.ArrivedDate,
+			&cusCase.ClosedDate,
+			&cusCase.UserCreate,
+			&cusCase.UserCommand,
+			&cusCase.UserReceive,
+			&cusCase.UserArrive,
+			&cusCase.UserClose,
+			&cusCase.ResID,
+			&cusCase.ResDetail,
+			&cusCase.CreatedAt,
+			&cusCase.UpdatedAt,
+			&cusCase.CreatedBy,
+			&cusCase.UpdatedBy,
+		)
+
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			errorMsg = err.Error()
+			continue
+		}
+
+		caseLists = append(caseLists, cusCase)
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   caseLists,
+		Desc:   errorMsg,
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
+// ListCase godoc
+// @summary Cases By Id
+// @tags Cases
+// @security ApiKeyAuth
+// @id Case By Id
+// @accept json
+// @produce json
+// @Param id path int true "id"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/case/{id} [get]
+func CaseById(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId"=$1 AND id=$2`
+	logger.Debug(`Query`, zap.String("query", query))
+	var cusCase model.Case
+	err := conn.QueryRow(ctx, query, orgId, id).Scan(
+		&cusCase.ID,
+		&cusCase.OrgID,
+		&cusCase.CaseID,
+		&cusCase.CaseVersion,
+		&cusCase.ReferCaseID,
+		&cusCase.CaseTypeID,
+		&cusCase.CaseSTypeID,
+		&cusCase.Priority,
+		&cusCase.Source,
+		&cusCase.DeviceID,
+		&cusCase.PhoneNo,
+		&cusCase.PhoneNoHide,
+		&cusCase.CaseDetail,
+		&cusCase.ExtReceive,
+		&cusCase.StatusID,
+		&cusCase.CaseLat,
+		&cusCase.CaseLon,
+		&cusCase.CaseLocAddr,
+		&cusCase.CaseLocAddrDecs,
+		&cusCase.CountryID,
+		&cusCase.ProvID,
+		&cusCase.DistID,
+		&cusCase.CaseDuration,
+		&cusCase.CreatedDate,
+		&cusCase.StartedDate,
+		&cusCase.CommandedDate,
+		&cusCase.ReceivedDate,
+		&cusCase.ArrivedDate,
+		&cusCase.ClosedDate,
+		&cusCase.UserCreate,
+		&cusCase.UserCommand,
+		&cusCase.UserReceive,
+		&cusCase.UserArrive,
+		&cusCase.UserClose,
+		&cusCase.ResID,
+		&cusCase.ResDetail,
+		&cusCase.CreatedAt,
+		&cusCase.UpdatedAt,
+		&cusCase.CreatedBy,
+		&cusCase.UpdatedBy,
+	)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   cusCase,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
+// @summary Create Case
+// @id Create Case
+// @security ApiKeyAuth
+// @tags Cases
+// @accept json
+// @produce json
+// @param Body body model.CaseInsert true "Create Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/case/add [post]
+func InsertCase(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+
+	var req model.CaseInsert
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	username := GetVariableFromToken(c, "username")
+	now := time.Now()
+	var id int
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `
+	INSERT INTO public."tix_cases"(
+	"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId",
+	"phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr",
+	"caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
+	"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive,
+	userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+		$21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+		$31, $32, $33, $34, $35, $36, $37, $38, $39 
+	) RETURNING id ;
+	`
+
+	err := conn.QueryRow(ctx, query,
+		orgId, genCaseID(), req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
+		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
+		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
+		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
+		req.ResDetail, now, now, username, username).Scan(&id)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Create successfully",
+	})
+
+}
+
+// @summary Update Case
+// @id Update Case
+// @security ApiKeyAuth
+// @accept json
+// @produce json
+// @tags Cases
+// @Param id path int true "id"
+// @param Body body model.CaseUpdate true "Update data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/case/{id} [patch]
+func UpdateCase(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+
+	id := c.Param("id")
+
+	var req model.CaseUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("Update failed", zap.Error(err))
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `UPDATE public."tix_cases"
+	SET "caseVersion"=$3, "referCaseId"=$4, "caseTypeId"=$5, "caseSTypeId"=$6,
+	 priority=$7, source=$8, "deviceId"=$9, "phoneNo"=$10, "phoneNoHide"=$11, "caseDetail"=$12, "extReceive"=$13,
+	  "statusId"=$14, "caseLat"=$15, "caseLon"=$16, "caselocAddr"=$17, "caselocAddrDecs"=$18, "countryId"=$19,
+	   "provId"=$20, "distId"=$21, "caseDuration"=$22, "createdDate"=$23, "startedDate"=$24, "commandedDate"=$25,
+	    "receivedDate"=$26, "arrivedDate"=$27, "closedDate"=$28, usercreate=$29, usercommand=$30, userreceive=$31,
+		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35,"updatedAt"=$36,"updatedBy"=$37
+	WHERE id = $1 AND "orgId"=$2`
+	_, err := conn.Exec(ctx, query,
+		id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
+		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
+		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
+		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
+		req.ResDetail, now, username)
+	logger.Debug("Update Case SQL Args",
+		zap.String("query", query),
+		zap.Any("Input", []any{
+			id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
+			req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
+			req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
+			req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+			req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
+			req.ResDetail, now, username,
+		}))
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
+// @summary Delete Case
+// @id Delete Case
+// @security ApiKeyAuth
+// @accept json
+// @tags Cases
+// @produce json
+// @Param id path int true "id"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/case/{id} [delete]
+func DeleteCase(c *gin.Context) {
+
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+	query := `DELETE FROM public."tix_cases" WHERE id = $1 AND "orgId"=$2`
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err := conn.Exec(ctx, query, id, orgId)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
+	})
+}
 
 // ListCase godoc
 // @summary List Cases

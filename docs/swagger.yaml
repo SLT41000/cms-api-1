@@ -1,5 +1,74 @@
 basePath: /
 definitions:
+  model.CaseInsert:
+    properties:
+      arrivedDate:
+        type: string
+      caseDetail:
+        type: string
+      caseDuration:
+        type: integer
+      caseLat:
+        type: string
+      caseLon:
+        type: string
+      caseSTypeId:
+        type: string
+      caseTypeId:
+        type: string
+      caseVersion:
+        type: string
+      caselocAddr:
+        type: string
+      caselocAddrDecs:
+        type: string
+      closedDate:
+        type: string
+      commandedDate:
+        type: string
+      countryId:
+        type: string
+      createdDate:
+        type: string
+      deviceId:
+        type: string
+      distId:
+        type: string
+      extReceive:
+        type: string
+      phoneNo:
+        type: string
+      phoneNoHide:
+        type: boolean
+      priority:
+        type: integer
+      provId:
+        type: string
+      receivedDate:
+        type: string
+      referCaseId:
+        type: string
+      resDetail:
+        type: string
+      resId:
+        type: string
+      source:
+        type: string
+      startedDate:
+        type: string
+      statusId:
+        type: string
+      userarrive:
+        type: string
+      userclose:
+        type: string
+      usercommand:
+        type: string
+      usercreate:
+        type: string
+      userreceive:
+        type: string
+    type: object
   model.CaseSubTypeInsert:
     properties:
       active:
@@ -68,6 +137,75 @@ definitions:
       en:
         type: string
       th:
+        type: string
+    type: object
+  model.CaseUpdate:
+    properties:
+      arrivedDate:
+        type: string
+      caseDetail:
+        type: string
+      caseDuration:
+        type: integer
+      caseLat:
+        type: string
+      caseLon:
+        type: string
+      caseSTypeId:
+        type: string
+      caseTypeId:
+        type: string
+      caseVersion:
+        type: string
+      caselocAddr:
+        type: string
+      caselocAddrDecs:
+        type: string
+      closedDate:
+        type: string
+      commandedDate:
+        type: string
+      countryId:
+        type: string
+      createdDate:
+        type: string
+      deviceId:
+        type: string
+      distId:
+        type: string
+      extReceive:
+        type: string
+      phoneNo:
+        type: string
+      phoneNoHide:
+        type: boolean
+      priority:
+        type: integer
+      provId:
+        type: string
+      receivedDate:
+        type: string
+      referCaseId:
+        type: string
+      resDetail:
+        type: string
+      resId:
+        type: string
+      source:
+        type: string
+      startedDate:
+        type: string
+      statusId:
+        type: string
+      userarrive:
+        type: string
+      userclose:
+        type: string
+      usercommand:
+        type: string
+      usercreate:
+        type: string
+      userreceive:
         type: string
     type: object
   model.CommandInsert:
@@ -767,6 +905,131 @@ paths:
       summary: Refresh Token
       tags:
       - Authentication
+  /api/v1/case:
+    get:
+      consumes:
+      - application/json
+      operationId: ListCase
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List Cases
+      tags:
+      - Cases
+  /api/v1/case/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Case
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Case
+      tags:
+      - Cases
+    get:
+      consumes:
+      - application/json
+      operationId: Case By Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Cases By Id
+      tags:
+      - Cases
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Case
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Case
+      tags:
+      - Cases
+  /api/v1/case/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Case
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Case
+      tags:
+      - Cases
   /api/v1/casesubtypes:
     get:
       consumes:

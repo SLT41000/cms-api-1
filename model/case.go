@@ -1,6 +1,123 @@
 package model
 
-import "time"
+import (
+	"time"
+)
+
+type Case struct {
+	ID              string    `json:"id"`
+	OrgID           string    `json:"orgId"`
+	CaseID          string    `json:"caseId"`
+	CaseVersion     string    `json:"caseVersion"`
+	ReferCaseID     *string   `json:"referCaseId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
+	Priority        int       `json:"priority"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
+	PhoneNoHide     bool      `json:"phoneNoHide"`
+	CaseDetail      *string   `json:"caseDetail"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
+	CaseDuration    int       `json:"caseDuration"`
+	CreatedDate     time.Time `json:"createdDate"`
+	StartedDate     time.Time `json:"startedDate"`
+	CommandedDate   time.Time `json:"commandedDate"`
+	ReceivedDate    time.Time `json:"receivedDate"`
+	ArrivedDate     time.Time `json:"arrivedDate"`
+	ClosedDate      time.Time `json:"closedDate"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
+	ResID           string    `json:"resId"`
+	ResDetail       *string   `json:"resDetail"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	CreatedBy       string    `json:"createdBy"`
+	UpdatedBy       string    `json:"updatedBy"`
+}
+
+type CaseInsert struct {
+	CaseVersion     string    `json:"caseVersion"`
+	ReferCaseID     *string   `json:"referCaseId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
+	Priority        int       `json:"priority"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
+	PhoneNoHide     bool      `json:"phoneNoHide"`
+	CaseDetail      *string   `json:"caseDetail"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
+	CaseDuration    int       `json:"caseDuration"`
+	CreatedDate     time.Time `json:"createdDate"`
+	StartedDate     time.Time `json:"startedDate"`
+	CommandedDate   time.Time `json:"commandedDate"`
+	ReceivedDate    time.Time `json:"receivedDate"`
+	ArrivedDate     time.Time `json:"arrivedDate"`
+	ClosedDate      time.Time `json:"closedDate"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
+	ResID           string    `json:"resId"`
+	ResDetail       *string   `json:"resDetail"`
+}
+
+type CaseUpdate struct {
+	CaseVersion     string    `json:"caseVersion"`
+	ReferCaseID     *string   `json:"referCaseId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
+	Priority        int       `json:"priority"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
+	PhoneNoHide     bool      `json:"phoneNoHide"`
+	CaseDetail      *string   `json:"caseDetail"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
+	CaseDuration    int       `json:"caseDuration"`
+	CreatedDate     time.Time `json:"createdDate"`
+	StartedDate     time.Time `json:"startedDate"`
+	CommandedDate   time.Time `json:"commandedDate"`
+	ReceivedDate    time.Time `json:"receivedDate"`
+	ArrivedDate     time.Time `json:"arrivedDate"`
+	ClosedDate      time.Time `json:"closedDate"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
+	ResID           string    `json:"resId"`
+	ResDetail       *string   `json:"resDetail"`
+}
 
 type OutputCase struct {
 	Id                    string     `json:"id"`

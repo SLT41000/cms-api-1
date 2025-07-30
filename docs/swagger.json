@@ -186,6 +186,205 @@
                 }
             }
         },
+        "/api/v1/case": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List Cases",
+                "operationId": "ListCase",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/case/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Create Case",
+                "operationId": "Create Case",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/case/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Cases By Id",
+                "operationId": "Case By Id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Delete Case",
+                "operationId": "Delete Case",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Update Case",
+                "operationId": "Update Case",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CaseUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/casesubtypes": {
             "get": {
                 "security": [
@@ -3478,6 +3677,110 @@
         }
     },
     "definitions": {
+        "model.CaseInsert": {
+            "type": "object",
+            "properties": {
+                "arrivedDate": {
+                    "type": "string"
+                },
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseDuration": {
+                    "type": "integer"
+                },
+                "caseLat": {
+                    "type": "string"
+                },
+                "caseLon": {
+                    "type": "string"
+                },
+                "caseSTypeId": {
+                    "type": "string"
+                },
+                "caseTypeId": {
+                    "type": "string"
+                },
+                "caseVersion": {
+                    "type": "string"
+                },
+                "caselocAddr": {
+                    "type": "string"
+                },
+                "caselocAddrDecs": {
+                    "type": "string"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "commandedDate": {
+                    "type": "string"
+                },
+                "countryId": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "distId": {
+                    "type": "string"
+                },
+                "extReceive": {
+                    "type": "string"
+                },
+                "phoneNo": {
+                    "type": "string"
+                },
+                "phoneNoHide": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provId": {
+                    "type": "string"
+                },
+                "receivedDate": {
+                    "type": "string"
+                },
+                "referCaseId": {
+                    "type": "string"
+                },
+                "resDetail": {
+                    "type": "string"
+                },
+                "resId": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "startedDate": {
+                    "type": "string"
+                },
+                "statusId": {
+                    "type": "string"
+                },
+                "userarrive": {
+                    "type": "string"
+                },
+                "userclose": {
+                    "type": "string"
+                },
+                "usercommand": {
+                    "type": "string"
+                },
+                "usercreate": {
+                    "type": "string"
+                },
+                "userreceive": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CaseSubTypeInsert": {
             "type": "object",
             "properties": {
@@ -3581,6 +3884,110 @@
                     "type": "string"
                 },
                 "th": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaseUpdate": {
+            "type": "object",
+            "properties": {
+                "arrivedDate": {
+                    "type": "string"
+                },
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseDuration": {
+                    "type": "integer"
+                },
+                "caseLat": {
+                    "type": "string"
+                },
+                "caseLon": {
+                    "type": "string"
+                },
+                "caseSTypeId": {
+                    "type": "string"
+                },
+                "caseTypeId": {
+                    "type": "string"
+                },
+                "caseVersion": {
+                    "type": "string"
+                },
+                "caselocAddr": {
+                    "type": "string"
+                },
+                "caselocAddrDecs": {
+                    "type": "string"
+                },
+                "closedDate": {
+                    "type": "string"
+                },
+                "commandedDate": {
+                    "type": "string"
+                },
+                "countryId": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "distId": {
+                    "type": "string"
+                },
+                "extReceive": {
+                    "type": "string"
+                },
+                "phoneNo": {
+                    "type": "string"
+                },
+                "phoneNoHide": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provId": {
+                    "type": "string"
+                },
+                "receivedDate": {
+                    "type": "string"
+                },
+                "referCaseId": {
+                    "type": "string"
+                },
+                "resDetail": {
+                    "type": "string"
+                },
+                "resId": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "startedDate": {
+                    "type": "string"
+                },
+                "statusId": {
+                    "type": "string"
+                },
+                "userarrive": {
+                    "type": "string"
+                },
+                "userclose": {
+                    "type": "string"
+                },
+                "usercommand": {
+                    "type": "string"
+                },
+                "usercreate": {
+                    "type": "string"
+                },
+                "userreceive": {
                     "type": "string"
                 }
             }

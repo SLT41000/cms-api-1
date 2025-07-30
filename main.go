@@ -85,6 +85,12 @@ func main() {
 		v1.GET("/workflows", handler.GetWorkFlowList)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
 
+		v1.GET("/case", handler.ListCase)
+		v1.GET("/case/:id", handler.CaseById)
+		v1.POST("/case/add", handler.InsertCase)
+		v1.PATCH("/case/:id", handler.UpdateCase)
+		v1.DELETE("/case/:id", handler.DeleteCase)
+
 		v1.GET("/casetypes", handler.ListCaseType)
 		v1.POST("/casetypes/add", handler.InsertCaseType)
 		v1.PATCH("/casetypes/:id", handler.UpdateCaseType)
