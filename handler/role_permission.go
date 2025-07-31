@@ -401,7 +401,7 @@ func UpdateMultiRolePermission(c *gin.Context) {
 				}))
 
 			_, err := conn.Exec(ctx, query,
-				orgId, id, item.PermID, items.Active, now, now, username, username)
+				orgId, id, items.PermID, items.Active, now, now, username, username)
 
 			if err != nil {
 				// log.Printf("Insert failed: %v", err)
