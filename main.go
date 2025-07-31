@@ -139,6 +139,12 @@ func main() {
 		v1.PATCH("/role_permission/multi", handler.UpdateMultiRolePermission)
 		v1.DELETE("/role_permission/:id", handler.DeleteRolePermission)
 
+		v1.GET("/customer", handler.CustomerList)
+		v1.POST("/customer/add", handler.CustomerAdd)
+		v1.GET("/customer/:id", handler.CustomerById)
+		v1.PATCH("/customer/:id", handler.CustomerUpdate)
+		v1.DELETE("/customer/:id", handler.CustomerDelete)
+
 		v1.GET("/users", handler.GetUmUserList)
 		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.POST("/users/add", handler.UserAdd)

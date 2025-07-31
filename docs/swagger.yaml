@@ -238,6 +238,10 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.CustomerInsert:
+    type: object
+  model.CustomerUpdate:
+    type: object
   model.Data:
     properties:
       key:
@@ -1373,6 +1377,131 @@ paths:
       summary: Create Commands
       tags:
       - Dispatch
+  /api/v1/customer:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer
+      tags:
+      - Customer
+  /api/v1/customer/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Customer
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Customer
+      tags:
+      - Customer
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer by Id
+      tags:
+      - Customer
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Customer
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data Update
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Customer
+      tags:
+      - Customer
+  /api/v1/customer/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Customer
+      parameters:
+      - description: Customer to be created
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Customer
+      tags:
+      - Customer
   /api/v1/departments:
     get:
       consumes:
