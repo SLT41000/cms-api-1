@@ -157,6 +157,68 @@ func GetRolePermissionbyId(c *gin.Context) {
 
 }
 
+// ListRolePermission godoc
+// @summary Get RolePermission by roleID
+// @tags Role
+// @security ApiKeyAuth
+// @id Get RolePermission by roleID
+// @accept json
+// @produce json
+// @Param roleId path string true "roleId"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/role_permission/roleId/{roleId} [get]
+func GetRolePermissionbyroleId(c *gin.Context) {
+	logger := config.GetLog()
+	id := c.Param("roleId")
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	orgId := GetVariableFromToken(c, "orgId")
+
+	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.um_role_with_permissions WHERE "roleId" = $1 AND "orgId" = $2`
+
+	logger.Debug("Query", zap.String("query", query),
+		zap.Any("Input", []any{id, orgId}),
+	)
+
+	var RolePermission model.RolePermission
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
+		&RolePermission.ID,
+		&RolePermission.OrgID,
+		&RolePermission.RoleID,
+		&RolePermission.PermID,
+		&RolePermission.Active,
+		&RolePermission.CreatedAt,
+		&RolePermission.UpdatedAt,
+		&RolePermission.CreatedBy,
+		&RolePermission.UpdatedBy,
+	)
+
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   RolePermission,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+}
+
 // @summary Create RolePermission
 // @id Create RolePermission
 // @security ApiKeyAuth

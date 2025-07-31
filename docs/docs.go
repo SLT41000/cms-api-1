@@ -2262,6 +2262,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/role_permission/roleId/{roleId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Get RolePermission by roleID",
+                "operationId": "Get RolePermission by roleID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "roleId",
+                        "name": "roleId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/role_permission/{id}": {
             "get": {
                 "security": [

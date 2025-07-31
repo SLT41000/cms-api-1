@@ -2297,6 +2297,29 @@ paths:
       summary: Update Multi RolePermission
       tags:
       - Role
+  /api/v1/role_permission/roleId/{roleId}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get RolePermission by roleID
+      parameters:
+      - description: roleId
+        in: path
+        name: roleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get RolePermission by roleID
+      tags:
+      - Role
   /api/v1/skill:
     get:
       consumes:

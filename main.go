@@ -133,6 +133,7 @@ func main() {
 
 		v1.GET("/role_permission", handler.GetRolePermission)
 		v1.GET("/role_permission/:id", handler.GetRolePermissionbyId)
+		v1.GET("/role_permission/roleId/:roleId", handler.GetRolePermissionbyroleId)
 		v1.POST("/role_permission/add", handler.InsertRolePermission)
 		v1.PATCH("/role_permission/:roleId", handler.UpdateRolePermission)
 		v1.PATCH("/role_permission/multi", handler.UpdateMultiRolePermission)

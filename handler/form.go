@@ -737,9 +737,10 @@ func GetWorkFlowList(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT wf_definitions."wfId","type","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
-	FROM public.wf_definitions Inner join public.wf_nodes
-	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_nodes."orgId"=$1`
+	query := `SELECT t1."wfId","section","data",title,"desc",t1."versions",t1."createdAt",t1."updatedAt" 
+	FROM public.wf_definitions t1
+	Inner join public.wf_nodes t2
+	ON t1."wfId" = t2."wfId" WHERE t2."orgId"=$1`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))

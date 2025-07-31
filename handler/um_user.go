@@ -362,7 +362,7 @@ func UserAdd(c *gin.Context) {
 	logger.Debug(`Encrypt Password :` + enc)
 	err = conn.QueryRow(ctx, query,
 		orgId, req.DisplayName, req.Title, req.FirstName, req.MiddleName,
-		req.LastName, req.CitizenID, req.Bod, req.Bod, req.Blood,
+		req.LastName, req.CitizenID, req.Bod, req.Blood,
 		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
 		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
 		req.Active, tokenString, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
