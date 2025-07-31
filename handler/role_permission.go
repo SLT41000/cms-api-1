@@ -180,25 +180,11 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 
 	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_role_with_permissions WHERE "roleId" = $1 AND "orgId" = $2`
+	FROM public.um_role_with_permissions WHERE "orgId"=$1 AND "roleId"=$2`
 
-	logger.Debug("Query", zap.String("query", query),
-		zap.Any("Input", []any{id, orgId}),
-	)
-
-	var RolePermission model.RolePermission
-	err := conn.QueryRow(ctx, query, id, orgId).Scan(
-		&RolePermission.ID,
-		&RolePermission.OrgID,
-		&RolePermission.RoleID,
-		&RolePermission.PermID,
-		&RolePermission.Active,
-		&RolePermission.CreatedAt,
-		&RolePermission.UpdatedAt,
-		&RolePermission.CreatedBy,
-		&RolePermission.UpdatedBy,
-	)
-
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, orgId, id)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -208,15 +194,43 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 		})
 		return
 	}
-
-	response := model.Response{
-		Status: "0",
-		Msg:    "Success",
-		Data:   RolePermission,
-		Desc:   "",
+	defer rows.Close()
+	var RolePermission model.RolePermission
+	var RolePermissionList []model.RolePermission
+	rowIndex := 0
+	found := false
+	for rows.Next() {
+		rowIndex++
+		err := rows.Scan(&RolePermission.ID, &RolePermission.OrgID, &RolePermission.RoleID, &RolePermission.PermID,
+			&RolePermission.Active, &RolePermission.CreatedAt, &RolePermission.UpdatedAt, &RolePermission.CreatedBy, &RolePermission.UpdatedBy)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		RolePermissionList = append(RolePermissionList, RolePermission)
+		found = true
 	}
-	c.JSON(http.StatusOK, response)
-
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "Not Found",
+		}
+		c.JSON(http.StatusInternalServerError, response)
+	} else {
+		response := model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Data:   RolePermissionList,
+			Desc:   "",
+		}
+		c.JSON(http.StatusOK, response)
+	}
 }
 
 // @summary Create RolePermission
