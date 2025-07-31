@@ -397,7 +397,7 @@ func UpdateMultiRolePermission(c *gin.Context) {
 				`
 			logger.Debug(`Query`, zap.String("query", query),
 				zap.Any("Input", []any{
-					req, item,
+					req, items,
 				}))
 
 			_, err := conn.Exec(ctx, query,
