@@ -980,6 +980,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 	defer rows.Close()
 	var formFields []map[string]interface{}
 	var form model.Form
+	found := false
 	for rows.Next() {
 		var rawJSON []byte
 		err := rows.Scan(&form.FormId, &form.FormName, &form.FormColSpan, &rawJSON)
@@ -1008,6 +1009,16 @@ func GetFormByCaseSubType(c *gin.Context) {
 
 		formFields = append(formFields, field)
 		form.FormFieldJson = formFields
+		found = true
+	}
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "No form data found",
+		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
 	}
 	response := model.Response{
 		Status: "0",

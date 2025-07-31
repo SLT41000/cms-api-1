@@ -330,6 +330,100 @@ func UpdateRolePermission(c *gin.Context) {
 	})
 }
 
+// @summary Update Multi RolePermission
+// @id Update Multi RolePermission
+// @security ApiKeyAuth
+// @accept json
+// @produce json
+// @tags Role
+// @param Body body model.MultiRolePermissionUpdate true "Update data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/role_permission/multi [patch]
+func UpdateMultiRolePermission(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	defer cancel()
+
+	var req model.MultiRolePermissionUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("Update failed", zap.Error(err))
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	for _, item := range req.Body {
+		logger.Debug("JsonArray", zap.Any("roleId", item.RoleID))
+		id := item.RoleID
+		now := time.Now()
+		username := GetVariableFromToken(c, "username")
+		orgId := GetVariableFromToken(c, "orgId")
+		query := `DELETE FROM public."um_role_with_permissions" WHERE "roleId" = $1 AND "orgId"=$2`
+
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				id, orgId,
+			}))
+		_, err := conn.Exec(ctx, query, id, orgId)
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Update failed", zap.Error(err))
+			return
+		}
+		logger.Debug("Update Case SQL Args",
+			zap.String("query", query),
+			zap.Any("Input", []any{id, orgId}))
+
+		for _, items := range item.PermID {
+			logger.Debug("JsonArray", zap.Any("PermID", items.PermID))
+
+			query := `
+				INSERT INTO public."um_role_with_permissions"(
+				"orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				`
+			logger.Debug(`Query`, zap.String("query", query),
+				zap.Any("Input", []any{
+					req, item,
+				}))
+
+			_, err := conn.Exec(ctx, query,
+				orgId, id, item.PermID, items.Active, now, now, username, username)
+
+			if err != nil {
+				// log.Printf("Insert failed: %v", err)
+				c.JSON(http.StatusInternalServerError, model.Response{
+					Status: "-1",
+					Msg:    "Failure",
+					Desc:   err.Error(),
+				})
+				logger.Warn("Insert failed", zap.Error(err))
+				return
+			}
+
+		}
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	})
+}
+
 // @summary Delete RolePermission
 // @id Delete RolePermission
 // @security ApiKeyAuth

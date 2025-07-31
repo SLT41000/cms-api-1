@@ -2223,6 +2223,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/role_permission/multi": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Update Multi RolePermission",
+                "operationId": "Update Multi RolePermission",
+                "parameters": [
+                    {
+                        "description": "Update data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.MultiRolePermissionUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/role_permission/{id}": {
             "get": {
                 "security": [
@@ -4276,6 +4315,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.MultiRolePermissionUpdate": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RolePermissionInsert"
+                    }
+                }
+            }
+        },
         "model.Notification": {
             "type": "object",
             "properties": {
@@ -4438,7 +4488,7 @@ const docTemplate = `{
         "model.RolePermissionInsert": {
             "type": "object",
             "properties": {
-                "permId": {
+                "permissions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.RolePermissionBody"
@@ -4452,7 +4502,7 @@ const docTemplate = `{
         "model.RolePermissionUpdate": {
             "type": "object",
             "properties": {
-                "permId": {
+                "permissions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.RolePermissionBody"

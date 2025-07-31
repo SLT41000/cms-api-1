@@ -370,6 +370,13 @@ definitions:
       username:
         type: string
     type: object
+  model.MultiRolePermissionUpdate:
+    properties:
+      body:
+        items:
+          $ref: '#/definitions/model.RolePermissionInsert'
+        type: array
+    type: object
   model.Notification:
     properties:
       createdAt:
@@ -477,7 +484,7 @@ definitions:
     type: object
   model.RolePermissionInsert:
     properties:
-      permId:
+      permissions:
         items:
           $ref: '#/definitions/model.RolePermissionBody'
         type: array
@@ -486,7 +493,7 @@ definitions:
     type: object
   model.RolePermissionUpdate:
     properties:
-      permId:
+      permissions:
         items:
           $ref: '#/definitions/model.RolePermissionBody'
         type: array
@@ -2264,6 +2271,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create RolePermission
+      tags:
+      - Role
+  /api/v1/role_permission/multi:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Multi RolePermission
+      parameters:
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MultiRolePermissionUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Multi RolePermission
       tags:
       - Role
   /api/v1/skill:

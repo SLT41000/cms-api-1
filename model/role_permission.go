@@ -15,15 +15,19 @@ type RolePermission struct {
 }
 
 type RolePermissionBody struct {
-	PermID string `json:"permId" gorm:"column:permId"`
-	Active bool   `json:"active" gorm:"column:active"`
+	PermID string `json:"permId"`
+	Active bool   `json:"active"`
 }
 
 type RolePermissionInsert struct {
-	RoleID string               `json:"roleId" gorm:"column:roleId"`
-	PermID []RolePermissionBody `json:"permId" gorm:"column:permId"`
+	RoleID string               `json:"roleId"`
+	PermID []RolePermissionBody `json:"permissions"`
 }
 
 type RolePermissionUpdate struct {
-	PermID []RolePermissionBody `json:"permId" gorm:"column:permId"`
+	PermID []RolePermissionBody `json:"permissions"`
+}
+
+type MultiRolePermissionUpdate struct {
+	Body []RolePermissionInsert `json:"body"`
 }
