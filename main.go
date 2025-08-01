@@ -145,6 +145,18 @@ func main() {
 		v1.PATCH("/customer/:id", handler.CustomerUpdate)
 		v1.DELETE("/customer/:id", handler.CustomerDelete)
 
+		v1.GET("/customer_contacts", handler.CustomerContactList)
+		v1.POST("/customer_contacts/add", handler.CustomerContactAdd)
+		v1.GET("/customer_contacts/:id", handler.CustomerContactById)
+		v1.PATCH("/customer_contacts/:id", handler.CustomerContactUpdate)
+		v1.DELETE("/customer_contacts/:id", handler.CustomerContactDelete)
+
+		v1.GET("/customer_with_socials", handler.CustomerSocialList)
+		v1.POST("/customer_with_socials/add", handler.CustomerSocialAdd)
+		v1.GET("/customer_with_socials/:id", handler.CustomerWithSocialById)
+		v1.PATCH("/customer_with_socials/:id", handler.CustomerSocialUpdate)
+		v1.DELETE("/customer_with_socials/:id", handler.CustomerSocialDelete)
+
 		v1.GET("/users", handler.GetUmUserList)
 		v1.GET("/users/:id", handler.GetUmUserById)
 		v1.POST("/users/add", handler.UserAdd)

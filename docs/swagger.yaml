@@ -238,7 +238,57 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.CustomerContactInsert:
+    properties:
+      contactAddr:
+        additionalProperties: true
+        type: object
+      contactName:
+        type: string
+      contactPhone:
+        type: string
+      custId:
+        type: integer
+    type: object
+  model.CustomerContactUpdate:
+    properties:
+      contactAddr:
+        additionalProperties: true
+        type: object
+      contactName:
+        type: string
+      contactPhone:
+        type: string
+      custId:
+        type: integer
+    type: object
   model.CustomerInsert:
+    type: object
+  model.CustomerSocialInsert:
+    properties:
+      custId:
+        type: string
+      imgUrl:
+        type: string
+      socialId:
+        type: string
+      socialName:
+        type: string
+      socialType:
+        type: string
+    type: object
+  model.CustomerSocialUpdate:
+    properties:
+      custId:
+        type: string
+      imgUrl:
+        type: string
+      socialId:
+        type: string
+      socialName:
+        type: string
+      socialType:
+        type: string
     type: object
   model.CustomerUpdate:
     type: object
@@ -1453,7 +1503,7 @@ paths:
     patch:
       consumes:
       - application/json
-      operationId: Update Customer
+      operationId: Update Customer with Social
       parameters:
       - description: id
         in: path
@@ -1465,7 +1515,7 @@ paths:
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.CustomerUpdate'
+          $ref: '#/definitions/model.CustomerSocialUpdate'
       produces:
       - application/json
       responses:
@@ -1475,7 +1525,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update Customer
+      summary: Update Customer with Social
       tags:
       - Customer
   /api/v1/customer/add:
@@ -1500,6 +1550,228 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Customer
+      tags:
+      - Customer
+  /api/v1/customer_contacts:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer Contact
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer Contact
+      tags:
+      - Customer
+  /api/v1/customer_contacts/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Customer Contact
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Customer Contact
+      tags:
+      - Customer
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer Contact by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer Contact by Id
+      tags:
+      - Customer
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Customer Contact
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data Update
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerContactUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Customer Contact
+      tags:
+      - Customer
+  /api/v1/customer_contacts/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Customer Contact
+      parameters:
+      - description: Data to be created
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerContactInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Customer Contact
+      tags:
+      - Customer
+  /api/v1/customer_with_socials:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer with Social
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer with Social
+      tags:
+      - Customer
+  /api/v1/customer_with_socials/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Customer with Social
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Customer with Social
+      tags:
+      - Customer
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer with Social by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer with Social by Id
+      tags:
+      - Customer
+  /api/v1/customer_with_socials/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Customer with Social
+      parameters:
+      - description: Data to be created
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerSocialInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Customer with Social
       tags:
       - Customer
   /api/v1/departments:

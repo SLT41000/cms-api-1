@@ -87,13 +87,13 @@ func encrypt(plaintext string) (string, error) {
 }
 
 func decrypt(ciphertextBase64 string) (string, error) {
+	// logger := config.GetLog()
 	key := deriveKey(os.Getenv("SECRET_KEY"))
 
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
 	if err != nil {
 		return "", err
 	}
-
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -106,6 +106,7 @@ func decrypt(ciphertextBase64 string) (string, error) {
 
 	nonceSize := aesGCM.NonceSize()
 	if len(ciphertext) < nonceSize {
+
 		return "", fmt.Errorf("ciphertext too short")
 	}
 

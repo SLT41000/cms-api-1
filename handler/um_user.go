@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Stations godoc
 // @summary Get User
 // @tags User
 // @security ApiKeyAuth
@@ -138,7 +137,6 @@ func GetUmUserList(c *gin.Context) {
 	}
 }
 
-// Stations godoc
 // @summary Get User by username
 // @tags User
 // @security ApiKeyAuth
@@ -216,7 +214,6 @@ func GetUmUserByUsername(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// Stations godoc
 // @summary Get User by Id
 // @tags User
 // @security ApiKeyAuth
@@ -296,7 +293,6 @@ func GetUmUserById(c *gin.Context) {
 
 }
 
-// Login godoc
 // @summary Create User
 // @tags User
 // @security ApiKeyAuth
@@ -333,6 +329,11 @@ func UserAdd(c *gin.Context) {
 	var id int
 	enc, err = encrypt(req.Password)
 	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
 		return
 	}
 	orgId := GetVariableFromToken(c, "orgId")
@@ -388,7 +389,6 @@ func UserAdd(c *gin.Context) {
 	})
 }
 
-// Login godoc
 // @summary Update User
 // @tags User
 // @security ApiKeyAuth
@@ -470,7 +470,6 @@ func UserUpdate(c *gin.Context) {
 	})
 }
 
-// Login godoc
 // @summary Update User By Username
 // @tags User
 // @security ApiKeyAuth
@@ -552,7 +551,6 @@ func UserUpdateByUsername(c *gin.Context) {
 	})
 }
 
-// Login godoc
 // @summary Delete User
 // @tags User
 // @security ApiKeyAuth
@@ -594,7 +592,6 @@ func UserDelete(c *gin.Context) {
 	})
 }
 
-// Stations godoc
 // @summary Get User with skills
 // @tags User
 // @security ApiKeyAuth
@@ -688,7 +685,6 @@ func GetUserWithSkills(c *gin.Context) {
 	}
 }
 
-// Stations godoc
 // @summary Get User with skills by id
 // @tags User
 // @security ApiKeyAuth
@@ -757,7 +753,6 @@ func GetUserWithSkillsById(c *gin.Context) {
 
 }
 
-// Stations godoc
 // @summary Get User with skills by skill id
 // @tags User
 // @security ApiKeyAuth
@@ -1019,7 +1014,6 @@ func DeleteUserWithSkills(c *gin.Context) {
 	})
 }
 
-// Stations godoc
 // @summary Get User with contacts
 // @tags User
 // @security ApiKeyAuth
@@ -1116,7 +1110,6 @@ func GetUserWithContacts(c *gin.Context) {
 	}
 }
 
-// Stations godoc
 // @summary Get User with contacts by id
 // @tags User
 // @security ApiKeyAuth
@@ -1360,7 +1353,6 @@ func DeleteUserWithContacts(c *gin.Context) {
 	})
 }
 
-// Stations godoc
 // @summary Get User with socials
 // @tags User
 // @security ApiKeyAuth
@@ -1457,7 +1449,6 @@ func GetUserWithSocials(c *gin.Context) {
 	}
 }
 
-// Stations godoc
 // @summary Get User with Socials by id
 // @tags User
 // @security ApiKeyAuth

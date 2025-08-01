@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Stations godoc
 // @summary Get Stations
 // @tags Dispatch
 // @security ApiKeyAuth
@@ -98,7 +97,6 @@ func GetStation(c *gin.Context) {
 	}
 }
 
-// Stations godoc
 // @summary Get Stations by id
 // @tags Dispatch
 // @security ApiKeyAuth

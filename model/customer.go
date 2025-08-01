@@ -64,3 +64,60 @@ type CustomerUpdate struct {
 	UserType    string          `json:"userType"`
 	Active      bool            `json:"active"`
 }
+
+type CustomerSocial struct {
+	ID         string    `json:"id"`
+	OrgID      string    `json:"orgId"`
+	CustID     string    `json:"custId"`
+	SocialType string    `json:"socialType"`
+	SocialID   string    `json:"socialId"`
+	SocialName string    `json:"socialName"`
+	ImgURL     string    `json:"imgUrl"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+	CreatedBy  string    `json:"createdBy"`
+	UpdatedBy  string    `json:"updatedBy"`
+}
+
+type CustomerSocialInsert struct {
+	CustID     string `json:"custId"`
+	SocialType string `json:"socialType"`
+	SocialID   string `json:"socialId"`
+	SocialName string `json:"socialName"`
+	ImgURL     string `json:"imgUrl"`
+}
+
+type CustomerSocialUpdate struct {
+	CustID     string `json:"custId"`
+	SocialType string `json:"socialType"`
+	SocialID   string `json:"socialId"`
+	SocialName string `json:"socialName"`
+	ImgURL     string `json:"imgUrl"`
+}
+
+type CustomerContact struct {
+	ID           string          `json:"id"`
+	OrgID        string          `json:"orgId"`
+	CustID       int             `json:"custId"`
+	ContactName  string          `json:"contactName"`
+	ContactPhone string          `json:"contactPhone"`
+	ContactAddr  json.RawMessage `json:"contactAddr"`
+	CreatedAt    time.Time       `json:"createdAt"`
+	UpdatedAt    time.Time       `json:"updatedAt"`
+	CreatedBy    string          `json:"createdBy"`
+	UpdatedBy    string          `json:"updatedBy"`
+}
+
+type CustomerContactInsert struct {
+	CustID       int                    `json:"custId"`
+	ContactName  string                 `json:"contactName"`
+	ContactPhone string                 `json:"contactPhone"`
+	ContactAddr  map[string]interface{} `json:"contactAddr"`
+}
+
+type CustomerContactUpdate struct {
+	CustID       int                    `json:"custId"`
+	ContactName  string                 `json:"contactName"`
+	ContactPhone string                 `json:"contactPhone"`
+	ContactAddr  map[string]interface{} `json:"contactAddr"`
+}

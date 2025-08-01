@@ -160,7 +160,6 @@ func ProtectedHandler(c *gin.Context) {
 
 }
 
-// Login godoc
 // @summary Login
 // @tags Authentication
 // @security ApiKeyAuth
@@ -263,7 +262,6 @@ func UserLogin(c *gin.Context) {
 	logger.Debug("User : " + username)
 }
 
-// Login godoc
 // @summary Login User Post
 // @tags Authentication
 // @security ApiKeyAuth
@@ -337,10 +335,11 @@ func UserLoginPost(c *gin.Context) {
 	var dec string
 	dec, err = decrypt(UserOpt.Password)
 	if err != nil {
-		logger.Debug(err.Error())
+		logger.Warn("Decryption failed", zap.Error(err)) // Use Warn for visibility
 		return
 	}
-
+	// logger.Debug(UserOpt.Password)
+	// logger.Debug(dec)
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
 		tokenString, refreshtoken, err := CreateToken(username, id)
 		if err != nil {
@@ -373,7 +372,6 @@ func UserLoginPost(c *gin.Context) {
 	logger.Debug("User : " + username)
 }
 
-// Login godoc
 // @summary Create User Auth
 // @tags Authentication
 // @security ApiKeyAuth
@@ -462,7 +460,6 @@ func UserAddAuth(c *gin.Context) {
 	})
 }
 
-// Login godoc
 // @summary Refresh Token
 // @tags Authentication
 // @security ApiKeyAuth
