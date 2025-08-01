@@ -350,6 +350,36 @@ func UserLoginPost(c *gin.Context) {
 			logger.Debug(err.Error())
 			return
 		}
+
+		query = `SELECT "permId" FROM public.um_role_with_permissions 
+				WHERE "orgId"=$1 AND "roleId"=$2 AND active = true`
+		logger.Debug(`Query`, zap.String("query", query), zap.Any("input", []any{UserOpt.OrgID, UserOpt.RoleID}))
+		var permId string
+		var RolePermissionList []string
+		rows, err := conn.Query(ctx, query, UserOpt.OrgID, UserOpt.RoleID)
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			return
+		}
+		for rows.Next() {
+			err = rows.Scan(&permId)
+			if err != nil {
+				logger.Warn("Scan failed", zap.Error(err))
+				response := model.Response{
+					Status: "-1",
+					Msg:    "Failed",
+					Desc:   err.Error(),
+				}
+				c.JSON(http.StatusInternalServerError, response)
+			}
+			RolePermissionList = append(RolePermissionList, permId)
+
+		}
 		c.JSON(http.StatusOK, model.Response{
 			Status: "0",
 			Msg:    "Success",
@@ -359,17 +389,19 @@ func UserLoginPost(c *gin.Context) {
 				"refreshToken": refreshtoken,
 				"token_type":   "bearer",
 				"user":         UserOpt,
+				"permission":   RolePermissionList,
 			},
 		})
+		return
 	} else {
 		c.JSON(http.StatusUnauthorized, model.Response{
 			Status: "-1",
 			Msg:    "",
 			Desc:   "Invalid credentials",
 		})
+		return
 	}
 
-	logger.Debug("User : " + username)
 }
 
 // @summary Create User Auth
