@@ -867,12 +867,12 @@ func GetFormByCaseSubType(c *gin.Context) {
 	var wfId string
 	orgId := GetVariableFromToken(c, "orgId")
 	// username := GetVariableFromToken(c, "username")
-	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1`
+	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1 AND "sTypeId"=$2`
 	logger.Debug(`Query`, zap.String("query", query),
 		zap.Any("Input", []any{
-			orgId,
+			orgId, req.CaseSubType,
 		}))
-	err := conn.QueryRow(ctx, query, orgId).Scan(&wfId)
+	err := conn.QueryRow(ctx, query, orgId, req.CaseSubType).Scan(&wfId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -883,11 +883,11 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT t2."type",t2."data" 
+	query = `SELECT t2."section",t2."data" 
 	FROM public.wf_definitions t1 
 	INNER JOIN public.wf_nodes t2 
 	ON t1."wfId"=t2."wfId" AND t1."versions" = t2."versions"
-	WHERE t1."wfId" = $1 AND t1."orgId"=$2`
+	WHERE t1."wfId" = $1 AND t1."orgId"=$2 AND LOWER(t2."type") != 'start'`
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
 		wfId, orgId,
 	}))
@@ -928,26 +928,24 @@ func GetFormByCaseSubType(c *gin.Context) {
 				logger.Warn("Unmarshal nodes failed", zap.Error(err))
 				continue
 			}
-			if data, ok := field["data"].(map[string]interface{}); ok {
-				logger.Debug("JSON", zap.Any("field", field))
-				if label, ok := data["label"].(string); ok {
-					lowerLabel := strings.ToLower(label)
-					if strings.HasPrefix(lowerLabel, "start") {
-						continue
-					} else {
-						if config, ok := data["config"].(map[string]interface{}); ok {
-							if formVal, ok := config["form"]; ok {
-								if formStr, ok := formVal.(string); ok {
-									formName = formStr
-								} else {
-									logger.Debug("form is not a string")
-								}
+
+			if label, ok := field["label"].(string); ok {
+				lowerLabel := strings.ToLower(label)
+				if strings.HasPrefix(lowerLabel, "start") {
+					continue
+				} else {
+					if config, ok := field["config"].(map[string]interface{}); ok {
+						if formVal, ok := config["form"]; ok {
+							if formStr, ok := formVal.(string); ok {
+								formName = formStr
 							} else {
-								logger.Debug("form key not found in config")
+								logger.Debug("form is not a string")
 							}
 						} else {
-							logger.Debug("config not found or wrong type")
+							logger.Debug("form key not found in config")
 						}
+					} else {
+						logger.Debug("config not found or wrong type")
 					}
 				}
 			}

@@ -717,6 +717,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/casetypes_with_subtype": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List Cases Type with Sub type",
+                "operationId": "List Cases Type with Sub type",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/commands": {
             "get": {
                 "security": [

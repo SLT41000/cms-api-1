@@ -54,7 +54,6 @@ func genCaseID() string {
 	return timestamp
 }
 
-// ListCase godoc
 // @summary List Cases
 // @tags Cases
 // @security ApiKeyAuth
@@ -170,7 +169,6 @@ func ListCase(c *gin.Context) {
 	logger.Info(logStr)
 }
 
-// ListCase godoc
 // @summary Cases By Id
 // @tags Cases
 // @security ApiKeyAuth
@@ -459,7 +457,77 @@ func DeleteCase(c *gin.Context) {
 	})
 }
 
-// ListCase godoc
+// @summary List Cases Type with Sub type
+// @tags Cases
+// @security ApiKeyAuth
+// @id List Cases Type with Sub type
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/casetypes_with_subtype [get]
+func ListCaseTypeWithSubtype(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
+
+	query := `SELECT t1."typeId",t1."orgId",t1."en",t1."th",t1."active",t2."sTypeId",t2."sTypeCode",
+	t2."en",t2."th",t2."wfId", t2."caseSla", t2.priority, t2."userSkillList", t2."unitPropLists", t2.active
+	FROM public.case_types t1
+	FULL JOIN public.case_sub_types t2
+	ON t1."typeId" = t2."typeId"
+	WHERE t1."orgId"=$1`
+	logger.Debug(`Query`, zap.String("query", query))
+
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.CaseTypeWithSubType
+	var errorMsg string
+	for rows.Next() {
+		var cusCase model.CaseTypeWithSubType
+		err := rows.Scan(
+			&cusCase.TypeID, &cusCase.OrgID, &cusCase.TypeEN, &cusCase.TypeTH, &cusCase.TypeActive,
+			&cusCase.SubTypeID, &cusCase.SubTypeCode, &cusCase.SubTypeEN, &cusCase.SubTypeTH,
+			&cusCase.WfID, &cusCase.CaseSla, &cusCase.Priority,
+			&cusCase.UserSkillList, &cusCase.UnitPropLists, &cusCase.SubTypeActive,
+		)
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			errorMsg = err.Error()
+			continue
+		}
+
+		caseLists = append(caseLists, cusCase)
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   caseLists,
+		Desc:   errorMsg,
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
 // @summary List Cases
 // @tags Cases
 // @security ApiKeyAuth
@@ -710,7 +778,6 @@ func DeleteCaseType(c *gin.Context) {
 	})
 }
 
-// ListCase godoc
 // @summary List CasesSubType
 // @tags Cases
 // @security ApiKeyAuth

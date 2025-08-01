@@ -1302,6 +1302,23 @@ paths:
       summary: Create CaseType
       tags:
       - Cases
+  /api/v1/casetypes_with_subtype:
+    get:
+      consumes:
+      - application/json
+      operationId: List Cases Type with Sub type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List Cases Type with Sub type
+      tags:
+      - Cases
   /api/v1/commands:
     get:
       consumes:

@@ -96,6 +96,7 @@ func main() {
 		v1.POST("/casetypes/add", handler.InsertCaseType)
 		v1.PATCH("/casetypes/:id", handler.UpdateCaseType)
 		v1.DELETE("/casetypes/:id", handler.DeleteCaseType)
+		v1.GET("/casetypes_with_subtype", handler.ListCaseTypeWithSubtype)
 		v1.GET("/casesubtypes", handler.ListCaseSubType)
 		v1.POST("/casesubtypes/add", handler.InsertCaseSubType)
 		v1.PATCH("/casesubtypes/:id", handler.UpdateCaseSubType)

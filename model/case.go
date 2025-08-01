@@ -430,3 +430,21 @@ type CaseSubTypeUpdate struct {
 	UnitPropLists []string `json:"unitPropLists"`
 	Active        bool     `json:"active"`
 }
+
+type CaseTypeWithSubType struct {
+	TypeID        string      `json:"typeId" db:"typeId"`
+	OrgID         string      `json:"orgId" db:"orgId"`
+	TypeEN        string      `json:"en" db:"en"`
+	TypeTH        string      `json:"th" db:"th"`
+	TypeActive    bool        `json:"active" db:"active"`
+	SubTypeID     *string     `json:"sTypeId" db:"sTypeId"`
+	SubTypeCode   *string     `json:"sTypeCode" db:"sTypeCode"`
+	SubTypeEN     *string     `json:"subTypeEn" db:"en"`
+	SubTypeTH     *string     `json:"subTypeTh" db:"th"`
+	WfID          *string     `json:"wfId" db:"wfId"`
+	CaseSla       *string     `json:"caseSla" db:"caseSla"`
+	Priority      *int        `json:"priority" db:"priority"`
+	UserSkillList interface{} `json:"userSkillList" db:"userSkillList"`
+	UnitPropLists interface{} `json:"unitPropLists" db:"unitPropLists"`
+	SubTypeActive *bool       `json:"subTypeActive" db:"active"`
+}
