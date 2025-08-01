@@ -928,28 +928,28 @@ func GetFormByCaseSubType(c *gin.Context) {
 				logger.Warn("Unmarshal nodes failed", zap.Error(err))
 				continue
 			}
-
-			if label, ok := field["label"].(string); ok {
-				lowerLabel := strings.ToLower(label)
-				if strings.HasPrefix(lowerLabel, "start") {
-					continue
-				} else {
-					if config, ok := field["config"].(map[string]interface{}); ok {
-						if formVal, ok := config["form"]; ok {
-							if formStr, ok := formVal.(string); ok {
-								formName = formStr
+			if data, ok := field["data"].(map[string]interface{}); ok {
+				if label, ok := data["label"].(string); ok {
+					lowerLabel := strings.ToLower(label)
+					if strings.HasPrefix(lowerLabel, "start") {
+						continue
+					} else {
+						if config, ok := data["config"].(map[string]interface{}); ok {
+							if formVal, ok := config["form_id"]; ok {
+								if formStr, ok := formVal.(string); ok {
+									formName = formStr
+								} else {
+									logger.Debug("form is not a string")
+								}
 							} else {
-								logger.Debug("form is not a string")
+								logger.Debug("form key not found in config")
 							}
 						} else {
-							logger.Debug("form key not found in config")
+							logger.Debug("config not found or wrong type")
 						}
-					} else {
-						logger.Debug("config not found or wrong type")
 					}
 				}
 			}
-
 		}
 		if formName != "" {
 			break
