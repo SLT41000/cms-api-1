@@ -315,7 +315,7 @@ func UserLoginPost(c *gin.Context) {
 	   FROM public.um_users WHERE username = $1 AND active = true`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
-	var UserOpt model.Um_User
+	var UserOpt model.Um_User_Login
 	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
 		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
 		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
@@ -380,6 +380,7 @@ func UserLoginPost(c *gin.Context) {
 			RolePermissionList = append(RolePermissionList, permId)
 
 		}
+		UserOpt.Permission = RolePermissionList
 		c.JSON(http.StatusOK, model.Response{
 			Status: "0",
 			Msg:    "Success",
@@ -389,7 +390,7 @@ func UserLoginPost(c *gin.Context) {
 				"refreshToken": refreshtoken,
 				"token_type":   "bearer",
 				"user":         UserOpt,
-				"permission":   RolePermissionList,
+				// "permission":   RolePermissionList,
 			},
 		})
 		return
