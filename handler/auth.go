@@ -258,8 +258,6 @@ func UserLogin(c *gin.Context) {
 			Desc:   "Invalid credentials",
 		})
 	}
-
-	logger.Debug("User : " + username)
 }
 
 // @summary Login User Post
