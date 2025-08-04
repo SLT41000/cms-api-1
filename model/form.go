@@ -8,6 +8,13 @@ type Form struct {
 	FormColSpan   int                      `json:"formColSpan"`
 	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
 }
+type FormByCasesubtypeOpt struct {
+	NodeId        *string                  `json:"nodeId"`
+	FormId        *string                  `json:"formId"`
+	FormName      *string                  `json:"formName"`
+	FormColSpan   int                      `json:"formColSpan"`
+	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+}
 
 type FormsManager struct {
 	Form
