@@ -263,6 +263,38 @@ definitions:
         type: integer
     type: object
   model.CustomerInsert:
+    properties:
+      active:
+        type: boolean
+      address:
+        additionalProperties: true
+        type: object
+      blood:
+        type: string
+      citizenId:
+        type: string
+      displayName:
+        type: string
+      dob:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: string
+      lastName:
+        type: string
+      middleName:
+        type: string
+      mobileNo:
+        type: string
+      photo:
+        type: string
+      title:
+        type: string
+      userType:
+        type: string
     type: object
   model.CustomerSocialInsert:
     properties:
@@ -291,6 +323,38 @@ definitions:
         type: string
     type: object
   model.CustomerUpdate:
+    properties:
+      active:
+        type: boolean
+      address:
+        additionalProperties: true
+        type: object
+      blood:
+        type: string
+      citizenId:
+        type: string
+      displayName:
+        type: string
+      dob:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: string
+      lastName:
+        type: string
+      middleName:
+        type: string
+      mobileNo:
+        type: string
+      photo:
+        type: string
+      title:
+        type: string
+      userType:
+        type: string
     type: object
   model.Data:
     properties:
@@ -917,6 +981,23 @@ info:
   title: CMS API
   version: "1.0"
 paths:
+  /api/v1/area/country_province_districts:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Country Province Districts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Country Province Districts
+      tags:
+      - Area
   /api/v1/auth/add:
     post:
       consumes:
@@ -1570,7 +1651,7 @@ paths:
     patch:
       consumes:
       - application/json
-      operationId: Update Customer with Social
+      operationId: Update Customer
       parameters:
       - description: id
         in: path
@@ -1582,7 +1663,7 @@ paths:
         name: Body
         required: true
         schema:
-          $ref: '#/definitions/model.CustomerSocialUpdate'
+          $ref: '#/definitions/model.CustomerUpdate'
       produces:
       - application/json
       responses:
@@ -1592,7 +1673,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update Customer with Social
+      summary: Update Customer
       tags:
       - Customer
   /api/v1/customer/add:
@@ -1815,6 +1896,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Customer with Social by Id
+      tags:
+      - Customer
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Customer with Social
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data Update
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CustomerSocialUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Customer with Social
       tags:
       - Customer
   /api/v1/customer_with_socials/add:

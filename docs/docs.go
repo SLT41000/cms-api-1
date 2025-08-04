@@ -24,6 +24,34 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/area/country_province_districts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Get Country Province Districts",
+                "operationId": "Get Country Province Districts",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/add": {
             "post": {
                 "security": [
@@ -1113,8 +1141,8 @@ const docTemplate = `{
                 "tags": [
                     "Customer"
                 ],
-                "summary": "Update Customer with Social",
-                "operationId": "Update Customer with Social",
+                "summary": "Update Customer",
+                "operationId": "Update Customer",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1129,7 +1157,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CustomerSocialUpdate"
+                            "$ref": "#/definitions/model.CustomerUpdate"
                         }
                     }
                 ],
@@ -1485,6 +1513,50 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Update Customer with Social",
+                "operationId": "Update Customer with Social",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CustomerSocialUpdate"
+                        }
                     }
                 ],
                 "responses": {
@@ -4917,7 +4989,55 @@ const docTemplate = `{
             }
         },
         "model.CustomerInsert": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "blood": {
+                    "type": "string"
+                },
+                "citizenId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "dob": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "middleName": {
+                    "type": "string"
+                },
+                "mobileNo": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "userType": {
+                    "type": "string"
+                }
+            }
         },
         "model.CustomerSocialInsert": {
             "type": "object",
@@ -4960,7 +5080,55 @@ const docTemplate = `{
             }
         },
         "model.CustomerUpdate": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "blood": {
+                    "type": "string"
+                },
+                "citizenId": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "dob": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "middleName": {
+                    "type": "string"
+                },
+                "mobileNo": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "userType": {
+                    "type": "string"
+                }
+            }
         },
         "model.Data": {
             "type": "object",

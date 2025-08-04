@@ -603,7 +603,7 @@ func CustomerSocialAdd(c *gin.Context) {
 // @Param id path int true "id"
 // @param Body body model.CustomerSocialUpdate true "Data Update"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/customer/{id} [patch]
+// @Router /api/v1/customer_with_socials/{id} [patch]
 func CustomerSocialUpdate(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()

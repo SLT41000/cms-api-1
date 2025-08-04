@@ -75,6 +75,8 @@ func main() {
 	v1 := router.Group("/api/v1")
 	{
 		v1.Use(handler.ProtectedHandler)
+		v1.GET("/area/country_province_districts", handler.GetCountryProvinceDistricts)
+
 		v1.GET("/forms", handler.GetForm)
 		v1.GET("/forms/getAllForms", handler.GetAllForm)
 		v1.POST("/forms", handler.FormInsert)
