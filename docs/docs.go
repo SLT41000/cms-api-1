@@ -759,7 +759,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Commands",
                 "operationId": "Get Commands",
@@ -803,7 +803,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Create Commands",
                 "operationId": "Create Commands",
@@ -842,7 +842,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Commands by id",
                 "operationId": "Get Commands by id",
@@ -877,7 +877,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Delete Commands",
                 "operationId": "Delete Commands",
@@ -912,7 +912,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Update Commands",
                 "operationId": "Update Commands",
@@ -1511,7 +1511,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Stations Command Department",
                 "operationId": "Get Stations Command Department",
@@ -1539,7 +1539,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Department",
                 "operationId": "Get Department",
@@ -1583,7 +1583,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Create Department",
                 "operationId": "Create Department",
@@ -1622,7 +1622,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Department by ID",
                 "operationId": "Get Department by ID",
@@ -1657,7 +1657,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Delete Department",
                 "operationId": "Delete Department",
@@ -1692,7 +1692,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Update Department",
                 "operationId": "Update Department",
@@ -3239,7 +3239,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Stations",
                 "operationId": "Get Stations",
@@ -3283,7 +3283,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Create Stations",
                 "operationId": "Create Stations",
@@ -3322,7 +3322,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Get Stations by id",
                 "operationId": "Get Stations  by id",
@@ -3357,7 +3357,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Delete Stations",
                 "operationId": "Delete Stations",
@@ -3392,7 +3392,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Dispatch"
+                    "Organization"
                 ],
                 "summary": "Update Stations",
                 "operationId": "Update Stations",

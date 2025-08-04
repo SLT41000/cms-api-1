@@ -15,7 +15,7 @@ import (
 
 // ListCommands godoc
 // @summary Get Commands
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Commands
 // @accept json
@@ -99,7 +99,7 @@ func GetCommand(c *gin.Context) {
 
 // ListCommands godoc
 // @summary Get Commands by id
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Commands by id
 // @accept json
@@ -162,7 +162,7 @@ func GetCommandById(c *gin.Context) {
 // @summary Create Commands
 // @id Create Commands
 // @security ApiKeyAuth
-// @tags Dispatch
+// @tags Organization
 // @accept json
 // @produce json
 // @param Body body model.CommandInsert true "Create Data"
@@ -229,7 +229,7 @@ func InsertCommand(c *gin.Context) {
 // @security ApiKeyAuth
 // @accept json
 // @produce json
-// @tags Dispatch
+// @tags Organization
 // @Param id path int true "id"
 // @param Body body model.CommandUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
@@ -296,7 +296,7 @@ func UpdateCommand(c *gin.Context) {
 // @id Delete Commands
 // @security ApiKeyAuth
 // @accept json
-// @tags Dispatch
+// @tags Organization
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.Response "OK - Request successful"

@@ -14,7 +14,7 @@ import (
 )
 
 // @summary Get Stations
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Stations
 // @accept json
@@ -98,7 +98,7 @@ func GetStation(c *gin.Context) {
 }
 
 // @summary Get Stations Command Department
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Stations Command Department
 // @accept json
@@ -117,12 +117,12 @@ func GetDepartmentCommandStation(c *gin.Context) {
 
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT t1."id",t1."orgId", t1."deptId", t1."commId", t1."stnId",
-	 t1.en, t1.th, t1.active,
-	  t2.en, t2.th, t2.active,
-	   t3.en, t3.th, t3.active
-FROM public.sec_stations t1
-join public.sec_commands t2 ON t1."commId" = t2."commId"
-join public.sec_departments t3 ON t1."deptId" = t2."deptId"
+	 	t1.en, t1.th, t1.active,
+	  	t2.en, t2.th, t2.active,
+	   	t3.en, t3.th, t3.active
+		FROM public.sec_stations t1
+		join public.sec_commands t2 ON t1."commId" = t2."commId"
+		join public.sec_departments t3 ON t1."deptId" = t2."deptId"
 	WHERE t1."orgId"=$1 ORDER by t1."stnId"`
 
 	var rows pgx.Rows
@@ -178,7 +178,7 @@ join public.sec_departments t3 ON t1."deptId" = t2."deptId"
 }
 
 // @summary Get Stations by id
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Stations  by id
 // @accept json
@@ -250,7 +250,7 @@ func GetStationbyId(c *gin.Context) {
 // @summary Create Stations
 // @id Create Stations
 // @security ApiKeyAuth
-// @tags Dispatch
+// @tags Organization
 // @accept json
 // @produce json
 // @param Body body model.StationInsert true "Create Data"
@@ -317,7 +317,7 @@ func InsertStations(c *gin.Context) {
 // @security ApiKeyAuth
 // @accept json
 // @produce json
-// @tags Dispatch
+// @tags Organization
 // @Param id path int true "id"
 // @param Body body model.StationUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
@@ -384,7 +384,7 @@ func UpdateStations(c *gin.Context) {
 // @id Delete Stations
 // @security ApiKeyAuth
 // @accept json
-// @tags Dispatch
+// @tags Organization
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.Response "OK - Request successful"

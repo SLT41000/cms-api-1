@@ -15,7 +15,7 @@ import (
 
 // ListDepartment godoc
 // @summary Get Department
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Department
 // @accept json
@@ -98,7 +98,7 @@ func GetDepartment(c *gin.Context) {
 
 // ListDepartment godoc
 // @summary Get Department by ID
-// @tags Dispatch
+// @tags Organization
 // @security ApiKeyAuth
 // @id Get Department by ID
 // @accept json
@@ -169,7 +169,7 @@ func GetDepartmentbyId(c *gin.Context) {
 // @summary Create Department
 // @id Create Department
 // @security ApiKeyAuth
-// @tags Dispatch
+// @tags Organization
 // @accept json
 // @produce json
 // @param Body body model.DepartmentInsert true "Create Data"
@@ -236,7 +236,7 @@ func InsertDepartment(c *gin.Context) {
 // @security ApiKeyAuth
 // @accept json
 // @produce json
-// @tags Dispatch
+// @tags Organization
 // @Param id path int true "id"
 // @param Body body model.DepartmentUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
@@ -303,7 +303,7 @@ func UpdateDepartment(c *gin.Context) {
 // @id Delete Department
 // @security ApiKeyAuth
 // @accept json
-// @tags Dispatch
+// @tags Organization
 // @produce json
 // @Param id path int true "id"
 // @response 200 {object} model.Response "OK - Request successful"
