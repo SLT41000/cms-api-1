@@ -5,28 +5,28 @@ import (
 )
 
 type Case struct {
-	ID              *string   `json:"id"`
-	OrgID           *string   `json:"orgId"`
-	CaseID          *string   `json:"caseId"`
-	CaseVersion     *string   `json:"caseVersion"`
+	ID              string    `json:"id"`
+	OrgID           string    `json:"orgId"`
+	CaseID          string    `json:"caseId"`
+	CaseVersion     string    `json:"caseVersion"`
 	ReferCaseID     *string   `json:"referCaseId"`
-	CaseTypeID      *string   `json:"caseTypeId"`
-	CaseSTypeID     *string   `json:"caseSTypeId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
 	Priority        int       `json:"priority"`
-	Source          *string   `json:"source"`
-	DeviceID        *string   `json:"deviceId"`
-	PhoneNo         *string   `json:"phoneNo"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
 	PhoneNoHide     bool      `json:"phoneNoHide"`
 	CaseDetail      *string   `json:"caseDetail"`
-	ExtReceive      *string   `json:"extReceive"`
-	StatusID        *string   `json:"statusId"`
-	CaseLat         *string   `json:"caseLat"`
-	CaseLon         *string   `json:"caseLon"`
-	CaseLocAddr     *string   `json:"caselocAddr"`
-	CaseLocAddrDecs *string   `json:"caselocAddrDecs"`
-	CountryID       *string   `json:"countryId"`
-	ProvID          *string   `json:"provId"`
-	DistID          *string   `json:"distId"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
 	CaseDuration    int       `json:"caseDuration"`
 	CreatedDate     time.Time `json:"createdDate"`
 	StartedDate     time.Time `json:"startedDate"`
@@ -34,39 +34,39 @@ type Case struct {
 	ReceivedDate    time.Time `json:"receivedDate"`
 	ArrivedDate     time.Time `json:"arrivedDate"`
 	ClosedDate      time.Time `json:"closedDate"`
-	UserCreate      *string   `json:"usercreate"`
-	UserCommand     *string   `json:"usercommand"`
-	UserReceive     *string   `json:"userreceive"`
-	UserArrive      *string   `json:"userarrive"`
-	UserClose       *string   `json:"userclose"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
 	ResID           *string   `json:"resId"`
 	ResDetail       *string   `json:"resDetail"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
-	CreatedBy       *string   `json:"createdBy"`
-	UpdatedBy       *string   `json:"updatedBy"`
+	CreatedBy       string    `json:"createdBy"`
+	UpdatedBy       string    `json:"updatedBy"`
 }
 
 type CaseInsert struct {
-	CaseVersion     *string   `json:"caseVersion"`
+	CaseVersion     string    `json:"caseVersion"`
 	ReferCaseID     *string   `json:"referCaseId"`
-	CaseTypeID      *string   `json:"caseTypeId"`
-	CaseSTypeID     *string   `json:"caseSTypeId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
 	Priority        int       `json:"priority"`
-	Source          *string   `json:"source"`
-	DeviceID        *string   `json:"deviceId"`
-	PhoneNo         *string   `json:"phoneNo"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
 	PhoneNoHide     bool      `json:"phoneNoHide"`
 	CaseDetail      *string   `json:"caseDetail"`
-	ExtReceive      *string   `json:"extReceive"`
-	StatusID        *string   `json:"statusId"`
-	CaseLat         *string   `json:"caseLat"`
-	CaseLon         *string   `json:"caseLon"`
-	CaseLocAddr     *string   `json:"caselocAddr"`
-	CaseLocAddrDecs *string   `json:"caselocAddrDecs"`
-	CountryID       *string   `json:"countryId"`
-	ProvID          *string   `json:"provId"`
-	DistID          *string   `json:"distId"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
 	CaseDuration    int       `json:"caseDuration"`
 	CreatedDate     time.Time `json:"createdDate"`
 	StartedDate     time.Time `json:"startedDate"`
@@ -74,35 +74,35 @@ type CaseInsert struct {
 	ReceivedDate    time.Time `json:"receivedDate"`
 	ArrivedDate     time.Time `json:"arrivedDate"`
 	ClosedDate      time.Time `json:"closedDate"`
-	UserCreate      *string   `json:"usercreate"`
-	UserCommand     *string   `json:"usercommand"`
-	UserReceive     *string   `json:"userreceive"`
-	UserArrive      *string   `json:"userarrive"`
-	UserClose       *string   `json:"userclose"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
 	ResID           *string   `json:"resId"`
 	ResDetail       *string   `json:"resDetail"`
 }
 
 type CaseUpdate struct {
-	CaseVersion     *string   `json:"caseVersion"`
+	CaseVersion     string    `json:"caseVersion"`
 	ReferCaseID     *string   `json:"referCaseId"`
-	CaseTypeID      *string   `json:"caseTypeId"`
-	CaseSTypeID     *string   `json:"caseSTypeId"`
+	CaseTypeID      string    `json:"caseTypeId"`
+	CaseSTypeID     string    `json:"caseSTypeId"`
 	Priority        int       `json:"priority"`
-	Source          *string   `json:"source"`
-	DeviceID        *string   `json:"deviceId"`
-	PhoneNo         *string   `json:"phoneNo"`
+	Source          string    `json:"source"`
+	DeviceID        string    `json:"deviceId"`
+	PhoneNo         string    `json:"phoneNo"`
 	PhoneNoHide     bool      `json:"phoneNoHide"`
 	CaseDetail      *string   `json:"caseDetail"`
-	ExtReceive      *string   `json:"extReceive"`
-	StatusID        *string   `json:"statusId"`
-	CaseLat         *string   `json:"caseLat"`
-	CaseLon         *string   `json:"caseLon"`
-	CaseLocAddr     *string   `json:"caselocAddr"`
-	CaseLocAddrDecs *string   `json:"caselocAddrDecs"`
-	CountryID       *string   `json:"countryId"`
-	ProvID          *string   `json:"provId"`
-	DistID          *string   `json:"distId"`
+	ExtReceive      string    `json:"extReceive"`
+	StatusID        string    `json:"statusId"`
+	CaseLat         string    `json:"caseLat"`
+	CaseLon         string    `json:"caseLon"`
+	CaseLocAddr     string    `json:"caselocAddr"`
+	CaseLocAddrDecs string    `json:"caselocAddrDecs"`
+	CountryID       string    `json:"countryId"`
+	ProvID          string    `json:"provId"`
+	DistID          string    `json:"distId"`
 	CaseDuration    int       `json:"caseDuration"`
 	CreatedDate     time.Time `json:"createdDate"`
 	StartedDate     time.Time `json:"startedDate"`
@@ -110,17 +110,17 @@ type CaseUpdate struct {
 	ReceivedDate    time.Time `json:"receivedDate"`
 	ArrivedDate     time.Time `json:"arrivedDate"`
 	ClosedDate      time.Time `json:"closedDate"`
-	UserCreate      *string   `json:"usercreate"`
-	UserCommand     *string   `json:"usercommand"`
-	UserReceive     *string   `json:"userreceive"`
-	UserArrive      *string   `json:"userarrive"`
-	UserClose       *string   `json:"userclose"`
-	ResID           *string   `json:"resId"`
+	UserCreate      string    `json:"usercreate"`
+	UserCommand     string    `json:"usercommand"`
+	UserReceive     string    `json:"userreceive"`
+	UserArrive      string    `json:"userarrive"`
+	UserClose       string    `json:"userclose"`
+	ResID           string    `json:"resId"`
 	ResDetail       *string   `json:"resDetail"`
 }
 
 type OutputCase struct {
-	Id                    *string    `json:"id"`
+	Id                    string     `json:"id"`
 	CaseId                *string    `json:"caseId"`
 	Casetype_code         *string    `json:"CasetypeCode"`
 	Priority              *int       `json:"priority"`
@@ -145,20 +145,20 @@ type CaseListData struct {
 	RecordsTotal    int          `json:"recordsTotal"`
 	RecordsFiltered int          `json:"recordsFiltered"`
 	Data            []OutputCase `json:"data"`
-	Error           *string      `json:"error"`
+	Error           string       `json:"error"`
 }
 
 type CaseDetailData struct {
 	ID                  int        `json:"id"`
-	CaseID              *string    `json:"caseId"`
+	CaseID              string     `json:"caseId"`
 	ReferCaseID         *string    `json:"referCaseId"`
-	CasetypeCode        *string    `json:"casetypeCode"`
+	CasetypeCode        string     `json:"casetypeCode"`
 	Priority            int        `json:"priority"`
 	Ways                int        `json:"ways"`
-	PhoneNumber         *string    `json:"phoneNumber"`
-	CaseStatusCode      *string    `json:"caseStatusCode"`
-	CaseStatusName      *string    `json:"caseStatusName"`
-	CaseDetail          *string    `json:"caseDetail"`
+	PhoneNumber         string     `json:"phoneNumber"`
+	CaseStatusCode      string     `json:"caseStatusCode"`
+	CaseStatusName      string     `json:"caseStatusName"`
+	CaseDetail          string     `json:"caseDetail"`
 	DepartmentName      *string    `json:"departmentName"`
 	CommandCode         *string    `json:"commandCode"`
 	CommandName         *string    `json:"commandName"`
@@ -168,9 +168,9 @@ type CaseDetailData struct {
 	CaseLocationDetail  *string    `json:"caseLocationDetail"`
 	CaseLat             *string    `json:"caseLat"`
 	CaseLon             *string    `json:"caseLon"`
-	TransImg            *string    `json:"transImg"`
-	CitizenCode         *string    `json:"citizenCode"`
-	ExtensionReceive    *string    `json:"extensionReceive"`
+	TransImg            string     `json:"transImg"`
+	CitizenCode         string     `json:"citizenCode"`
+	ExtensionReceive    string     `json:"extensionReceive"`
 	SpecialEmergency    int        `json:"specialEmergency"`
 	UrgentAmount        *string    `json:"urgentAmount"`
 	OpenedDate          time.Time  `json:"openedDate"`
@@ -178,84 +178,84 @@ type CaseDetailData struct {
 	CreatedDate         time.Time  `json:"createdDate"`
 	StartedDate         time.Time  `json:"startedDate"`
 	ModifiedDate        time.Time  `json:"modifiedDate"`
-	UserCreate          *string    `json:"userCreate"`
+	UserCreate          string     `json:"userCreate"`
 	UserCreateID        *string    `json:"userCreateId"`
-	UserModify          *string    `json:"userModify"`
+	UserModify          string     `json:"userModify"`
 	Responsible         *string    `json:"responsible"`
 	ApprovedStatus      *int       `json:"approvedStatus"`
-	CasetypeName        *string    `json:"casetypeName"`
+	CasetypeName        string     `json:"casetypeName"`
 	MediaType           int        `json:"mediaType"`
 	VOwner              int        `json:"vOwner"`
-	VVin                *string    `json:"vVin"`
+	VVin                string     `json:"vVin"`
 	DestLocationAddress *string    `json:"destLocationAddress"`
 	DestLocationDetail  *string    `json:"destLocationDetail"`
 	DestLat             *string    `json:"destLat"`
 	DestLon             *string    `json:"destLon"`
-	CitizenFullname     *string    `json:"citizenFullname"`
+	CitizenFullname     string     `json:"citizenFullname"`
 }
 
 type CaseResponse struct {
-	Status *string         `json:"status"`
-	Msg    *string         `json:"msg"`
+	Status string          `json:"status"`
+	Msg    string          `json:"msg"`
 	Data   *CaseDetailData `json:"data,omitempty"`
-	Desc   *string         `json:"desc"`
+	Desc   string          `json:"desc"`
 }
 
 type CaseListResponse struct {
-	Status *string      `json:"status"`
-	Msg    *string      `json:"msg"`
+	Status string       `json:"status"`
+	Msg    string       `json:"msg"`
 	Data   CaseListData `json:"data,omitempty"`
-	Desc   *string      `json:"desc"`
+	Desc   string       `json:"desc"`
 }
 
 type CaseForCreate struct {
-	ReferCaseID         *string   `json:"referCaseId" `
-	CasetypeCode        *string   `json:"casetypeCode" `
+	ReferCaseID         string    `json:"referCaseId" `
+	CasetypeCode        string    `json:"casetypeCode" `
 	Priority            int       `json:"priority" `
 	Ways                int       `json:"ways" `
-	PhoneNumber         *string   `json:"phoneNumber" `
+	PhoneNumber         string    `json:"phoneNumber" `
 	PhoneNumberHide     int       `json:"phoneNumberHide" `
 	Duration            int       `json:"duration" `
-	CaseStatusCode      *string   `json:"caseStatusCode" `
+	CaseStatusCode      string    `json:"caseStatusCode" `
 	CaseCondition       int       `json:"caseCondition" `
-	CaseDetail          *string   `json:"caseDetail" `
-	CaseLocationType    *string   `json:"caseLocationType" `
-	CommandCode         *string   `json:"commandCode" `
-	PoliceStationCode   *string   `json:"policeStationCode" `
-	CaseLocationAddress *string   `json:"caseLocationAddress" `
-	CaseLocationDetail  *string   `json:"caseLocationDetail" `
-	CaseRoute           *string   `json:"caseRoute" `
-	CaseLat             *string   `json:"caseLat" `
-	CaseLon             *string   `json:"caseLon" `
-	CaseDirection       *string   `json:"caseDirection" `
+	CaseDetail          string    `json:"caseDetail" `
+	CaseLocationType    string    `json:"caseLocationType" `
+	CommandCode         string    `json:"commandCode" `
+	PoliceStationCode   string    `json:"policeStationCode" `
+	CaseLocationAddress string    `json:"caseLocationAddress" `
+	CaseLocationDetail  string    `json:"caseLocationDetail" `
+	CaseRoute           string    `json:"caseRoute" `
+	CaseLat             string    `json:"caseLat" `
+	CaseLon             string    `json:"caseLon" `
+	CaseDirection       string    `json:"caseDirection" `
 	CasePhoto           []Media   `json:"casePhoto" `
 	TransImg            []Media   `json:"transImg" `
 	Home                int       `json:"home" `
-	CitizenCode         *string   `json:"citizenCode" `
-	ExtensionReceive    *string   `json:"extensionReceive" `
+	CitizenCode         string    `json:"citizenCode" `
+	ExtensionReceive    string    `json:"extensionReceive" `
 	CaseSLA             int       `json:"caseSla" `
-	ActionProCode       *string   `json:"actionProCode" `
+	ActionProCode       string    `json:"actionProCode" `
 	SpecialEmergency    int       `json:"specialEmergency" `
-	MediaCode           *string   `json:"mediaCode" `
+	MediaCode           string    `json:"mediaCode" `
 	MediaType           int       `json:"mediaType" `
 	OpenedDate          time.Time `json:"openedDate"`
 	CreatedDate         time.Time `json:"createdDate"`
 	StartedDate         time.Time `json:"startedDate"`
 	ClosedDate          time.Time `json:"closedDate"`
 	ModifiedDate        time.Time `json:"modifiedDate" `
-	UserCreate          *string   `json:"userCreate" `
-	UserClose           *string   `json:"userClose" `
-	UserModify          *string   `json:"userModify" `
+	UserCreate          string    `json:"userCreate" `
+	UserClose           string    `json:"userClose" `
+	UserModify          string    `json:"userModify" `
 	NeedAmbulance       int       `json:"needAmbulance" `
 	Backdated           int       `json:"backdated" `
-	EscapeRoute         *string   `json:"escapeRoute" `
+	EscapeRoute         string    `json:"escapeRoute" `
 	VOwner              int       `json:"vOwner" `
-	VVin                *string   `json:"vVin" `
-	DestLocationAddress *string   `json:"destLocationAddress" `
-	DestLocationDetail  *string   `json:"destLocationDetail" `
-	DestLat             *string   `json:"destLat" `
-	DestLon             *string   `json:"destLon" `
-	Token               *string   `json:"token" `
+	VVin                string    `json:"vVin" `
+	DestLocationAddress string    `json:"destLocationAddress" `
+	DestLocationDetail  string    `json:"destLocationDetail" `
+	DestLat             string    `json:"destLat" `
+	DestLon             string    `json:"destLon" `
+	Token               string    `json:"token" `
 }
 
 func (c *CaseForCreate) SetDefaults() {
@@ -278,93 +278,93 @@ func (c *CaseForCreate) SetDefaults() {
 }
 
 type CaseForUpdate struct {
-	ReferCaseID         *string   `json:"referCaseId"`
-	CasetypeCode        *string   `json:"casetypeCode"`
+	ReferCaseID         string    `json:"referCaseId"`
+	CasetypeCode        string    `json:"casetypeCode"`
 	Priority            int       `json:"priority"`
 	Ways                int       `json:"ways"`
-	PhoneNumber         *string   `json:"phoneNumber"`
+	PhoneNumber         string    `json:"phoneNumber"`
 	PhoneNumberHide     int       `json:"phoneNumberHide"`
 	Duration            int       `json:"duration"`
-	CaseStatusCode      *string   `json:"caseStatusCode"`
+	CaseStatusCode      string    `json:"caseStatusCode"`
 	CaseCondition       int       `json:"caseCondition"`
-	CaseDetail          *string   `json:"caseDetail"`
-	CaseLocationType    *string   `json:"caseLocationType"`
-	CommandCode         *string   `json:"commandCode"`
-	PoliceStationCode   *string   `json:"policeStationCode"`
-	CaseLocationAddress *string   `json:"caseLocationAddress"`
-	CaseLocationDetail  *string   `json:"caseLocationDetail"`
-	CaseRoute           *string   `json:"caseRoute"`
-	CaseLat             *string   `json:"caseLat"`
-	CaseLon             *string   `json:"caseLon"`
-	CaseDirection       *string   `json:"caseDirection"`
+	CaseDetail          string    `json:"caseDetail"`
+	CaseLocationType    string    `json:"caseLocationType"`
+	CommandCode         string    `json:"commandCode"`
+	PoliceStationCode   string    `json:"policeStationCode"`
+	CaseLocationAddress string    `json:"caseLocationAddress"`
+	CaseLocationDetail  string    `json:"caseLocationDetail"`
+	CaseRoute           string    `json:"caseRoute"`
+	CaseLat             string    `json:"caseLat"`
+	CaseLon             string    `json:"caseLon"`
+	CaseDirection       string    `json:"caseDirection"`
 	CasePhoto           []Media   `json:"casePhoto"`
 	TransImg            []Media   `json:"transImg"`
 	Home                int       `json:"home"`
-	CitizenCode         *string   `json:"citizenCode"`
-	ExtensionReceive    *string   `json:"extensionReceive"`
+	CitizenCode         string    `json:"citizenCode"`
+	ExtensionReceive    string    `json:"extensionReceive"`
 	CaseSLA             int       `json:"caseSla"`
-	ActionProCode       *string   `json:"actionProCode"`
+	ActionProCode       string    `json:"actionProCode"`
 	SpecialEmergency    int       `json:"specialEmergency"`
-	MediaCode           *string   `json:"mediaCode"`
+	MediaCode           string    `json:"mediaCode"`
 	MediaType           int       `json:"mediaType"`
 	OpenedDate          time.Time `json:"openedDate"`
 	CreatedDate         time.Time `json:"createdDate"`
 	StartedDate         time.Time `json:"startedDate"`
 	ClosedDate          time.Time `json:"closedDate"`
 	ModifiedDate        time.Time `json:"modifiedDate"`
-	UserCreate          *string   `json:"userCreate"`
-	UserClose           *string   `json:"userClose"`
-	UserModify          *string   `json:"userModify"`
+	UserCreate          string    `json:"userCreate"`
+	UserClose           string    `json:"userClose"`
+	UserModify          string    `json:"userModify"`
 	NeedAmbulance       int       `json:"needAmbulance"`
 	Backdated           int       `json:"backdated"`
-	EscapeRoute         *string   `json:"escapeRoute"`
+	EscapeRoute         string    `json:"escapeRoute"`
 	VOwner              int       `json:"vOwner"`
-	VVin                *string   `json:"vVin"`
-	DestLocationAddress *string   `json:"destLocationAddress"`
-	DestLocationDetail  *string   `json:"destLocationDetail"`
-	DestLat             *string   `json:"destLat"`
-	DestLon             *string   `json:"destLon"`
+	VVin                string    `json:"vVin"`
+	DestLocationAddress string    `json:"destLocationAddress"`
+	DestLocationDetail  string    `json:"destLocationDetail"`
+	DestLat             string    `json:"destLat"`
+	DestLon             string    `json:"destLon"`
 }
 type Media struct {
-	URL *string `json:"url"`
+	URL string `json:"url"`
 }
 
 type CaseCloseInput struct {
-	CaseStatusCode *string   `json:"caseStatusCode"`
-	ResultCode     *string   `json:"resultCode"`
-	ResultDetail   *string   `json:"resultDetail"`
+	CaseStatusCode string    `json:"caseStatusCode"`
+	ResultCode     string    `json:"resultCode"`
+	ResultDetail   string    `json:"resultDetail"`
 	TransImg       []Media   `json:"transImg"`
 	ClosedDate     time.Time `json:"closedDate"`
 	ModifiedDate   time.Time `json:"modifiedDate"`
-	UserClose      *string   `json:"userClose"`
-	UserModify     *string   `json:"userModify"`
+	UserClose      string    `json:"userClose"`
+	UserModify     string    `json:"userModify"`
 }
 
 type CreateCaseResponse struct {
-	Status *string `json:"status"`
-	Msg    *string `json:"msg"`
-	Desc   *string `json:"desc"`
-	ID     *string `json:"id"`
-	CaseID *string `json:"caseId"`
+	Status string `json:"status"`
+	Msg    string `json:"msg"`
+	Desc   string `json:"desc"`
+	ID     string `json:"id"`
+	CaseID string `json:"caseId"`
 }
 
 type UpdateCaseResponse struct {
-	Status *string `json:"status"`
-	Msg    *string `json:"msg"`
-	Desc   *string `json:"desc"`
-	ID     int     `json:"id"`
+	Status string `json:"status"`
+	Msg    string `json:"msg"`
+	Desc   string `json:"desc"`
+	ID     int    `json:"id"`
 }
 
 type DeleteCaseResponse struct {
-	Status *string `json:"status"`
-	Msg    *string `json:"msg"`
-	Desc   *string `json:"desc"`
+	Status string `json:"status"`
+	Msg    string `json:"msg"`
+	Desc   string `json:"desc"`
 }
 
 type CaseType struct {
-	Id        *string   `json:"id"`
-	TypeId    *string   `json:"typeId"`
-	OrgId     *string   `json:"orgId"`
+	Id        string    `json:"id"`
+	TypeId    string    `json:"typeId"`
+	OrgId     string    `json:"orgId"`
 	En        *string   `json:"en"`
 	Th        *string   `json:"th"`
 	Active    bool      `json:"active"`
@@ -387,55 +387,55 @@ type CaseTypeUpdate struct {
 }
 
 type CaseSubType struct {
-	Id            *string   `json:"id"`
-	TypeID        *string   `json:"typeId"`
-	STypeID       *string   `json:"sTypeId"`
-	STypeCode     *string   `json:"sTypeCode"`
-	OrgID         *string   `json:"orgId"`
-	EN            *string   `json:"en"`
-	TH            *string   `json:"th"`
-	WFID          *string   `json:"wfId"`
-	CaseSLA       *string   `json:"caseSla"`
-	Priority      *string   `json:"priority"`
-	UserSkillList []*string `json:"userSkillList"`
-	UnitPropLists []*string `json:"unitPropLists"`
+	Id            string    `json:"id"`
+	TypeID        string    `json:"typeId"`
+	STypeID       string    `json:"sTypeId"`
+	STypeCode     string    `json:"sTypeCode"`
+	OrgID         string    `json:"orgId"`
+	EN            string    `json:"en"`
+	TH            string    `json:"th"`
+	WFID          string    `json:"wfId"`
+	CaseSLA       string    `json:"caseSla"`
+	Priority      string    `json:"priority"`
+	UserSkillList []string  `json:"userSkillList"`
+	UnitPropLists []string  `json:"unitPropLists"`
 	Active        bool      `json:"active"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
-	CreatedBy     *string   `json:"createdBy"`
-	UpdatedBy     *string   `json:"updatedBy"`
+	CreatedBy     string    `json:"createdBy"`
+	UpdatedBy     string    `json:"updatedBy"`
 }
 
 type CaseSubTypeInsert struct {
-	TypeID        *string   `json:"typeId"`
-	STypeCode     *string   `json:"sTypeCode"`
-	EN            *string   `json:"en"`
-	TH            *string   `json:"th"`
-	WFID          *string   `json:"wfId"`
-	CaseSLA       *string   `json:"caseSla"`
-	Priority      *string   `json:"priority"`
-	UserSkillList []*string `json:"userSkillList"`
-	UnitPropLists []*string `json:"unitPropLists"`
-	Active        bool      `json:"active"`
+	TypeID        string   `json:"typeId"`
+	STypeCode     string   `json:"sTypeCode"`
+	EN            string   `json:"en"`
+	TH            string   `json:"th"`
+	WFID          string   `json:"wfId"`
+	CaseSLA       string   `json:"caseSla"`
+	Priority      string   `json:"priority"`
+	UserSkillList []string `json:"userSkillList"`
+	UnitPropLists []string `json:"unitPropLists"`
+	Active        bool     `json:"active"`
 }
 
 type CaseSubTypeUpdate struct {
-	STypeCode     *string   `json:"sTypeCode"`
-	EN            *string   `json:"en"`
-	TH            *string   `json:"th"`
-	WFID          *string   `json:"wfId"`
-	CaseSLA       *string   `json:"caseSla"`
-	Priority      *string   `json:"priority"`
-	UserSkillList []*string `json:"userSkillList"`
-	UnitPropLists []*string `json:"unitPropLists"`
-	Active        bool      `json:"active"`
+	STypeCode     string   `json:"sTypeCode"`
+	EN            string   `json:"en"`
+	TH            string   `json:"th"`
+	WFID          string   `json:"wfId"`
+	CaseSLA       string   `json:"caseSla"`
+	Priority      string   `json:"priority"`
+	UserSkillList []string `json:"userSkillList"`
+	UnitPropLists []string `json:"unitPropLists"`
+	Active        bool     `json:"active"`
 }
 
 type CaseTypeWithSubType struct {
-	TypeID        *string     `json:"typeId" db:"typeId"`
-	OrgID         *string     `json:"orgId" db:"orgId"`
-	TypeEN        *string     `json:"en" db:"en"`
-	TypeTH        *string     `json:"th" db:"th"`
+	TypeID        string      `json:"typeId" db:"typeId"`
+	OrgID         string      `json:"orgId" db:"orgId"`
+	TypeEN        string      `json:"en" db:"en"`
+	TypeTH        string      `json:"th" db:"th"`
 	TypeActive    bool        `json:"active" db:"active"`
 	SubTypeID     *string     `json:"sTypeId" db:"sTypeId"`
 	SubTypeCode   *string     `json:"sTypeCode" db:"sTypeCode"`
