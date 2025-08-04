@@ -35,7 +35,7 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 	  	t3.en, t3.th, t3.active
 		FROM public.area_districts t1
 		FULL JOIN public.area_provinces t2 ON t1."provId" = t2."provId"
-		FULL JOIN public.area_countries t3 ON t1."countryId" = t3."countryId"
+		FULL JOIN public.area_countries t3 ON t2."countryId" = t3."countryId"
 	WHERE (t1."orgId" = $1 OR t1."orgId" IS NULL) ORDER by t1."countryId"  NULLS LAST;`
 
 	var rows pgx.Rows
