@@ -836,6 +836,313 @@ func GetWorkFlowList(c *gin.Context) {
 
 }
 
+// @summary Create Workflow
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Create Workflow
+// @accept json
+// @produce json
+// @param Body body model.WorkFlowInsert true "Create Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/workflows [post]
+func WorkFlowInsert(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.WorkFlowInsert
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	username := GetVariableFromToken(c, "username")
+	uuid := uuid.New()
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
+	query := `INSERT INTO public.wf_definitions(
+	"orgId", "wfId", title, "desc", "caseTypeId", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+
+	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
+	_, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc, req.MetaData.CaseTypeId,
+		true, true, true, "draft", now, now, username, username)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	for i, item := range req.Nodes {
+		now = time.Now()
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+
+		query := `
+		INSERT INTO public.wf_nodes(
+	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		_, err := conn.Exec(ctx, query,
+			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, now, now, username, username)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+	}
+
+	for i, item := range req.Connections {
+		now = time.Now()
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+
+		query := `
+		INSERT INTO public.wf_nodes(
+	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		_, err := conn.Exec(ctx, query,
+			orgId, uuid, "", "draft", "", "connections", item, now, now, username, username)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+	}
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Create successfully",
+	}
+	c.JSON(http.StatusOK, response)
+
+}
+
+// @summary Update Workflow
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Update Workflow
+// @accept json
+// @produce json
+// @Param uuid path string true "uuid"
+// @param Body body model.WorkFlowInsert true "Create Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/workflows/{uuid} [patch]
+func WorkFlowUpdate(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	var req model.WorkFlowInsert
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	uuid := c.Param("uuid")
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	now := time.Now()
+	query := `UPDATE public.wf_definitions
+	SET title=$3, "desc"=$4, active=$5, publish=$6, locks=$7, versions=$8, "updatedAt"=$9,"updatedBy"=$10
+		WHERE "wfId"=$1 AND "orgId"=$2;`
+
+	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
+	_, err := conn.Exec(ctx, query,
+		uuid, orgId, req.MetaData.Title, req.MetaData.Desc,
+		true, true, true, "draft", now, username)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	query = `
+	DELETE FROM public.wf_nodes
+	WHERE "wfId"=$1;
+	`
+	_, err = conn.Exec(ctx, query, uuid)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	for i, item := range req.Nodes {
+		now = time.Now()
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+
+		query := `
+		INSERT INTO public.wf_nodes(
+	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		_, err := conn.Exec(ctx, query,
+			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, now, now, username, username)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+	}
+
+	for i, item := range req.Connections {
+		now = time.Now()
+		logger.Debug("eleNumber", zap.Int("i", i+1))
+		logger.Debug("JsonArray", zap.Any("Json", item))
+
+		query := `
+		INSERT INTO public.wf_nodes(
+	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+		`
+		logger.Debug(`Query`, zap.String("query", query),
+			zap.Any("Input", []any{
+				req, item,
+			}))
+
+		_, err := conn.Exec(ctx, query,
+			orgId, uuid, "", "draft", "", "connections", item, now, now, username, username)
+
+		if err != nil {
+			// log.Printf("Insert failed: %v", err)
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			logger.Warn("Insert failed", zap.Error(err))
+			return
+		}
+	}
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Update successfully",
+	}
+	c.JSON(http.StatusOK, response)
+
+}
+
+// @summary Delete Workflow
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Delete Workflow
+// @accept json
+// @produce json
+// @Param uuid path string true "uuid"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/workflows/{uuid} [delete]
+func WorkflowDelete(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	id := c.Param("uuid")
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `DELETE FROM public."wf_definitions" WHERE "wfId" = $1 AND "orgId"=$2`
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err := conn.Exec(ctx, query, id, orgId)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+	query = `DELETE FROM public."wf_nodes" WHERE "wfId" = $1 AND "orgId"=$2`
+	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
+	_, err = conn.Exec(ctx, query, id, orgId)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Update failed", zap.Error(err))
+		return
+	}
+
+	// Continue logic...
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
+	})
+}
+
 // @summary Get Form by Casesubtype
 // @tags Form and Workflow
 // @security ApiKeyAuth

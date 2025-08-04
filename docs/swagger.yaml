@@ -855,6 +855,56 @@ definitions:
       username:
         type: string
     type: object
+  model.WorkFlowConnection:
+    properties:
+      id:
+        type: string
+      source:
+        type: string
+      target:
+        type: string
+    type: object
+  model.WorkFlowInsert:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/model.WorkFlowConnection'
+        type: array
+      metadata:
+        $ref: '#/definitions/model.WorkFlowMetadata'
+      nodes:
+        items:
+          $ref: '#/definitions/model.WorkFlowNode'
+        type: array
+    type: object
+  model.WorkFlowMetadata:
+    properties:
+      caseTypeId:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.WorkFlowNode:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      id:
+        type: string
+      position:
+        additionalProperties: true
+        type: object
+      type:
+        type: string
+    type: object
 info:
   contact:
     email: support@somewhere.com
@@ -3596,6 +3646,29 @@ paths:
       summary: Get Workflow List
       tags:
       - Form and Workflow
+    post:
+      consumes:
+      - application/json
+      operationId: Create Workflow
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WorkFlowInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Workflow
+      tags:
+      - Form and Workflow
   /api/v1/workflows/{id}:
     get:
       consumes:
@@ -3617,6 +3690,57 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Workflow
+      tags:
+      - Form and Workflow
+  /api/v1/workflows/{uuid}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Workflow
+      parameters:
+      - description: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Workflow
+      tags:
+      - Form and Workflow
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Workflow
+      parameters:
+      - description: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.WorkFlowInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Workflow
       tags:
       - Form and Workflow
 schemes:

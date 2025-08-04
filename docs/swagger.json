@@ -4360,6 +4360,43 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Create Workflow",
+                "operationId": "Create Workflow",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WorkFlowInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/workflows/{id}": {
@@ -4387,6 +4424,87 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workflows/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Delete Workflow",
+                "operationId": "Delete Workflow",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "uuid",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Workflow",
+                "operationId": "Update Workflow",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "uuid",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.WorkFlowInsert"
+                        }
                     }
                 ],
                 "responses": {
@@ -5685,6 +5803,82 @@
                     "type": "integer"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WorkFlowConnection": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WorkFlowInsert": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.WorkFlowConnection"
+                    }
+                },
+                "metadata": {
+                    "$ref": "#/definitions/model.WorkFlowMetadata"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.WorkFlowNode"
+                    }
+                }
+            }
+        },
+        "model.WorkFlowMetadata": {
+            "type": "object",
+            "properties": {
+                "caseTypeId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WorkFlowNode": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "type": {
                     "type": "string"
                 }
             }

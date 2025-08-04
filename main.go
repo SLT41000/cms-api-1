@@ -85,6 +85,9 @@ func main() {
 		v1.POST("/forms/casesubtype", handler.GetFormByCaseSubType)
 		v1.GET("/workflows", handler.GetWorkFlowList)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
+		v1.POST("/workflows", handler.WorkFlowInsert)
+		v1.PATCH("/workflows/:uuid", handler.WorkFlowUpdate)
+		v1.DELETE("/workflows/:uuid", handler.WorkflowDelete)
 
 		v1.GET("/case", handler.ListCase)
 		v1.GET("/case/:id", handler.CaseById)

@@ -82,11 +82,31 @@ type WorkFlow struct {
 }
 
 type WorkFlowMetadata struct {
-	Title     *string   `json:"title"`
-	Desc      *string   `json:"description"`
-	Status    *string   `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Title      *string   `json:"title"`
+	CaseTypeId *string   `json:"caseTypeId,omitempty"`
+	Desc       *string   `json:"description"`
+	Status     *string   `json:"status"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+type WorkFlowInsert struct {
+	Nodes       []WorkFlowNode       `json:"nodes"`
+	Connections []WorkFlowConnection `json:"connections"`
+	MetaData    WorkFlowMetadata     `json:"metadata"`
+}
+
+type WorkFlowNode struct {
+	Id       string                 `json:"id"`
+	Type     string                 `json:"type"`
+	Position map[string]interface{} `json:"position"`
+	Data     map[string]interface{} `json:"data"`
+}
+
+type WorkFlowConnection struct {
+	Id     string `json:"id"`
+	Source string `json:"source"`
+	Target string `json:"target"`
 }
 
 type FormByCasesubtype struct {

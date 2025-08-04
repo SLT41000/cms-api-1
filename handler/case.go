@@ -307,6 +307,7 @@ func InsertCase(c *gin.Context) {
 	) RETURNING id ;
 	`
 
+	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
 	err := conn.QueryRow(ctx, query,
 		orgId, genCaseID(), req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
