@@ -114,6 +114,7 @@ func main() {
 		v1.PATCH("/commands/:id", handler.UpdateCommand)
 		v1.DELETE("/commands/:id", handler.DeleteCommand)
 
+		v1.GET("/department_command_stations", handler.GetDepartmentCommandStation)
 		v1.GET("/stations", handler.GetStation)
 		v1.GET("/stations/:id", handler.GetStationbyId)
 		v1.POST("/stations/add", handler.InsertStations)

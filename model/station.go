@@ -32,3 +32,26 @@ type StationUpdate struct {
 	Th     string `json:"th"`     // Thai name
 	Active bool   `json:"active"` // Active status\
 }
+
+type StationWithCommandDept struct {
+	ID     string `json:"id"`
+	OrgId  string `json:"orgId"`
+	DeptId string `json:"deptId"`
+	CommId string `json:"commId"`
+	StnId  string `json:"stnId"`
+
+	// Station fields
+	StationEn     string `json:"stationEn"`
+	StationTh     string `json:"stationTh"`
+	StationActive bool   `json:"stationActive"`
+
+	// Command fields
+	CommandEn     string `json:"commandEn"`
+	CommandTh     string `json:"commandTh"`
+	CommandActive bool   `json:"commandActive"`
+
+	// Department fields
+	DeptEn     string `json:"deptEn"`
+	DeptTh     string `json:"deptTh"`
+	DeptActive bool   `json:"deptActive"`
+}

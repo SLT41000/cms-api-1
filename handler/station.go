@@ -97,6 +97,86 @@ func GetStation(c *gin.Context) {
 	}
 }
 
+// @summary Get Stations Command Department
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id Get Stations Command Department
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/department_command_stations [get]
+func GetDepartmentCommandStation(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT t1."id",t1."orgId", t1."deptId", t1."commId", t1."stnId",
+	 t1.en, t1.th, t1.active,
+	  t2.en, t2.th, t2.active,
+	   t3.en, t3.th, t3.active
+FROM public.sec_stations t1
+join public.sec_commands t2 ON t1."commId" = t2."commId"
+join public.sec_departments t3 ON t1."deptId" = t2."deptId"
+	WHERE t1."orgId"=$1 ORDER by t1."stnId"`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var errorMsg string
+	var Station model.StationWithCommandDept
+	var StationList []model.StationWithCommandDept
+	rowIndex := 0
+	for rows.Next() {
+		rowIndex++
+		err := rows.Scan(&Station.ID, &Station.OrgId, &Station.DeptId, &Station.CommId, &Station.StnId,
+			&Station.StationEn, &Station.StationTh, &Station.StationActive,
+			&Station.CommandEn, &Station.CommandTh, &Station.CommandActive,
+			&Station.DeptEn, &Station.DeptTh, &Station.DeptActive)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		StationList = append(StationList, Station)
+	}
+	if errorMsg != "" {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   errorMsg,
+		}
+		c.JSON(http.StatusInternalServerError, response)
+	} else {
+		response := model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Data:   StationList,
+			Desc:   "",
+		}
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 // @summary Get Stations by id
 // @tags Dispatch
 // @security ApiKeyAuth

@@ -1497,6 +1497,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/department_command_stations": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Get Stations Command Department",
+                "operationId": "Get Stations Command Department",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/departments": {
             "get": {
                 "security": [

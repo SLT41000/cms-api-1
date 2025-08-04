@@ -1791,6 +1791,23 @@ paths:
       summary: Create Customer with Social
       tags:
       - Customer
+  /api/v1/department_command_stations:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Stations Command Department
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Stations Command Department
+      tags:
+      - Dispatch
   /api/v1/departments:
     get:
       consumes:
