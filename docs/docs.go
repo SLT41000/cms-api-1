@@ -5340,6 +5340,18 @@ const docTemplate = `{
                 }
             }
         },
+        "model.NodeConfig": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Notification": {
             "type": "object",
             "properties": {
@@ -6040,8 +6052,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/model.NodeConfig"
                 },
                 "id": {
                     "type": "string"

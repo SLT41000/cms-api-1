@@ -869,11 +869,11 @@ func WorkFlowInsert(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 	query := `INSERT INTO public.wf_definitions(
-	"orgId", "wfId", title, "desc", "caseTypeId", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+	"orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
-	_, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc, req.MetaData.CaseTypeId,
+	_, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc,
 		true, true, true, "draft", now, now, username, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -889,11 +889,25 @@ func WorkFlowInsert(c *gin.Context) {
 		now = time.Now()
 		logger.Debug("eleNumber", zap.Int("i", i+1))
 		logger.Debug("JsonArray", zap.Any("Json", item))
+		var pic, group, formID interface{}
+		if item.Data != nil && item.Data.Config != nil {
+			config := *item.Data.Config
+
+			if val, ok := config["pic"].(string); ok {
+				pic = val
+			}
+			if val, ok := config["group"].(string); ok {
+				group = val
+			}
+			if val, ok := config["formId"].(string); ok {
+				formID = val
+			}
+		}
 
 		query := `
 		INSERT INTO public.wf_nodes(
-	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+	"orgId", "wfId", "nodeId", versions, type, section, data,pic,"group","formId", "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
 		`
 		logger.Debug(`Query`, zap.String("query", query),
 			zap.Any("Input", []any{
@@ -901,7 +915,7 @@ func WorkFlowInsert(c *gin.Context) {
 			}))
 
 		_, err := conn.Exec(ctx, query,
-			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, now, now, username, username)
+			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, pic, group, formID, now, now, username, username)
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
@@ -915,39 +929,34 @@ func WorkFlowInsert(c *gin.Context) {
 		}
 	}
 
-	for i, item := range req.Connections {
-		now = time.Now()
-		logger.Debug("eleNumber", zap.Int("i", i+1))
-		logger.Debug("JsonArray", zap.Any("Json", item))
-
-		query := `
+	query = `
 		INSERT INTO public.wf_nodes(
 	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 		`
-		logger.Debug(`Query`, zap.String("query", query),
-			zap.Any("Input", []any{
-				req, item,
-			}))
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{
+			req, req.Connections,
+		}))
 
-		_, err := conn.Exec(ctx, query,
-			orgId, uuid, "", "draft", "", "connections", item, now, now, username, username)
+	_, err = conn.Exec(ctx, query,
+		orgId, uuid, "", "draft", "", "connections", req.Connections, now, now, username, username)
 
-		if err != nil {
-			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
-				Status: "-1",
-				Msg:    "Failure",
-				Desc:   err.Error(),
-			})
-			logger.Warn("Insert failed", zap.Error(err))
-			return
-		}
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
 	}
+
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
-		Desc:   "Create successfully",
+		Desc:   "Update successfully",
 	}
 	c.JSON(http.StatusOK, response)
 
@@ -1025,11 +1034,25 @@ func WorkFlowUpdate(c *gin.Context) {
 		now = time.Now()
 		logger.Debug("eleNumber", zap.Int("i", i+1))
 		logger.Debug("JsonArray", zap.Any("Json", item))
+		var pic, group, formID interface{}
+		if item.Data != nil && item.Data.Config != nil {
+			config := *item.Data.Config
+
+			if val, ok := config["pic"].(string); ok {
+				pic = val
+			}
+			if val, ok := config["group"].(string); ok {
+				group = val
+			}
+			if val, ok := config["formId"].(string); ok {
+				formID = val
+			}
+		}
 
 		query := `
 		INSERT INTO public.wf_nodes(
-	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+	"orgId", "wfId", "nodeId", versions, type, section, data,pic,"group","formId", "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
 		`
 		logger.Debug(`Query`, zap.String("query", query),
 			zap.Any("Input", []any{
@@ -1037,7 +1060,7 @@ func WorkFlowUpdate(c *gin.Context) {
 			}))
 
 		_, err := conn.Exec(ctx, query,
-			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, now, now, username, username)
+			orgId, uuid, item.Id, "draft", item.Type, "nodes", item, pic, group, formID, now, now, username, username)
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
@@ -1051,35 +1074,30 @@ func WorkFlowUpdate(c *gin.Context) {
 		}
 	}
 
-	for i, item := range req.Connections {
-		now = time.Now()
-		logger.Debug("eleNumber", zap.Int("i", i+1))
-		logger.Debug("JsonArray", zap.Any("Json", item))
-
-		query := `
+	query = `
 		INSERT INTO public.wf_nodes(
 	"orgId", "wfId", "nodeId", versions, type, section, data, "createdAt", "updatedAt", "createdBy", "updatedBy")
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 		`
-		logger.Debug(`Query`, zap.String("query", query),
-			zap.Any("Input", []any{
-				req, item,
-			}))
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{
+			req, req.Connections,
+		}))
 
-		_, err := conn.Exec(ctx, query,
-			orgId, uuid, "", "draft", "", "connections", item, now, now, username, username)
+	_, err = conn.Exec(ctx, query,
+		orgId, uuid, "", "draft", "", "connections", req.Connections, now, now, username, username)
 
-		if err != nil {
-			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
-				Status: "-1",
-				Msg:    "Failure",
-				Desc:   err.Error(),
-			})
-			logger.Warn("Insert failed", zap.Error(err))
-			return
-		}
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
 	}
+
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",

@@ -100,7 +100,12 @@ type WorkFlowNode struct {
 	Id       string                 `json:"id"`
 	Type     string                 `json:"type"`
 	Position map[string]interface{} `json:"position"`
-	Data     map[string]interface{} `json:"data"`
+	Data     *NodeConfig            `json:"data"`
+}
+
+type NodeConfig struct {
+	Label  string                  `json:"label"`
+	Config *map[string]interface{} `json:"config"`
 }
 
 type WorkFlowConnection struct {
