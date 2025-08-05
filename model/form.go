@@ -120,17 +120,17 @@ type FormByCasesubtype struct {
 }
 
 type WorkflowModel struct {
-	ID        string
-	OrgID     string
-	WfID      string
-	Title     string
-	Desc      string
-	Active    bool
-	Publish   bool
-	Locks     bool
-	Versions  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	CreatedBy string
-	UpdatedBy string
+	ID        string    `json:"id"`
+	OrgID     string    `json:"orgId"`
+	WfID      string    `json:"wfId"`
+	Title     string    `json:"title"`
+	Desc      string    `json:"desc"`
+	Active    bool      `json:"active"`
+	Publish   bool      `json:"publish"`
+	Locks     bool      `json:"locks"`
+	Versions  string    `json:"versions"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy string    `json:"createdBy"`
+	UpdatedBy string    `json:"updatedBy"`
 }
