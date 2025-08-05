@@ -5,6 +5,7 @@ import (
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -725,6 +726,8 @@ func GetWorkFlow(c *gin.Context) {
 // @id Get Workflow List
 // @accept json
 // @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows [get]
 func GetWorkFlowList(c *gin.Context) {
@@ -736,15 +739,105 @@ func GetWorkFlowList(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil || length > 100 {
+		length = 1000
+	}
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT t1."wfId","section","data",title,"desc",t1."versions",t1."createdAt",t1."updatedAt" 
-	FROM public.wf_definitions t1
-	Inner join public.wf_nodes t2
-	ON t1."wfId" = t2."wfId" WHERE t2."orgId"=$1`
+	query := `SELECT id, "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.wf_definitions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{orgId, length, start}))
+	rows, err = conn.Query(ctx, query, orgId, length, start)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+	var Workflow model.WorkflowModel
+	var Data []model.WorkflowModel
+	found := false
+	for rows.Next() {
+		err := rows.Scan(&Workflow.ID, &Workflow.OrgID, &Workflow.WfID, &Workflow.Title, &Workflow.Desc, &Workflow.Active,
+			&Workflow.Publish, &Workflow.Locks, &Workflow.Versions, &Workflow.CreatedAt, &Workflow.UpdatedAt, &Workflow.CreatedBy, &Workflow.UpdatedBy)
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Data:   nil,
+				Desc:   err.Error(),
+			}
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+		// Store metadata (assuming same metadata per workflowId)
+		Data = append(Data, Workflow)
+		found = true
+	}
+
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "Not found",
+		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   Data,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+}
+
+func GetWorkFlowListOld(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil || length > 100 {
+		length = 1000
+	}
+	orgId := GetVariableFromToken(c, "orgId")
+	query := `SELECT t1."id",t1."wfId","section","data",title,"desc",t1."versions",t1."createdAt",t1."updatedAt" 
+	FROM public.wf_definitions t1
+	Inner join public.wf_nodes t2
+	ON t1."wfId" = t2."wfId" WHERE t2."orgId"=$1 LIMIT $2 OFFSET $3`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{orgId, length, start}))
+	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -765,12 +858,12 @@ func GetWorkFlowList(c *gin.Context) {
 	workflowNodesMap := make(map[string][]map[string]interface{})
 	workflowConnectionsMap := make(map[string][]map[string]interface{})
 	workflowMetaMap := make(map[string]model.WorkFlowMetadata)
-
+	found := false
 	for rows.Next() {
 		rowIndex++
 		var rawJSON []byte
 		var rowsType string
-		err := rows.Scan(&WfId, &rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
+		err := rows.Scan(&workflowMetaData.Id, &WfId, &rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
 			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
@@ -805,8 +898,18 @@ func GetWorkFlowList(c *gin.Context) {
 
 		// Store metadata (assuming same metadata per workflowId)
 		workflowMetaMap[WfId] = workflowMetaData
+		found = true
 	}
 
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "Not found",
+		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 	uniqueWfIDs := make(map[string]bool)
 	for id := range workflowNodesMap {
 		uniqueWfIDs[id] = true
@@ -819,11 +922,12 @@ func GetWorkFlowList(c *gin.Context) {
 	}
 	for wfId := range uniqueWfIDs {
 		workflow := model.WorkFlow{
-			Nodes:       workflowNodesMap[wfId],       // could be nil
-			Connections: workflowConnectionsMap[wfId], // could be nil
-			MetaData:    workflowMetaMap[wfId],
+			// Nodes:       workflowNodesMap[wfId],
+			// Connections: workflowConnectionsMap[wfId],
+			MetaData: workflowMetaMap[wfId],
 		}
 		workflowList = append(workflowList, workflow)
+
 	}
 
 	response := model.Response{

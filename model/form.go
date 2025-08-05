@@ -82,6 +82,7 @@ type WorkFlow struct {
 }
 
 type WorkFlowMetadata struct {
+	Id         int       `json:"id"`
 	Title      *string   `json:"title"`
 	CaseTypeId *string   `json:"caseTypeId,omitempty"`
 	Desc       *string   `json:"description"`
@@ -116,4 +117,20 @@ type WorkFlowConnection struct {
 
 type FormByCasesubtype struct {
 	CaseSubType *string `json:"caseSubType"`
+}
+
+type WorkflowModel struct {
+	ID        string
+	OrgID     string
+	WfID      string
+	Title     string
+	Desc      string
+	Active    bool
+	Publish   bool
+	Locks     bool
+	Versions  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	CreatedBy string
+	UpdatedBy string
 }

@@ -4627,6 +4627,22 @@ const docTemplate = `{
                 ],
                 "summary": "Get Workflow List",
                 "operationId": "Get Workflow List",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
@@ -6269,6 +6285,9 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"

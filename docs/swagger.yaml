@@ -979,6 +979,8 @@ definitions:
         type: string
       description:
         type: string
+      id:
+        type: integer
       status:
         type: string
       title:
@@ -3897,6 +3899,17 @@ paths:
       consumes:
       - application/json
       operationId: Get Workflow List
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
       produces:
       - application/json
       responses:
