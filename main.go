@@ -97,6 +97,12 @@ func main() {
 		v1.PATCH("/case/:id", handler.UpdateCase)
 		v1.DELETE("/case/:id", handler.DeleteCase)
 
+		v1.GET("/case_status", handler.GetCaseStatus)
+		v1.GET("/case_status/:id", handler.GetCaseStatusById)
+		v1.POST("/case_status/add", handler.InsertCaseStatus)
+		v1.PATCH("/case_status/:id", handler.UpdateCaseStatus)
+		v1.DELETE("/case_status/:id", handler.DeleteCaseStatus)
+
 		v1.GET("/casetypes", handler.ListCaseType)
 		v1.POST("/casetypes/add", handler.InsertCaseType)
 		v1.PATCH("/casetypes/:id", handler.UpdateCaseType)
