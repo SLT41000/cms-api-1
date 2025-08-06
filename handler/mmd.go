@@ -1591,8 +1591,8 @@ func GetMmdUnit(c *gin.Context) {
 		length = 1000
 	}
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT id, orgid, unitid, unitname, unitsourceid, unittypeid, priority, compid, deptid, commid, stnid, plateno, provincecode, active, username, islogin, isfreeze, isoutarea, loclat, loclon, localt, locbearing, locspeed, locprovider, locgpstime, locsatellites, locaccuracy, loclastupdatetime, breakduration, healthchk, healthchktime, sttid, createdat, updatedat, createdby, updatedby
-	FROM public.mdm_units WHERE orgid= $3 LIMIT $1 OFFSET $2`
+	query := `SELECT id, "orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId", "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat", "locLon", "locAlt", "locBearing", "locSpeed", "locProvider", "locGpsTime", "locSatellites", "locAccuracy", "locLastUpdateTime", "breakDuration", "healthChk", "healthChkTime", "sttId", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.mdm_units WHERE "orgId"= $3 LIMIT $1 OFFSET $2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
@@ -1700,8 +1700,8 @@ func GetMmdUnitById(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT id, orgid, unitid, unitname, unitsourceid, unittypeid, priority, compid, deptid, commid, stnid, plateno, provincecode, active, username, islogin, isfreeze, isoutarea, loclat, loclon, localt, locbearing, locspeed, locprovider, locgpstime, locsatellites, locaccuracy, loclastupdatetime, breakduration, healthchk, healthchktime, sttid, createdat, updatedat, createdby, updatedby
-	FROM public.mdm_units WHERE id=$1 AND orgid=$2`
+	query := `SELECT id, "orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId", "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat", "locLon", "locAlt", "locBearing", "locSpeed", "locProvider", "locGpsTime", "locSatellites", "locAccuracy", "locLastUpdateTime", "breakDuration", "healthChk", "healthChkTime", "sttId", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.mdm_units WHERE id=$1 AND "orgId"=$2`
 
 	var unit model.MmdUnit
 	logger.Debug(`Query`, zap.String("query", query))
@@ -1796,12 +1796,14 @@ func InsertMmdUnit(c *gin.Context) {
 	var id int
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `INSERT INTO public.mdm_units(
-	orgid, unitid, unitname, unitsourceid, unittypeid, priority, compid, deptid,
-	 commid, stnid, plateno, provincecode, active, username, islogin, isfreeze,
-	  isoutarea, loclat, loclon, localt, locbearing, locspeed, locprovider, locgpstime,
-	   locsatellites, locaccuracy, loclastupdatetime, breakduration, healthchk, healthchktime,
-	    sttid, createdat, updatedat, createdby, updatedby)
-	VALUES ($1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
+	"orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId",
+	 "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat",
+	  "locLon", "locAlt", "locBearing", "locSpeed", "locProvider", "locGpsTime", "locSatellites", "locAccuracy",
+	   "locLastUpdateTime", "breakDuration", "healthChk", "healthChkTime", "sttId", "createdAt", "updatedAt",
+	    "createdBy", "updatedBy")
+	VALUES ($1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+	 $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29,
+	  $30, $31, $32, $33, $34, $35)
 	RETURNING id ;
 	`
 
@@ -1892,11 +1894,13 @@ func UpdateMmdUnit(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_units"
-	SET unitid=$2, unitname=$3, unitsourceid=$4, unittypeid=$5, priority=$6, compid=$7, deptid=$8, commid=$9, stnid=$10, plateno=$11,
-	 provincecode=$12, active=$13, username=$14, islogin=$15, isfreeze=$16, isoutarea=$17, loclat=$18, loclon=$19, localt=$20, locbearing=$21,
-	  locspeed=$22, locprovider=$23, locgpstime=$24, locsatellites=$25, locaccuracy=$26, loclastupdatetime=$27, breakduration=$28,
-	   healthchk=$29, healthchktime=$30, sttid=$31,updatedat=$32,updatedby=$33
-	WHERE id = $1 AND orgid=$34`
+	SET "unitId"=$2, "unitName"=$3, "unitSourceId"=$4, "unitTypeId"=$5, priority=$6, "compId"=$7,
+	 "deptId"=$8, "commId"=$9, "stnId"=$10, "plateNo"=$11, "provinceCode"=$12, active=$13, username=$14,
+	  "isLogin"=$15, "isFreeze"=$16, "isOutArea"=$17, "locLat"=$18, "locLon"=$19, "locAlt"=$20, "locBearing"=$21,
+	   "locSpeed"=$22, "locProvider"=$23, "locGpsTime"=$24, "locSatellites"=$25, "locAccuracy"=$26,
+	    "locLastUpdateTime"=$27, "breakDuration"=$28, "healthChk"=$29, "healthChkTime"=$30, "sttId"=$31,
+		 "updatedAt"=$32, "updatedBy"=$33
+	WHERE id = $1 AND "orgId"=$34`
 	_, err := conn.Exec(ctx, query,
 		id, req.UnitID, req.UnitName, req.UnitSourceID, req.UnitTypeID, req.Priority, req.CompID,
 		req.DeptID, req.CommID, req.StnID, req.PlateNo, req.ProvinceCode, req.Active, req.Username,
@@ -1952,7 +1956,7 @@ func DeleteMmdUnit(c *gin.Context) {
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
-	query := `DELETE FROM public."mdm_units" WHERE id = $1 AND orgid=$2`
+	query := `DELETE FROM public."mdm_units" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
