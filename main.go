@@ -193,19 +193,43 @@ func main() {
 		v1.POST("/users_with_socials/add", handler.InsertUserWithSocials)
 		v1.PATCH("/users_with_socials/:id", handler.UpdateUserWithSocials)
 		v1.DELETE("/users_with_socials/:id", handler.DeleteUserWithSocials)
+
+		v1.GET("/mdm/properties", handler.GetMmdProperty)
+		v1.GET("/mdm/properties/:id", handler.GetMmdPropertyById)
+		v1.POST("/mdm/properties/add", handler.InsertMmdProperty)
+		v1.PATCH("/mdm/properties/:id", handler.UpdateMmdProperty)
+		v1.DELETE("/mdm/properties/:id", handler.DeleteMmdProperty)
+
+		v1.GET("/mdm/sources", handler.GetMmdUnitSources)
+		v1.GET("/mdm/sources/:id", handler.GetMmdUnitSourcesById)
+		v1.POST("/mdm/sources/add", handler.InsertMmdUnitSources)
+		v1.PATCH("/mdm/sources/:id", handler.UpdateMmdUnitSources)
+		v1.DELETE("/mdm/sources/:id", handler.DeleteMmdUnitSources)
+
+		v1.GET("/mdm/types", handler.GetMmdUnitType)
+		v1.GET("/mdm/types/:id", handler.GetMmdUnitTypeById)
+		v1.POST("/mdm/types/add", handler.InsertMmdUnitType)
+		v1.PATCH("/mdm/types/:id", handler.UpdateMmdUnitType)
+		v1.DELETE("/mdm/types/:id", handler.DeleteMmdUnitType)
+
+		v1.GET("/mdm/companies", handler.GetMmdCompanies)
+		v1.GET("/mdm/companies/:id", handler.GetMmdCompaniesById)
+		v1.POST("/mdm/companies/add", handler.InsertMmdCompanies)
+		v1.PATCH("/mdm/companies/:id", handler.UpdateMmdCompanies)
+		v1.DELETE("/mdm/companies/:id", handler.DeleteMmdCompanies)
+
+		v1.GET("/mdm/status", handler.GetMmdUnitStatus)
+		v1.GET("/mdm/status/:id", handler.GetMmdUnitStatusById)
+		v1.POST("/mdm/status/add", handler.InsertMmdUnitStatus)
+		v1.PATCH("/mdm/status/:id", handler.UpdateMmdUnitStatus)
+		v1.DELETE("/mdm/status/:id", handler.DeleteMmdUnitStatus)
+
+		v1.GET("/mdm/units", handler.GetMmdUnit)
+		v1.GET("/mdm/units/:id", handler.GetMmdUnitById)
+		v1.POST("/mdm/units/add", handler.InsertMmdUnit)
+		v1.PATCH("/mdm/units/:id", handler.UpdateMmdUnit)
+		v1.DELETE("/mdm/units/:id", handler.DeleteMmdUnit)
 	}
-	// cases := router.Group("/api/v1/cases")
-	// {
-	// 	cases.Use(handler.ProtectedHandler)
-	// 	cases.GET("", handler.ListCase)
-	// 	cases.GET("/search", handler.SearchCase)
-	// 	cases.GET("/:id", handler.SearchCaseById)
-	// 	cases.PATCH("/:id", handler.UpdateCase)
-	// 	cases.DELETE("/:id", handler.DeleteCase)
-	// 	cases.PATCH("/close/:id", handler.UpdateCaseClose)
-	// 	cases.GET("/detail/:id", handler.SearchCaseByCaseCode)
-	// 	cases.POST("", handler.CreateCase)
-	// }
 
 	notifications := router.Group("/api/v1/notifications")
 	{

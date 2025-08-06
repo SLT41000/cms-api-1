@@ -149,18 +149,25 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 	logger := config.GetLog()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("Failed", zap.Error(err))
 		return err
 	}
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
-	query := `SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data, t1.pic, t1."group", t1."formId",t1. "createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy" FROM public.wf_nodes t1 JOIN public.wf_definitions t2 ON t1."versions"=t2."versions" AND t1."wfId"=t2."wfId"
-	WHERE t2."wfId"=$1 AND t2."nodeId"=$2 AND t2."orgId"=$3`
+	query := `SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data,
+	 t1.pic, t1."group", t1."formId",t1. "createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy" 
+	 FROM public.wf_nodes t1 
+	 JOIN public.wf_definitions t2 
+	 ON t1."versions"=t2."versions" AND t1."wfId"=t2."wfId"
+	 WHERE t2."wfId"=$1 AND t2."nodeId"=$2 AND t2."orgId"=$3`
 
 	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query),
+	logger.Debug(`Query`,
+		zap.String("query", query),
 		zap.Any("Input", []any{req.WfID, req.NodeID, orgId}))
+
 	rows, err := conn.Query(ctx, query, orgId, req.WfID, req.NodeID, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -188,6 +195,7 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 	)
 
 	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
 		return err
 	}
 	return nil

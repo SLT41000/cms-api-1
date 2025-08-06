@@ -516,6 +516,244 @@ definitions:
       username:
         type: string
     type: object
+  model.MmdCompaniesInsert:
+    properties:
+      address:
+        additionalProperties: true
+        type: object
+      description:
+        type: string
+      domain:
+        type: string
+      email:
+        type: string
+      legalName:
+        type: string
+      logoUrl:
+        type: string
+      name:
+        type: string
+      phoneNumber:
+        type: string
+      websiteUrl:
+        type: string
+    type: object
+  model.MmdCompaniesUpdate:
+    properties:
+      address:
+        additionalProperties: true
+        type: object
+      description:
+        type: string
+      domain:
+        type: string
+      email:
+        type: string
+      legalName:
+        type: string
+      logoUrl:
+        type: string
+      name:
+        type: string
+      phoneNumber:
+        type: string
+      websiteUrl:
+        type: string
+    type: object
+  model.MmdPropertyInsert:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdPropertyUpdate:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdUnitInsert:
+    properties:
+      active:
+        type: boolean
+      breakDuration:
+        type: integer
+      commId:
+        type: string
+      compId:
+        type: string
+      deptId:
+        type: string
+      healthChk:
+        type: boolean
+      healthChkTime:
+        type: string
+      isFreeze:
+        type: boolean
+      isLogin:
+        type: boolean
+      isOutArea:
+        type: boolean
+      locAccuracy:
+        type: number
+      locAlt:
+        type: number
+      locBearing:
+        type: number
+      locGpsTime:
+        type: string
+      locLastUpdateTime:
+        type: string
+      locLat:
+        type: number
+      locLon:
+        type: number
+      locProvider:
+        type: string
+      locSatellites:
+        type: integer
+      locSpeed:
+        type: number
+      plateNo:
+        type: string
+      priority:
+        type: integer
+      provinceCode:
+        type: string
+      stnId:
+        type: string
+      sttId:
+        type: string
+      unitId:
+        type: string
+      unitName:
+        type: string
+      unitSourceId:
+        type: string
+      unitTypeId:
+        type: string
+      username:
+        type: string
+    type: object
+  model.MmdUnitSourceInsert:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdUnitSourceUpdate:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdUnitStatusInsert:
+    properties:
+      sttId:
+        type: string
+      sttName:
+        type: string
+    type: object
+  model.MmdUnitStatusUpdate:
+    properties:
+      sttId:
+        type: string
+      sttName:
+        type: string
+    type: object
+  model.MmdUnitTypeInsert:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdUnitTypeUpdate:
+    properties:
+      active:
+        type: boolean
+      en:
+        type: string
+      th:
+        type: string
+    type: object
+  model.MmdUnitUpdate:
+    properties:
+      active:
+        type: boolean
+      breakDuration:
+        type: integer
+      commId:
+        type: string
+      compId:
+        type: string
+      deptId:
+        type: string
+      healthChk:
+        type: string
+      healthChkTime:
+        type: string
+      isFreeze:
+        type: boolean
+      isLogin:
+        type: boolean
+      isOutArea:
+        type: boolean
+      locAccuracy:
+        type: number
+      locAlt:
+        type: number
+      locBearing:
+        type: number
+      locGpsTime:
+        type: string
+      locLastUpdateTime:
+        type: string
+      locLat:
+        type: number
+      locLon:
+        type: number
+      locProvider:
+        type: string
+      locSatellites:
+        type: integer
+      locSpeed:
+        type: number
+      plateNo:
+        type: string
+      priority:
+        type: integer
+      provinceCode:
+        type: string
+      stnId:
+        type: string
+      sttId:
+        type: string
+      unitId:
+        type: string
+      unitName:
+        type: string
+      unitSourceId:
+        type: string
+      unitTypeId:
+        type: string
+      username:
+        type: string
+    type: object
   model.MultiRolePermissionUpdate:
     properties:
       body:
@@ -2486,6 +2724,756 @@ paths:
       summary: Update Form Publish
       tags:
       - Form and Workflow
+  /api/v1/mdm/companies:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Companies
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Companies
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/companies/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Companies
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Companies
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Companies by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Companies by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Companies
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdCompaniesUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Companies
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/companies/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Companies Types
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdCompaniesInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Companies Types
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/properties:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Properties
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Properties
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/properties/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Properties
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Properties
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Properties by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Properties by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Properties
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdPropertyUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Properties
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/properties/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Properties
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdPropertyInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Properties
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/sources:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Sources
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Sources
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/sources/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Unit Sources
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Unit Sources
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Sources by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Sources by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Unit Sources
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitSourceUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Unit Sources
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/sources/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Unit Sources
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitSourceInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Unit Sources
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/status:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Status
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Status
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/status/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Unit Status
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Unit Status
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Status by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Status by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Unit Status
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitStatusUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Unit Status
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/status/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Unit Status
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitStatusInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Unit Status
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/types:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Types
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Types
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/types/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Types Sources
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Types Sources
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit Types by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit Types by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Types Sources
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitTypeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Types Sources
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/types/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Unit Types
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitTypeInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Unit Types
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/units:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/units/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Mmd Unit
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Mmd Unit
+      tags:
+      - Mobile device management (Units)
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit by Id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit by Id
+      tags:
+      - Mobile device management (Units)
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Mmd Unit
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Mmd Unit
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/units/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Mmd Unit
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MmdUnitInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Mmd Unit
+      tags:
+      - Mobile device management (Units)
   /api/v1/notifications:
     post:
       consumes:
