@@ -4884,6 +4884,9 @@
                 "extReceive": {
                     "type": "string"
                 },
+                "nodeId": {
+                    "type": "string"
+                },
                 "phoneNo": {
                     "type": "string"
                 },
@@ -4930,6 +4933,9 @@
                     "type": "string"
                 },
                 "userreceive": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }
@@ -5175,6 +5181,9 @@
                     "type": "string"
                 },
                 "userreceive": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }

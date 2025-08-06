@@ -13,6 +13,7 @@ type Case struct {
 	CaseTypeID      string     `json:"caseTypeId"`
 	CaseSTypeID     string     `json:"caseSTypeId"`
 	Priority        int        `json:"priority"`
+	WfID            string     `json:"wfId" db:"wfId"`
 	Source          string     `json:"source"`
 	DeviceID        string     `json:"deviceId"`
 	PhoneNo         string     `json:"phoneNo"`
@@ -53,6 +54,8 @@ type CaseInsert struct {
 	CaseTypeID      string     `json:"caseTypeId"`
 	CaseSTypeID     string     `json:"caseSTypeId"`
 	Priority        int        `json:"priority"`
+	WfID            string     `json:"wfId"`
+	NodeID          string     `json:"nodeId" db:"nodeId"`
 	Source          string     `json:"source"`
 	DeviceID        *string    `json:"deviceId"`
 	PhoneNo         *string    `json:"phoneNo"`
@@ -89,6 +92,7 @@ type CaseUpdate struct {
 	CaseTypeID      string    `json:"caseTypeId"`
 	CaseSTypeID     string    `json:"caseSTypeId"`
 	Priority        int       `json:"priority"`
+	WfID            string    `json:"wfId" db:"wfId"`
 	Source          string    `json:"source"`
 	DeviceID        string    `json:"deviceId"`
 	PhoneNo         string    `json:"phoneNo"`

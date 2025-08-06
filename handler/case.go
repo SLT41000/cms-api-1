@@ -93,7 +93,7 @@ func ListCase(c *gin.Context) {
 	category := c.Query("category")
 
 	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId" = $1`
 
 	params := []interface{}{orgId}
@@ -153,6 +153,7 @@ func ListCase(c *gin.Context) {
 			&cusCase.CaseTypeID,
 			&cusCase.CaseSTypeID,
 			&cusCase.Priority,
+			&cusCase.WfID,
 			&cusCase.Source,
 			&cusCase.DeviceID,
 			&cusCase.PhoneNo,
@@ -195,7 +196,7 @@ func ListCase(c *gin.Context) {
 				Desc:   err.Error(),
 			}
 			c.JSON(http.StatusInternalServerError, response)
-			continue
+			return
 		}
 
 		caseLists = append(caseLists, cusCase)
@@ -242,7 +243,7 @@ func CaseById(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
 
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId"=$1 AND id=$2`
 	logger.Debug(`Query`, zap.String("query", query))
 	var cusCase model.Case
@@ -255,6 +256,7 @@ func CaseById(c *gin.Context) {
 		&cusCase.CaseTypeID,
 		&cusCase.CaseSTypeID,
 		&cusCase.Priority,
+		&cusCase.WfID,
 		&cusCase.Source,
 		&cusCase.DeviceID,
 		&cusCase.PhoneNo,
@@ -343,11 +345,12 @@ func InsertCase(c *gin.Context) {
 	}
 	username := GetVariableFromToken(c, "username")
 	now := time.Now()
+	caseId := genCaseID()
 	var id int
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `
 	INSERT INTO public."tix_cases"(
-	"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId",
+	"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId",source, "deviceId",
 	"phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr",
 	"caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
 	"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive,
@@ -356,13 +359,13 @@ func InsertCase(c *gin.Context) {
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
 		$21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-		$31, $32, $33, $34, $35, $36, $37, $38, $39 
+		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40
 	) RETURNING id ;
 	`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
 	err := conn.QueryRow(ctx, query,
-		orgId, genCaseID(), req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
+		orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority, req.WfID,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
@@ -379,8 +382,23 @@ func InsertCase(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
+	if req.NodeID != "" {
+		var data = model.CustomCaseCurrentStage{
+			CaseID: caseId,
+			WfID:   req.WfID,
+			NodeID: req.NodeID,
+		}
+		err = CaseCurrentStageInsert(conn, ctx, c, data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			return
+		}
+	}
 
-	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",
@@ -430,7 +448,7 @@ func UpdateCase(c *gin.Context) {
 	  "statusId"=$14, "caseLat"=$15, "caseLon"=$16, "caselocAddr"=$17, "caselocAddrDecs"=$18, "countryId"=$19,
 	   "provId"=$20, "distId"=$21, "caseDuration"=$22, "createdDate"=$23, "startedDate"=$24, "commandedDate"=$25,
 	    "receivedDate"=$26, "arrivedDate"=$27, "closedDate"=$28, usercreate=$29, usercommand=$30, userreceive=$31,
-		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35,"updatedAt"=$36,"updatedBy"=$37
+		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35,"updatedAt"=$36,"updatedBy"=$37 ,"wfId"=$38
 	WHERE id = $1 AND "orgId"=$2`
 	_, err := conn.Exec(ctx, query,
 		id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
@@ -438,7 +456,7 @@ func UpdateCase(c *gin.Context) {
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-		req.ResDetail, now, username)
+		req.ResDetail, now, username, req.WfID)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{

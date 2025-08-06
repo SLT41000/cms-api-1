@@ -4888,6 +4888,9 @@ const docTemplate = `{
                 "extReceive": {
                     "type": "string"
                 },
+                "nodeId": {
+                    "type": "string"
+                },
                 "phoneNo": {
                     "type": "string"
                 },
@@ -4934,6 +4937,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userreceive": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }
@@ -5179,6 +5185,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userreceive": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }
