@@ -62,6 +62,10 @@ func genCaseID() string {
 // @produce json
 // @Param start query int false "start" default(0)
 // @Param length query int false "length" default(10)
+// @Param detail query string false "detail"
+// @Param start_date query string false "start_date"
+// @Param end_date query string false "end_date"
+// @Param category query string false "category"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
 func ListCase(c *gin.Context) {
@@ -83,11 +87,48 @@ func ListCase(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.tix_cases WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
-	logger.Debug(`Query`, zap.String("query", query))
+	detail := c.Query("detail")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	category := c.Query("category")
 
-	rows, err := conn.Query(ctx, query, orgId, length, start)
+	// Dynamic query builder
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId" = $1`
+
+	params := []interface{}{orgId}
+	paramIndex := 2 // start at $2 because $1 is already used for orgId
+
+	// Add conditions dynamically
+	if detail != "" {
+		baseQuery += fmt.Sprintf(" AND \"caseDetail\" ILIKE $%d", paramIndex)
+		params = append(params, "%"+detail+"%")
+		paramIndex++
+	}
+
+	if startDate != "" {
+		baseQuery += fmt.Sprintf(" AND \"createdDate\" >= $%d", paramIndex)
+		params = append(params, startDate)
+		paramIndex++
+	}
+
+	if endDate != "" {
+		baseQuery += fmt.Sprintf(" AND \"createdDate\" <= $%d", paramIndex)
+		params = append(params, endDate)
+		paramIndex++
+	}
+
+	if category != "" {
+		baseQuery += fmt.Sprintf(" AND \"statusId\" = $%d", paramIndex)
+		params = append(params, category)
+		paramIndex++
+	}
+
+	// Add pagination
+	baseQuery += fmt.Sprintf(" ORDER BY \"createdDate\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+	params = append(params, length, start)
+
+	rows, err := conn.Query(ctx, baseQuery, params...)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -100,7 +141,7 @@ func ListCase(c *gin.Context) {
 	defer rows.Close()
 
 	var caseLists []model.Case
-	var errorMsg string
+	found := false
 	for rows.Next() {
 		var cusCase model.Case
 		err := rows.Scan(
@@ -148,19 +189,31 @@ func ListCase(c *gin.Context) {
 
 		if err != nil {
 			logger.Warn("Query failed", zap.Error(err))
-			errorMsg = err.Error()
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			c.JSON(http.StatusInternalServerError, response)
 			continue
 		}
 
 		caseLists = append(caseLists, cusCase)
+		found = true
 	}
 
-	// Final JSON
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "Not found",
+		}
+		c.JSON(http.StatusInternalServerError, response)
+	}
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Data:   caseLists,
-		Desc:   errorMsg,
 	}
 	c.JSON(http.StatusOK, response)
 

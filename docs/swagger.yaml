@@ -1149,6 +1149,22 @@ paths:
         in: query
         name: length
         type: integer
+      - description: detail
+        in: query
+        name: detail
+        type: string
+      - description: start_date
+        in: query
+        name: start_date
+        type: string
+      - description: end_date
+        in: query
+        name: end_date
+        type: string
+      - description: category
+        in: query
+        name: category
+        type: string
       produces:
       - application/json
       responses:

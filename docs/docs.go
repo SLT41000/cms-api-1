@@ -250,6 +250,30 @@ const docTemplate = `{
                         "description": "length",
                         "name": "length",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "detail",
+                        "name": "detail",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category",
+                        "name": "category",
+                        "in": "query"
                     }
                 ],
                 "responses": {
