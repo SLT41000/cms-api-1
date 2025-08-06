@@ -1365,7 +1365,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 						continue
 					} else {
 						if config, ok := data["config"].(map[string]interface{}); ok {
-							if formVal, ok := config["form_id"]; ok {
+							if formVal, ok := config["formId"]; ok {
 								if formStr, ok := formVal.(string); ok {
 									formName = formStr
 								} else {
