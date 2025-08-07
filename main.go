@@ -193,6 +193,7 @@ func main() {
 		v1.POST("/users_with_socials/add", handler.InsertUserWithSocials)
 		v1.PATCH("/users_with_socials/:id", handler.UpdateUserWithSocials)
 		v1.DELETE("/users_with_socials/:id", handler.DeleteUserWithSocials)
+		v1.GET("/user_groups/all", handler.GetUmGroupList)
 
 		v1.GET("/mdm/properties", handler.GetMmdProperty)
 		v1.GET("/mdm/properties/:id", handler.GetMmdPropertyById)
