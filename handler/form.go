@@ -1453,7 +1453,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 	form.NextNodeId = &nodeId
-	form.Versions = &versions
+	form.WfVersions = &versions
 	form.WfId = &wfId
 	response := model.Response{
 		Status: "0",

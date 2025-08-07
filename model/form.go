@@ -10,7 +10,7 @@ type Form struct {
 }
 type FormByCasesubtypeOpt struct {
 	NextNodeId    *string                  `json:"nextNodeId"`
-	Versions      *string                  `json:"versions"`
+	WfVersions    *string                  `json:"versions"`
 	WfId          *string                  `json:"wfId"`
 	FormId        *string                  `json:"formId"`
 	FormName      *string                  `json:"formName"`
