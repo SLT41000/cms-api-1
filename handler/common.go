@@ -148,55 +148,70 @@ func unmarshalToSliceOfMaps(data []byte) ([]map[string]interface{}, error) {
 func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context, req model.CustomCaseCurrentStage) error {
 	logger := config.GetLog()
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warn("Failed", zap.Error(err))
-		return err
-	}
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
-	query := `SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data,
-	 t1.pic, t1."group", t1."formId",t1. "createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy" 
-	 FROM public.wf_nodes t1 
-	 JOIN public.wf_definitions t2 
-	 ON t1."versions"=t2."versions" AND t1."wfId"=t2."wfId"
-	 WHERE t2."wfId"=$1 AND t2."nodeId"=$2 AND t2."orgId"=$3`
-
-	var rows pgx.Rows
-	logger.Debug(`Query`,
-		zap.String("query", query),
-		zap.Any("Input", []any{req.WfID, req.NodeID, orgId}))
-
-	rows, err := conn.Query(ctx, query, orgId, req.WfID, req.NodeID, orgId)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		return err
-	}
-	defer rows.Close()
-	logger.Debug(`Query`, zap.String("query", query))
-	var Workflow model.WfNode
-	err = rows.Scan(&Workflow.ID, &Workflow.OrgID, &Workflow.WfID, &Workflow.NodeID, &Workflow.Versions, &Workflow.Type, &Workflow.Section,
-		&Workflow.Data, &Workflow.Pic, &Workflow.Group, &Workflow.FormID, &Workflow.CreatedAt, &Workflow.UpdatedAt, &Workflow.CreatedBy, &Workflow.UpdatedBy)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		return err
-	}
-	query = `
-	INSERT INTO public.tix_case_current_stage(
-	"orgId", "caseId", "wfId", "nodeId", versions, type, section, data, pic, "group", "formId", "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+	// Step 1: Load workflow node from DB
+	query := `
+	SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data,
+	       t1.pic, t1."group", t1."formId", t1."createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy"
+	FROM public.wf_nodes t1
+	JOIN public.wf_definitions t2
+	  ON t1."versions" = t2."versions" AND t1."wfId" = t2."wfId"
+	WHERE t2."wfId" = $1 AND t1."nodeId" = $2 AND t2."orgId" = $3
 	`
 
-	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
-	_, err = conn.Exec(ctx, query,
-		&Workflow.OrgID, req.CaseID, &Workflow.WfID, req.NodeID, &Workflow.Versions, &Workflow.Type, &Workflow.Section,
-		&Workflow.Data, &Workflow.Pic, &Workflow.Group, &Workflow.FormID, now, now, username, username,
+	logger.Debug("Loading workflow node",
+		zap.String("query", query),
+		zap.Any("params", []any{req.WfID, req.NodeID, orgId}),
+	)
+
+	var workflow model.WfNode
+	err := conn.QueryRow(ctx, query, req.WfID, req.NodeID, orgId).Scan(
+		&workflow.ID, &workflow.OrgID, &workflow.WfID, &workflow.NodeID,
+		&workflow.Versions, &workflow.Type, &workflow.Section,
+		&workflow.Data, &workflow.Pic, &workflow.Group, &workflow.FormID,
+		&workflow.CreatedAt, &workflow.UpdatedAt, &workflow.CreatedBy, &workflow.UpdatedBy,
 	)
 
 	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
+		if err == pgx.ErrNoRows {
+			logger.Warn("No workflow node found")
+			return fmt.Errorf("workflow node not found")
+		}
+		logger.Error("Failed to load workflow node", zap.Error(err))
 		return err
 	}
+
+	// Step 2: Insert into tix_case_current_stage
+	insertQuery := `
+	INSERT INTO public.tix_case_current_stage(
+		"orgId", "caseId", "wfId", "nodeId", versions, type, section, data, pic, "group", "formId",
+		"createdAt", "updatedAt", "createdBy", "updatedBy"
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+		$12, $13, $14, $15
+	)
+	`
+
+	args := []interface{}{
+		workflow.OrgID, req.CaseID, workflow.WfID, req.NodeID, workflow.Versions,
+		workflow.Type, workflow.Section, workflow.Data, workflow.Pic,
+		workflow.Group, workflow.FormID, now, now, username, username,
+	}
+
+	logger.Debug("Inserting current stage",
+		zap.String("query", insertQuery),
+		zap.Any("args", args),
+	)
+
+	_, err = conn.Exec(ctx, insertQuery, args...)
+	if err != nil {
+		logger.Error("Insert failed", zap.Error(err))
+		return err
+	}
+
+	logger.Info("Insert success", zap.String("caseId", req.CaseID))
 	return nil
 }
