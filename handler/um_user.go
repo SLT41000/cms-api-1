@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
@@ -1691,98 +1690,4 @@ func DeleteUserWithSocials(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Delete successfully",
 	})
-}
-
-// @summary Get User Groups
-// @tags User
-// @security ApiKeyAuth
-// @id GetUserGroups
-// @accept json
-// @produce json
-// @Param start query int false "start" default(0)
-// @Param length query int false "length" default(10)
-// @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/user_groups/all [get]
-func GetUmGroupList(c *gin.Context) {
-	logger := config.GetLog()
-	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
-	if conn == nil {
-		return
-	}
-	defer cancel()
-	defer conn.Close(ctx)
-
-	startStr := c.DefaultQuery("start", "0")
-	start, err := strconv.Atoi(startStr)
-	if err != nil {
-		start = 0
-	}
-	lengthStr := c.DefaultQuery("length", "1000")
-	length, err := strconv.Atoi(lengthStr)
-	if err != nil {
-		length = 1000
-	}
-	logger.Debug(`Query`, zap.Any("start", start))
-	logger.Debug(`Query`, zap.Any("length", length))
-
-	query := `
-	SELECT "id", "orgId", "grpId", "en", "th", "active", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_groups
-	WHERE "orgId"=$1
-	LIMIT $2 OFFSET $3
-	`
-	logger.Debug(`Query`, zap.String("query", query))
-	fmt.Printf("query---: %v\n", query)
-	rows, err := conn.Query(ctx, query, orgId, length, start)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	defer rows.Close()
-
-	var group model.UmGroup
-	var groupList []model.UmGroup
-	var errorMsg string
-
-	for rows.Next() {
-		err := rows.Scan(
-			&group.ID,
-			&group.OrgID,
-			&group.GrpID,
-			&group.En,
-			&group.Th,
-			&group.Active,
-			&group.CreatedAt,
-			&group.UpdatedAt,
-			&group.CreatedBy,
-			&group.UpdatedBy,
-		)
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			errorMsg = err.Error()
-			break
-		}
-		groupList = append(groupList, group)
-	}
-
-	if errorMsg != "" {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		})
-	} else {
-		c.JSON(http.StatusOK, model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   groupList,
-			Desc:   "",
-		})
-	}
 }
