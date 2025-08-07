@@ -2031,6 +2031,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dispatch/{caseId}/SOP": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Get SOP",
+                "operationId": "Case By CaseId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/forms": {
             "get": {
                 "security": [
@@ -4925,6 +4962,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/user_groups/all": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Groups",
+                "operationId": "GetUserGroups",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "security": [
@@ -6042,6 +6123,9 @@ const docTemplate = `{
     "definitions": {
         "model.CaseInsert": {
             "type": "object",
+            "required": [
+                "caseVersion"
+            ],
             "properties": {
                 "arrivedDate": {
                     "type": "string"

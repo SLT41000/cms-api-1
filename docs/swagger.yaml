@@ -74,6 +74,8 @@ definitions:
         type: string
       wfId:
         type: string
+    required:
+    - caseVersion
     type: object
   model.CaseStatusInsert:
     properties:
@@ -2518,6 +2520,29 @@ paths:
       summary: Create Department
       tags:
       - Organization
+  /api/v1/dispatch/{caseId}/SOP:
+    get:
+      consumes:
+      - application/json
+      operationId: Case By CaseId
+      parameters:
+      - description: caseId
+        in: path
+        name: caseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get SOP
+      tags:
+      - Dispatch
   /api/v1/forms:
     get:
       consumes:
@@ -4340,6 +4365,34 @@ paths:
       summary: Create Stations
       tags:
       - Organization
+  /api/v1/user_groups/all:
+    get:
+      consumes:
+      - application/json
+      operationId: GetUserGroups
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User Groups
+      tags:
+      - User
   /api/v1/users:
     get:
       consumes:
