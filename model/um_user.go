@@ -220,3 +220,16 @@ type UserSocialUpdate struct {
 	SocialName string `json:"socialName"`
 	UpdatedBy  string `json:"updatedBy"`
 }
+
+type UmGroup struct {
+	ID        int       `json:"id"`
+	OrgID     string    `json:"orgId"`
+	GrpID     string    `json:"grpId"`
+	En        string    `json:"en"`
+	Th        string    `json:"th"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy string    `json:"createdBy"`
+	UpdatedBy string    `json:"updatedBy"`
+}
