@@ -54,7 +54,8 @@ type CaseInsert struct {
 	CaseTypeID      string     `json:"caseTypeId"`
 	CaseSTypeID     string     `json:"caseSTypeId"`
 	Priority        int        `json:"priority"`
-	WfID            string     `json:"wfId"`
+	WfID            *string    `json:"wfId"`
+	WfVersions      *string    `json:"versions"`
 	NodeID          string     `json:"nodeId" db:"nodeId"`
 	Source          string     `json:"source"`
 	DeviceID        *string    `json:"deviceId"`
