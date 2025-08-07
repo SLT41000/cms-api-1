@@ -1312,7 +1312,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT t2."section",t2."data" ,t2."nodeId" 
+	query = `SELECT t2."section",t2."data" ,t2."nodeId" , t1."versions"
 	FROM public.wf_definitions t1 
 	INNER JOIN public.wf_nodes t2 
 	ON t1."wfId"=t2."wfId" AND t1."versions" = t2."versions"
@@ -1336,11 +1336,14 @@ func GetFormByCaseSubType(c *gin.Context) {
 	rowIndex := 0
 	var formName string
 	var nodeId string
+	var versions string
 	for rows.Next() {
 		rowIndex++
 		var rawJSON []byte
 		var rowsType string
-		err := rows.Scan(&rowsType, &rawJSON, &nodeId)
+
+		err := rows.Scan(&rowsType, &rawJSON, &nodeId, &versions)
+		versions = versions
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -1449,7 +1452,9 @@ func GetFormByCaseSubType(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-	form.NodeId = &nodeId
+	form.NextNodeId = &nodeId
+	form.Versions = &versions
+	form.WfId = &wfId
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",

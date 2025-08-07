@@ -9,7 +9,9 @@ type Form struct {
 	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
 }
 type FormByCasesubtypeOpt struct {
-	NodeId        *string                  `json:"nodeId"`
+	NextNodeId    *string                  `json:"nextNodeId"`
+	Versions      *string                  `json:"versions"`
+	WfId          *string                  `json:"wfId"`
 	FormId        *string                  `json:"formId"`
 	FormName      *string                  `json:"formName"`
 	FormColSpan   int                      `json:"formColSpan"`
