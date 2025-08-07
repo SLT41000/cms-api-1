@@ -142,13 +142,13 @@ type WfNode struct {
 	OrgID     string                 `json:"orgId" db:"orgId"`
 	WfID      string                 `json:"wfId" db:"wfId"`
 	NodeID    string                 `json:"nodeId" db:"nodeId"`
-	Versions  int                    `json:"versions" db:"versions"`
+	Versions  string                 `json:"versions" db:"versions"`
 	Type      string                 `json:"type" db:"type"`
 	Section   string                 `json:"section" db:"section"`
 	Data      map[string]interface{} `json:"data" db:"data"` // Or json.RawMessage if it's JSON
-	Pic       string                 `json:"pic" db:"pic"`   // Change to []string if stored as array
-	Group     string                 `json:"group" db:"group"`
-	FormID    string                 `json:"formId" db:"formId"`
+	Pic       *string                `json:"pic" db:"pic"`   // Change to []string if stored as array
+	Group     *string                `json:"group" db:"group"`
+	FormID    *string                `json:"formId" db:"formId"`
 	CreatedAt time.Time              `json:"createdAt" db:"createdAt"`
 	UpdatedAt time.Time              `json:"updatedAt" db:"updatedAt"`
 	CreatedBy string                 `json:"createdBy" db:"createdBy"`

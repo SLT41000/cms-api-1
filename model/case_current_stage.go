@@ -5,9 +5,9 @@ import (
 )
 
 type CustomCaseCurrentStage struct {
-	CaseID string `json:"caseId" db:"caseId"`
-	WfID   string `json:"wfId" db:"wfId"`
-	NodeID string `json:"nodeId" db:"nodeId"`
+	CaseID string  `json:"caseId" db:"caseId"`
+	WfID   *string `json:"wfId" db:"wfId"`
+	NodeID string  `json:"nodeId" db:"nodeId"`
 }
 
 type CaseCurrentStage struct {
@@ -16,7 +16,7 @@ type CaseCurrentStage struct {
 	CaseID    string    `json:"caseId" db:"caseId"`
 	WfID      string    `json:"wfId" db:"wfId"`
 	NodeID    string    `json:"nodeId" db:"nodeId"`
-	Versions  int       `json:"versions" db:"versions"`
+	Versions  string    `json:"versions" db:"versions"`
 	Type      string    `json:"type" db:"type"`
 	Section   string    `json:"section" db:"section"`
 	Data      string    `json:"data" db:"data"` // consider json.RawMessage if it's JSON
@@ -33,7 +33,7 @@ type CaseCurrentStageInsert struct {
 	CaseID   string `json:"caseId" db:"caseId"`
 	WfID     string `json:"wfId" db:"wfId"`
 	NodeID   string `json:"nodeId" db:"nodeId"`
-	Versions int    `json:"versions" db:"versions"`
+	Versions string `json:"versions" db:"versions"`
 	Type     string `json:"type" db:"type"`
 	Section  string `json:"section" db:"section"`
 	Data     string `json:"data" db:"data"` // consider json.RawMessage if it's JSON
