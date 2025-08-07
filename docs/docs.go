@@ -253,6 +253,18 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "caseType",
+                        "name": "caseType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "caseSType",
+                        "name": "caseSType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "detail",
                         "name": "detail",
                         "in": "query"
@@ -6131,6 +6143,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userreceive": {
+                    "type": "string"
+                },
+                "versions": {
                     "type": "string"
                 },
                 "wfId": {

@@ -62,6 +62,8 @@ func genCaseID() string {
 // @produce json
 // @Param start query int false "start" default(0)
 // @Param length query int false "length" default(10)
+// @Param caseType query string false "caseType"
+// @Param caseSType query string false "caseSType"
 // @Param detail query string false "detail"
 // @Param start_date query string false "start_date"
 // @Param end_date query string false "end_date"
@@ -87,19 +89,33 @@ func ListCase(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+	caseType := c.Query("caseType")
+	caseSType := c.Query("caseSType")
 	detail := c.Query("detail")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 	category := c.Query("category")
 
 	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId" = $1`
 
 	params := []interface{}{orgId}
 	paramIndex := 2 // start at $2 because $1 is already used for orgId
 
 	// Add conditions dynamically
+	if caseType != "" {
+		baseQuery += fmt.Sprintf(" AND \"caseTypeId\" = $%d", paramIndex)
+		params = append(params, caseType)
+		paramIndex++
+	}
+
+	if caseSType != "" {
+		baseQuery += fmt.Sprintf(" AND \"caseSTypeId\" = $%d", paramIndex)
+		params = append(params, caseSType)
+		paramIndex++
+	}
+
 	if detail != "" {
 		baseQuery += fmt.Sprintf(" AND \"caseDetail\" ILIKE $%d", paramIndex)
 		params = append(params, "%"+detail+"%")
@@ -107,13 +123,13 @@ func ListCase(c *gin.Context) {
 	}
 
 	if startDate != "" {
-		baseQuery += fmt.Sprintf(" AND \"createdDate\" >= $%d", paramIndex)
+		baseQuery += fmt.Sprintf(" AND \"createdAt\" >= $%d", paramIndex)
 		params = append(params, startDate)
 		paramIndex++
 	}
 
 	if endDate != "" {
-		baseQuery += fmt.Sprintf(" AND \"createdDate\" <= $%d", paramIndex)
+		baseQuery += fmt.Sprintf(" AND \"createdAt\" <= $%d", paramIndex)
 		params = append(params, endDate)
 		paramIndex++
 	}
@@ -125,7 +141,7 @@ func ListCase(c *gin.Context) {
 	}
 
 	// Add pagination
-	baseQuery += fmt.Sprintf(" ORDER BY \"createdDate\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+	baseQuery += fmt.Sprintf(" ORDER BY \"createdAt\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
 	params = append(params, length, start)
 
 	rows, err := conn.Query(ctx, baseQuery, params...)
