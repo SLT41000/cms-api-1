@@ -4976,7 +4976,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "UserGroup"
                 ],
                 "summary": "Get User Groups",
                 "operationId": "GetUserGroups",

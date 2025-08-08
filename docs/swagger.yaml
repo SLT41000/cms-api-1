@@ -4392,7 +4392,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get User Groups
       tags:
-      - User
+      - UserGroup
   /api/v1/users:
     get:
       consumes:
