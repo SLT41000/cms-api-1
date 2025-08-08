@@ -230,6 +230,8 @@ func main() {
 		v1.POST("/mdm/units/add", handler.InsertMmdUnit)
 		v1.PATCH("/mdm/units/:id", handler.UpdateMmdUnit)
 		v1.DELETE("/mdm/units/:id", handler.DeleteMmdUnit)
+
+		v1.GET("/dispatch/:caseId/SOP", handler.GetSOP)
 	}
 
 	notifications := router.Group("/api/v1/notifications")
