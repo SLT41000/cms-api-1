@@ -637,7 +637,7 @@ func GetWorkFlow(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT "type","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
+	query := `SELECT "section","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
 	FROM public.wf_definitions Inner join public.wf_nodes
 	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1 AND wf_nodes."orgId"=$2`
 

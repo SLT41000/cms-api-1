@@ -231,6 +231,8 @@ func main() {
 		v1.PATCH("/mdm/units/:id", handler.UpdateMmdUnit)
 		v1.DELETE("/mdm/units/:id", handler.DeleteMmdUnit)
 
+		v1.GET("/mdm/units/properties/unitId", handler.GetMmdUnitWithProperty)
+
 		v1.GET("/dispatch/:caseId/SOP", handler.GetSOP)
 	}
 

@@ -242,3 +242,15 @@ type MmdUnitUpdate struct {
 	HealthChkTime     time.Time `json:"healthChkTime" db:"healthchktime"`
 	SttID             string    `json:"sttId" db:"sttid"`
 }
+
+type MdmUnitProperty struct {
+	ID        string    `json:"id" db:"id"`
+	OrgID     string    `json:"orgId" db:"orgid"`
+	UnitID    string    `json:"unitId" db:"unitid"`
+	PropID    string    `json:"propId" db:"propid"`
+	Active    bool      `json:"active" db:"active"`
+	CreatedAt time.Time `json:"createdAt" db:"createdat"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updatedat"`
+	CreatedBy string    `json:"createdBy" db:"createdby"`
+	UpdatedBy string    `json:"updatedBy" db:"updatedby"`
+}
