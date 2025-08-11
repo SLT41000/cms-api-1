@@ -237,6 +237,12 @@ func main() {
 
 		v1.GET("/audit_log", handler.GetAuditlog)
 		v1.GET("/audit_log/:username", handler.GetAuditlogByUsername)
+
+		v1.GET("/case_history", handler.GetCaseHistory)
+		v1.GET("/case_history/:caseId", handler.GetCaseHistoryByCaseId)
+		v1.POST("/case_history/add", handler.InsertCaseHistory)
+		v1.PATCH("/case_history/:id", handler.UpdateCaseHistory)
+		v1.DELETE("/case_history/:id", handler.DeleteCaseHistory)
 	}
 
 	notifications := router.Group("/api/v1/notifications")
