@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
@@ -234,48 +233,26 @@ func GetUmUserById(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.um_users WHERE id=$1 AND "orgId"=$2`
 
+	// Step 1: Get user profile
+	queryUser := `
+		SELECT "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood, gender, 
+		       "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId", 
+		       "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", 
+		       islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy"
+		FROM public.um_users 
+		WHERE id=$1 AND "orgId"=$2
+	`
 	var u model.Um_User
-	logger.Debug(`Query`, zap.String("query", query))
-	err := conn.QueryRow(ctx, query, id, orgId).Scan(
-		&u.OrgID,
-		&u.DisplayName,
-		&u.Title,
-		&u.FirstName,
-		&u.MiddleName,
-		&u.LastName,
-		&u.CitizenID,
-		&u.Bod,
-		&u.Blood,
-		&u.Gender,
-		&u.MobileNo,
-		&u.Address,
-		&u.Photo,
-		&u.Username,
-		&u.Password,
-		&u.Email,
-		&u.RoleID,
-		&u.UserType,
-		&u.EmpID,
-		&u.DeptID,
-		&u.CommID,
-		&u.StnID,
-		&u.Active,
-		&u.ActivationToken,
-		&u.LastActivationRequest,
-		&u.LostPasswordRequest,
-		&u.SignupStamp,
-		&u.IsLogin,
-		&u.LastLogin,
-		&u.CreatedAt,
-		&u.UpdatedAt,
-		&u.CreatedBy,
-		&u.UpdatedBy,
+	err := conn.QueryRow(ctx, queryUser, id, orgId).Scan(
+		&u.OrgID, &u.DisplayName, &u.Title, &u.FirstName, &u.MiddleName, &u.LastName, &u.CitizenID,
+		&u.Bod, &u.Blood, &u.Gender, &u.MobileNo, &u.Address, &u.Photo, &u.Username, &u.Password, &u.Email,
+		&u.RoleID, &u.UserType, &u.EmpID, &u.DeptID, &u.CommID, &u.StnID, &u.Active, &u.ActivationToken,
+		&u.LastActivationRequest, &u.LostPasswordRequest, &u.SignupStamp, &u.IsLogin, &u.LastLogin,
+		&u.CreatedAt, &u.UpdatedAt, &u.CreatedBy, &u.UpdatedBy,
 	)
 	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
+		logger.Warn("Query user failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
@@ -284,14 +261,41 @@ func GetUmUserById(c *gin.Context) {
 		return
 	}
 
+	// Step 2: Get skills
+	querySkills := `
+		SELECT s."skillId", s."en", s."th"
+		FROM public.um_user_with_skills us
+		JOIN public.um_skills s ON us."skillId" = s."skillId"
+		WHERE us."orgId" = $1 AND us."userName" = $2 AND us.active = TRUE
+	`
+	rows, err := conn.Query(ctx, querySkills, orgId, u.Username)
+	if err != nil {
+		logger.Warn("Query skills failed", zap.Error(err))
+	}
+	defer rows.Close()
+
+	var skills []map[string]interface{}
+	for rows.Next() {
+		var skillId, en, th string
+		if err := rows.Scan(&skillId, &en, &th); err == nil {
+			skills = append(skills, map[string]interface{}{
+				"skillId": skillId,
+				"en":      en,
+				"th":      th,
+			})
+		}
+	}
+
+	// Step 3: Combine into response
+	u.Skills = skills
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Data:   u,
 		Desc:   "",
 	}
-	c.JSON(http.StatusOK, response)
 
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Create User
@@ -1694,7 +1698,7 @@ func DeleteUserWithSocials(c *gin.Context) {
 }
 
 // @summary Get User Groups
-// @tags User
+// @tags UserGroup
 // @security ApiKeyAuth
 // @id GetUserGroups
 // @accept json
@@ -1733,7 +1737,7 @@ func GetUmGroupList(c *gin.Context) {
 	LIMIT $2 OFFSET $3
 	`
 	logger.Debug(`Query`, zap.String("query", query))
-	fmt.Printf("query---: %v\n", query)
+
 	rows, err := conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))

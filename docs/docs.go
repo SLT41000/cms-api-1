@@ -3494,57 +3494,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/mdm/units/properties/{unitId}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Mobile device management (Units)"
-                ],
-                "summary": "Get Mmd Unit With Property",
-                "operationId": "Get Mmd Unit With Property",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "start",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "length",
-                        "name": "length",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "unitId",
-                        "name": "unitId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/mdm/units/{id}": {
             "get": {
                 "security": [
@@ -5027,7 +4976,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "UserGroup"
                 ],
                 "summary": "Get User Groups",
                 "operationId": "GetUserGroups",
@@ -6174,6 +6123,9 @@ const docTemplate = `{
     "definitions": {
         "model.CaseInsert": {
             "type": "object",
+            "required": [
+                "caseVersion"
+            ],
             "properties": {
                 "arrivedDate": {
                     "type": "string"
