@@ -74,8 +74,6 @@ definitions:
         type: string
       wfId:
         type: string
-    required:
-    - caseVersion
     type: object
   model.CaseStatusInsert:
     properties:
@@ -1277,6 +1275,57 @@ paths:
       summary: Get Country Province Districts
       tags:
       - Area
+  /api/v1/audit_log:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Audit Log
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Audit Log
+      tags:
+      - Audit Log
+  /api/v1/audit_log/{username}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Audit Log By Username
+      parameters:
+      - description: username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Audit Log By Username
+      tags:
+      - Audit Log
   /api/v1/auth/add:
     post:
       consumes:
@@ -3507,6 +3556,39 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Mmd Unit
+      tags:
+      - Mobile device management (Units)
+  /api/v1/mdm/units/properties/{unitId}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Mmd Unit With Property
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: unitId
+        in: path
+        name: unitId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Mmd Unit With Property
       tags:
       - Mobile device management (Units)
   /api/v1/notifications:
