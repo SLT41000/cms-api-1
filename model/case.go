@@ -123,7 +123,7 @@ type CaseUpdate struct {
 	UserReceive     string    `json:"userreceive"`
 	UserArrive      string    `json:"userarrive"`
 	UserClose       string    `json:"userclose"`
-	ResID           string    `json:"resId"`
+	ResID           *string   `json:"resId"`
 	ResDetail       *string   `json:"resDetail"`
 }
 
