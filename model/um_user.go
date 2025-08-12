@@ -82,6 +82,7 @@ type Um_User struct {
 	CreatedBy             string                   `json:"createdBy"`
 	UpdatedBy             string                   `json:"updatedBy"`
 	Skills                []map[string]interface{} `json:"skills"`
+	Areas                 []map[string]interface{} `json:"areas"`
 }
 
 type UserInput struct {

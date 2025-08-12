@@ -286,8 +286,41 @@ func GetUmUserById(c *gin.Context) {
 		}
 	}
 
-	// Step 3: Combine into response
+	// Step 3: Get areas from um_user_with_area_response
+	queryAreas := `
+		SELECT
+		ad."distId",
+		ad."th",
+		ad."en"
+		FROM "um_user_with_area_response" ua
+		LEFT JOIN "area_districts" ad ON ad."orgId" = ua."orgId"
+		AND ad."distId" IN (
+			SELECT jsonb_array_elements_text(ua."distIdLists")
+		)
+		WHERE ua."orgId" = $1 AND ua."username" = $2 
+	`
+
+	areaRows, err := conn.Query(ctx, queryAreas, orgId, u.Username)
+	if err != nil {
+		logger.Warn("Query areas failed", zap.Error(err))
+	}
+	defer areaRows.Close()
+
+	var areas []map[string]interface{}
+	for areaRows.Next() {
+		var distId, th, en string
+		if err := areaRows.Scan(&distId, &th, &en); err == nil {
+			areas = append(areas, map[string]interface{}{
+				"distId": distId,
+				"th":     th,
+				"en":     en,
+			})
+		}
+	}
+
+	// Step 4: Combine into response
 	u.Skills = skills
+	u.Areas = areas
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
