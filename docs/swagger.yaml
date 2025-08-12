@@ -1,5 +1,30 @@
 basePath: /
 definitions:
+  model.CaseHistoryInsert:
+    properties:
+      caseId:
+        type: string
+      fullMsg:
+        type: string
+      jsonData:
+        type: string
+      type:
+        type: string
+      username:
+        type: string
+    type: object
+  model.CaseHistoryUpdate:
+    properties:
+      fullMsg:
+        type: string
+      jsonData:
+        type: string
+      type:
+        description: |-
+          CaseID   string          `json:"caseId" db:"caseId"`
+          Username string          `json:"username" db:"username"`
+        type: string
+    type: object
   model.CaseInsert:
     properties:
       arrivedDate:
@@ -1277,6 +1302,57 @@ paths:
       summary: Get Country Province Districts
       tags:
       - Area
+  /api/v1/audit_log:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Audit Log
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Audit Log
+      tags:
+      - Audit Log
+  /api/v1/audit_log/{username}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Audit Log By Username
+      parameters:
+      - description: username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Audit Log By Username
+      tags:
+      - Audit Log
   /api/v1/auth/add:
     post:
       consumes:
@@ -1540,6 +1616,132 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Case
+      tags:
+      - Cases
+  /api/v1/case_history:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Case History
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Case History
+      tags:
+      - Cases
+  /api/v1/case_history/{caseId}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Case History By Case Id
+      parameters:
+      - description: caseId
+        in: path
+        name: caseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Case History By Case Id
+      tags:
+      - Cases
+  /api/v1/case_history/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Case History
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Case History
+      tags:
+      - Cases
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Case History
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseHistoryUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Case History
+      tags:
+      - Cases
+  /api/v1/case_history/add:
+    post:
+      consumes:
+      - application/json
+      operationId: Create Case History
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CaseHistoryInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Case History
       tags:
       - Cases
   /api/v1/case_status:
