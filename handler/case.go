@@ -62,11 +62,14 @@ func genCaseID() string {
 // @produce json
 // @Param start query int false "start" default(0)
 // @Param length query int false "length" default(10)
+// @Param start_date query string false "start_date"
+// @Param end_date query string false "end_date"
 // @Param caseType query string false "caseType"
 // @Param caseSType query string false "caseSType"
 // @Param detail query string false "detail"
-// @Param start_date query string false "start_date"
-// @Param end_date query string false "end_date"
+// @Param countryId query string false "countryId"
+// @Param provId query string false "provId"
+// @Param distId query string false "distId"
 // @Param category query string false "category"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
@@ -78,6 +81,7 @@ func ListCase(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+
 	orgId := GetVariableFromToken(c, "orgId")
 	startStr := c.DefaultQuery("start", "0")
 	start, err := strconv.Atoi(startStr)
@@ -89,12 +93,16 @@ func ListCase(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+
 	caseType := c.Query("caseType")
 	caseSType := c.Query("caseSType")
 	detail := c.Query("detail")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 	category := c.Query("category")
+	countryId := c.Query("countryId")
+	provId := c.Query("provId")
+	distId := c.Query("distId")
 
 	// Dynamic query builder
 	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -137,6 +145,25 @@ func ListCase(c *gin.Context) {
 	if category != "" {
 		baseQuery += fmt.Sprintf(" AND \"statusId\" = $%d", paramIndex)
 		params = append(params, category)
+		paramIndex++
+	}
+
+	// New filters
+	if countryId != "" {
+		baseQuery += fmt.Sprintf(" AND \"countryId\" = $%d", paramIndex)
+		params = append(params, countryId)
+		paramIndex++
+	}
+
+	if provId != "" {
+		baseQuery += fmt.Sprintf(" AND \"provId\" = $%d", paramIndex)
+		params = append(params, provId)
+		paramIndex++
+	}
+
+	if distId != "" {
+		baseQuery += fmt.Sprintf(" AND \"distId\" = $%d", paramIndex)
+		params = append(params, distId)
 		paramIndex++
 	}
 
@@ -206,12 +233,11 @@ func ListCase(c *gin.Context) {
 
 		if err != nil {
 			logger.Warn("Query failed", zap.Error(err))
-			response := model.Response{
+			c.JSON(http.StatusInternalServerError, model.Response{
 				Status: "-1",
 				Msg:    "Failed",
 				Desc:   err.Error(),
-			}
-			c.JSON(http.StatusInternalServerError, response)
+			})
 			return
 		}
 
@@ -220,13 +246,14 @@ func ListCase(c *gin.Context) {
 	}
 
 	if !found {
-		response := model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
 			Msg:    "Failed",
 			Desc:   "Not found",
-		}
-		c.JSON(http.StatusInternalServerError, response)
+		})
+		return
 	}
+
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",

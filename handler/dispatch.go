@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"mainPackage/config"
 	"mainPackage/model"
@@ -195,4 +196,177 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 	log.Println(allNodes)
 
 	return allNodes, &current, nil
+}
+
+// @summary Get Unit
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id CaseByCaseId
+// @accept json
+// @produce json
+// @Param caseId path string true "caseId"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/{caseId}/units [get]
+func GetUnit(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+
+	defer cancel()
+	defer conn.Close(ctx)
+
+	if conn == nil {
+		return
+	}
+
+	fmt.Println("=xcxxxx==xx=x=x=x=x=x")
+	log.Println("===")
+
+	orgId := GetVariableFromToken(c, "orgId")
+	caseId := c.Param("caseId")
+
+	query := `
+  WITH case_info AS (
+  SELECT 
+    c."caseSTypeId", 
+    c."countryId",
+    c."provId",
+    c."distId",
+    s."unitPropLists", 
+    s."userSkillList"
+  FROM "tix_cases" c
+  JOIN "case_sub_types" s ON c."caseSTypeId" = s."sTypeId"
+  WHERE c."caseId" = $1
+    AND s."active" = TRUE
+),
+unit_with_props AS (
+  SELECT 
+    "unitId", 
+    array_agg("propId") AS props
+  FROM "mdm_unit_with_properties"
+  WHERE "active" = TRUE
+  GROUP BY "unitId"
+),
+units_matched AS (
+  SELECT u."unitId", u."unitName", p.props
+  FROM "mdm_units" u
+  JOIN unit_with_props p ON u."unitId" = p."unitId"
+  CROSS JOIN case_info c
+  WHERE u."active" = TRUE
+    AND (
+      SELECT COUNT(DISTINCT prop_uuid)
+      FROM (
+        SELECT (jsonb_array_elements_text(c."unitPropLists"::jsonb))::uuid AS prop_uuid
+      ) AS required_props
+      WHERE prop_uuid = ANY(p.props)
+    ) = (SELECT jsonb_array_length(c."unitPropLists"::jsonb))
+),
+users_on_units AS (
+  SELECT u."unitId", mdm."username"
+  FROM units_matched u
+  JOIN "mdm_units" mdm ON mdm."unitId" = u."unitId" AND mdm."active" = TRUE
+  JOIN "um_users" um ON um."username" = mdm."username" AND um."active" = TRUE
+),
+users_with_skill AS (
+  SELECT DISTINCT "userName"
+  FROM "um_user_with_skills"
+  WHERE "skillId" IN (
+    SELECT (jsonb_array_elements_text(ci."userSkillList"::jsonb))::uuid
+    FROM case_info ci
+  )
+  AND "active" = TRUE
+),
+users_in_area AS (
+  SELECT "username"
+  FROM "um_user_with_area_response" ua
+  CROSS JOIN case_info c
+  WHERE ua."orgId" = $2
+    AND EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements_text(ua."distIdLists") AS distId
+      WHERE distId.value = c."distId"
+    )
+)
+SELECT mu."orgId",
+    mu."unitId",
+    mu."unitName",
+    mu."unitSourceId",
+    mu."unitTypeId",
+    mu."priority",
+    mu."compId",
+    mu."deptId",
+    mu."commId",
+    mu."stnId",
+    mu."plateNo",
+    mu."provinceCode",
+    mu."active",
+    mu."username",
+    mu."isLogin",
+    mu."isFreeze",
+    mu."isOutArea",
+    mu."locLat",
+    mu."locLon",
+    mu."locAlt",
+    mu."locBearing",
+    mu."locSpeed",
+    mu."locProvider",
+    mu."locGpsTime",
+    mu."locSatellites",
+    mu."locAccuracy",
+    mu."locLastUpdateTime",
+    mu."breakDuration",
+    mu."healthChk",
+    mu."healthChkTime",
+    mu."sttId",
+    mu."createdBy",
+    mu."updatedBy"
+FROM users_on_units u
+JOIN users_with_skill us ON u."username" = us."userName"
+JOIN users_in_area ua ON u."username" = ua."username"
+JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
+`
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(context.Background(), query, caseId, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var results []model.UnitUser
+
+	for rows.Next() {
+		var u model.UnitUser
+		if err := rows.Scan(
+			&u.OrgID, &u.UnitID, &u.UnitName, &u.UnitSourceID, &u.UnitTypeID, &u.Priority,
+			&u.CompID, &u.DeptID, &u.CommID, &u.StnID, &u.PlateNo, &u.ProvinceCode,
+			&u.Active, &u.Username, &u.IsLogin, &u.IsFreeze, &u.IsOutArea,
+			&u.LocLat, &u.LocLon, &u.LocAlt, &u.LocBearing, &u.LocSpeed, &u.LocProvider,
+			&u.LocGpsTime, &u.LocSatellites, &u.LocAccuracy, &u.LocLastUpdateTime,
+			&u.BreakDuration, &u.HealthChk, &u.HealthChkTime, &u.SttID,
+			&u.CreatedBy, &u.UpdatedBy,
+		); err != nil {
+			logger.Warn("Row scan failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			return
+		}
+		results = append(results, u)
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "OK",
+		Data:   results,
+	})
 }

@@ -234,6 +234,7 @@ func main() {
 		v1.GET("/mdm/units/properties/unitId", handler.GetMmdUnitWithProperty)
 
 		v1.GET("/dispatch/:caseId/SOP", handler.GetSOP)
+		v1.GET("/dispatch/:caseId/units", handler.GetUnit)
 
 		v1.GET("/audit_log", handler.GetAuditlog)
 		v1.GET("/audit_log/:username", handler.GetAuditlogByUsername)
