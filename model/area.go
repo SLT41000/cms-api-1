@@ -8,6 +8,7 @@ type AreaDistrictWithDetails struct {
 	DistrictEn     *string `json:"districtEn"`
 	DistrictTh     *string `json:"districtTh"`
 	DistrictActive *bool   `json:"districtActive"`
+	DistID         *string `json:"distId"`
 
 	ProvinceEn     *string `json:"provinceEn"`
 	ProvinceTh     *string `json:"provinceTh"`

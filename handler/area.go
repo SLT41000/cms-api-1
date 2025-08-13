@@ -29,7 +29,7 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	orgId := GetVariableFromToken(c, "orgId")
-	query := `SELECT t1.id, t1."orgId", t1."countryId", t1."provId",
+	query := `SELECT t1.id, t1."orgId", t1."countryId", t1."provId", t1."distId",
 	 	t1.en, t1.th, t1.active,
 	  	t2.en, t2.th, t2.active,
 	  	t3.en, t3.th, t3.active
@@ -56,7 +56,7 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 	var AreaList []model.AreaDistrictWithDetails
 	found := false
 	for rows.Next() {
-		err := rows.Scan(&Area.ID, &Area.OrgID, &Area.CountryID, &Area.ProvID,
+		err := rows.Scan(&Area.ID, &Area.OrgID, &Area.CountryID, &Area.ProvID, &Area.DistID,
 			&Area.DistrictEn, &Area.DistrictTh, &Area.DistrictActive,
 			&Area.ProvinceEn, &Area.ProvinceTh, &Area.ProvinceActive,
 			&Area.CountryEn, &Area.CountryTh, &Area.CountryActive)
