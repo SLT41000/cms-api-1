@@ -50,79 +50,9 @@ func CreateNotifications(c *gin.Context) {
 		return
 	}
 
-	if len(inputs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "notification array cannot be empty"})
-		return
-	}
-
-	orgId := inputs[0].OrgID
-
-	conn, ctx, cancel := config.ConnectDB()
-	defer cancel()
-	defer conn.Close(ctx)
-
-	tx, err := conn.Begin(ctx)
+	createdNotifications, err := CoreNotifications(c.Request.Context(), inputs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction", "detail": err.Error()})
-		return
-	}
-	defer tx.Rollback(ctx)
-
-	var createdNotifications []model.Notification
-
-	for _, input := range inputs {
-		// UPDATED: Create notification object based on the new model
-		noti := model.Notification{
-			OrgID:       orgId,
-			SenderType:  input.SenderType,
-			Sender:      input.Sender,      // Changed from SenderID
-			SenderPhoto: input.SenderPhoto, // New field
-			Message:     input.Message,
-			EventType:   input.EventType,
-			RedirectUrl: input.RedirectUrl,
-			Data:        input.Data,
-			CreatedAt:   time.Now(),
-			CreatedBy:   input.CreatedBy, // New field
-			ExpiredAt:   input.ExpiredAt, // New field
-			Recipients:  input.Recipients,
-		}
-
-		recipientsJSON, err := json.Marshal(noti.Recipients)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process recipients", "detail": err.Error()})
-			return
-		}
-		dataJSON, err := json.Marshal(noti.Data)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process custom data", "detail": err.Error()})
-			return
-		}
-
-		// UPDATED: SQL INSERT statement to match the new model and database schema
-		err = tx.QueryRow(ctx, `
-            INSERT INTO notifications 
-            ("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
-        `, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
-			noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "database insert failed", "detail": err.Error()})
-			return
-		}
-
-		log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
-
-		// 🔔 Broadcast a copy that still contains recipients
-		notiCopy := noti // shallow copy
-		go BroadcastNotification(notiCopy)
-
-		// 📝 Add to the response to be returned
-		createdNotifications = append(createdNotifications, noti)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "transaction commit failed", "detail": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

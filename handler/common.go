@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mainPackage/config"
 	"mainPackage/model"
 	"os"
@@ -214,4 +215,75 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 
 	logger.Info("Insert success", zap.String("caseId", req.CaseID))
 	return nil
+}
+
+func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]model.Notification, error) {
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("notification array cannot be empty")
+	}
+
+	orgId := inputs[0].OrgID
+
+	conn, ctx, cancel := config.ConnectDB()
+	defer cancel()
+	defer conn.Close(ctx)
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var createdNotifications []model.Notification
+
+	for _, input := range inputs {
+		noti := model.Notification{
+			OrgID:       orgId,
+			SenderType:  input.SenderType,
+			Sender:      input.Sender,
+			SenderPhoto: input.SenderPhoto,
+			Message:     input.Message,
+			EventType:   input.EventType,
+			RedirectUrl: input.RedirectUrl,
+			Data:        input.Data,
+			CreatedAt:   time.Now(),
+			CreatedBy:   input.CreatedBy,
+			ExpiredAt:   input.ExpiredAt,
+			Recipients:  input.Recipients,
+		}
+
+		recipientsJSON, err := json.Marshal(noti.Recipients)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process recipients: %w", err)
+		}
+		dataJSON, err := json.Marshal(noti.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process custom data: %w", err)
+		}
+
+		err = tx.QueryRow(ctx, `
+			INSERT INTO notifications 
+			("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
+		`, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
+			noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
+
+		if err != nil {
+			return nil, fmt.Errorf("database insert failed: %w", err)
+		}
+
+		log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
+
+		// Broadcast async
+		notiCopy := noti
+		go BroadcastNotification(notiCopy)
+
+		createdNotifications = append(createdNotifications, noti)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("transaction commit failed: %w", err)
+	}
+
+	return createdNotifications, nil
 }

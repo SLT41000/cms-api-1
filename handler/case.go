@@ -515,7 +515,7 @@ func UpdateCase(c *gin.Context) {
 			req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 			req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 			req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-			req.ResDetail, req.ScheduleDate, now, username, req.WfID,
+			req.ResDetail, req.Schedule, req.ScheduleDate, now, username, req.WfID,
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
