@@ -6624,6 +6624,9 @@
                 "resId": {
                     "type": "string"
                 },
+                "scheduleDate": {
+                    "type": "string"
+                },
                 "source": {
                     "type": "string"
                 },
@@ -6873,6 +6876,9 @@
                     "type": "string"
                 },
                 "resId": {
+                    "type": "string"
+                },
+                "scheduleDate": {
                     "type": "string"
                 },
                 "source": {

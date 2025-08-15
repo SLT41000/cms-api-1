@@ -79,6 +79,8 @@ definitions:
         type: string
       resId:
         type: string
+      scheduleDate:
+        type: string
       source:
         type: string
       startedDate:
@@ -245,6 +247,8 @@ definitions:
       resDetail:
         type: string
       resId:
+        type: string
+      scheduleDate:
         type: string
       source:
         type: string

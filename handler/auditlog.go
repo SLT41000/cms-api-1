@@ -40,7 +40,7 @@ func GetAuditlog(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
-	query := `SELECT id, "orgId", username, "txId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
+	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
 	FROM public.audit_logs LIMIT $1 OFFSET $2`
 
 	var rows pgx.Rows
@@ -67,6 +67,7 @@ func GetAuditlog(c *gin.Context) {
 			&AuditLog.OrgID,
 			&AuditLog.Username,
 			&AuditLog.TxID,
+			&AuditLog.UniqueId,
 			&AuditLog.MainFunc,
 			&AuditLog.SubFunc,
 			&AuditLog.NameFunc,
@@ -131,7 +132,7 @@ func GetAuditlogByUsername(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	username := c.Param("username")
 
-	query := `SELECT id, "orgId", username, "txId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
+	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
 	FROM public.audit_logs WHERE "orgId"=$1 AND username=$2`
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
@@ -157,6 +158,7 @@ func GetAuditlogByUsername(c *gin.Context) {
 			&AuditLog.OrgID,
 			&AuditLog.Username,
 			&AuditLog.TxID,
+			&AuditLog.UniqueId,
 			&AuditLog.MainFunc,
 			&AuditLog.SubFunc,
 			&AuditLog.NameFunc,

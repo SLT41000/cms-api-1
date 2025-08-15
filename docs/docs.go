@@ -6628,6 +6628,9 @@ const docTemplate = `{
                 "resId": {
                     "type": "string"
                 },
+                "scheduleDate": {
+                    "type": "string"
+                },
                 "source": {
                     "type": "string"
                 },
@@ -6877,6 +6880,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resId": {
+                    "type": "string"
+                },
+                "scheduleDate": {
                     "type": "string"
                 },
                 "source": {
