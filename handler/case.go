@@ -451,7 +451,7 @@ func InsertCase(c *gin.Context) {
 
 	//Noti Custom
 	data := []model.Data{
-		{Key: "delay", Value: "2"},
+		{Key: "Create", Value: "2"},
 	}
 
 	recipients := []model.Recipient{
