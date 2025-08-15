@@ -300,6 +300,7 @@ func genNotiCustom(
 	redirectUrl string,
 	senderType string,
 ) {
+
 	noti := model.Notification{
 		CreatedBy:   createdBy,
 		Data:        data,
@@ -312,7 +313,15 @@ func genNotiCustom(
 		SenderPhoto: senderPhoto,
 		SenderType:  senderType,
 	}
+
+	// Log safely as JSON
+	b, err := json.MarshalIndent(noti, "", "  ")
+	if err != nil {
+		log.Println("Failed to marshal notification:", err)
+	} else {
+		log.Println(string(b))
+	}
+
 	// Broadcast asynchronously
-	notiCopy := noti // shallow copy
-	go BroadcastNotification(notiCopy)
+	go BroadcastNotification(noti)
 }
