@@ -289,6 +289,7 @@ func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]mode
 }
 
 func genNotiCustom(
+	c *gin.Context,
 	orgId string,
 	createdBy string,
 	senderName string,
@@ -300,8 +301,8 @@ func genNotiCustom(
 	redirectUrl string,
 	senderType string,
 ) {
-
-	noti := model.Notification{
+	var noti model.Notification
+	noti = model.Notification{
 		CreatedBy:   createdBy,
 		Data:        data,
 		EventType:   eventType,
@@ -313,6 +314,8 @@ func genNotiCustom(
 		SenderPhoto: senderPhoto,
 		SenderType:  senderType,
 	}
+
+	_, err := CoreNotifications(c.Request.Context(), []model.Notification{noti})
 
 	// Log safely as JSON
 	b, err := json.MarshalIndent(noti, "", "  ")
