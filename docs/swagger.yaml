@@ -79,10 +79,10 @@ definitions:
         type: string
       resId:
         type: string
-      schedule:
-        type: boolean
       scheduleDate:
         type: string
+      scheduleFlag:
+        type: boolean
       source:
         type: string
       startedDate:
@@ -250,10 +250,10 @@ definitions:
         type: string
       resId:
         type: string
-      schedule:
-        type: boolean
       scheduleDate:
         type: string
+      scheduleFlag:
+        type: boolean
       source:
         type: string
       startedDate:

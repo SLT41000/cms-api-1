@@ -6628,11 +6628,11 @@ const docTemplate = `{
                 "resId": {
                     "type": "string"
                 },
-                "schedule": {
-                    "type": "boolean"
-                },
                 "scheduleDate": {
                     "type": "string"
+                },
+                "scheduleFlag": {
+                    "type": "boolean"
                 },
                 "source": {
                     "type": "string"
@@ -6885,11 +6885,11 @@ const docTemplate = `{
                 "resId": {
                     "type": "string"
                 },
-                "schedule": {
-                    "type": "boolean"
-                },
                 "scheduleDate": {
                     "type": "string"
+                },
+                "scheduleFlag": {
+                    "type": "boolean"
                 },
                 "source": {
                     "type": "string"
