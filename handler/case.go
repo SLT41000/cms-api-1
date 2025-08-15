@@ -105,7 +105,7 @@ func ListCase(c *gin.Context) {
 	distId := c.Query("distId")
 
 	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  "schedule", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId" = $1`
 
 	params := []interface{}{orgId}
@@ -225,6 +225,7 @@ func ListCase(c *gin.Context) {
 			&cusCase.UserClose,
 			&cusCase.ResID,
 			&cusCase.ResDetail,
+			&cusCase.Schedule,
 			&cusCase.ScheduleDate,
 			&cusCase.CreatedAt,
 			&cusCase.UpdatedAt,
@@ -287,7 +288,7 @@ func CaseById(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
 
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "schedule", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId"=$1 AND id=$2`
 	logger.Debug(`Query`, zap.String("query", query))
 	var cusCase model.Case
@@ -330,6 +331,7 @@ func CaseById(c *gin.Context) {
 		&cusCase.UserClose,
 		&cusCase.ResID,
 		&cusCase.ResDetail,
+		&cusCase.Schedule,
 		&cusCase.ScheduleDate,
 		&cusCase.CreatedAt,
 		&cusCase.UpdatedAt,
@@ -400,12 +402,12 @@ func InsertCase(c *gin.Context) {
 	"phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr",
 	"caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
 	"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive,
-	userarrive, userclose, "resId", "resDetail", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy")
+	userarrive, userclose, "resId", "resDetail", "schedule", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy")
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
 		$21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42
+		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43
 	) RETURNING id ;
 	`
 
@@ -416,7 +418,7 @@ func InsertCase(c *gin.Context) {
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-		req.ResDetail, now, now, username, username).Scan(&id)
+		req.ResDetail, req.Schedule, req.ScheduleDate, now, now, username, username).Scan(&id)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
@@ -496,7 +498,7 @@ func UpdateCase(c *gin.Context) {
 	  "statusId"=$14, "caseLat"=$15, "caseLon"=$16, "caselocAddr"=$17, "caselocAddrDecs"=$18, "countryId"=$19,
 	   "provId"=$20, "distId"=$21, "caseDuration"=$22, "createdDate"=$23, "startedDate"=$24, "commandedDate"=$25,
 	    "receivedDate"=$26, "arrivedDate"=$27, "closedDate"=$28, usercreate=$29, usercommand=$30, userreceive=$31,
-		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35, "scheduleDate"=$36, "updatedAt"=$37,"updatedBy"=$38 ,"wfId"=$39
+		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35, "schedule"=$36 , "scheduleDate"=$37, "updatedAt"=$38,"updatedBy"=$39 ,"wfId"=$40
 	WHERE id = $1 AND "orgId"=$2`
 	_, err := conn.Exec(ctx, query,
 		id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
@@ -504,7 +506,7 @@ func UpdateCase(c *gin.Context) {
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-		req.ResDetail, req.ScheduleDate, now, username, req.WfID)
+		req.ResDetail, req.Schedule, req.ScheduleDate, now, username, req.WfID)
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{

@@ -43,6 +43,7 @@ type Case struct {
 	UserClose       string      `json:"userclose"`
 	ResID           *string     `json:"resId"`
 	ResDetail       *string     `json:"resDetail"`
+	Schedule        *bool       `json:"schedule"`
 	ScheduleDate    *time.Time  `json:"scheduleDate"`
 	CreatedAt       *time.Time  `json:"createdAt"`
 	UpdatedAt       *time.Time  `json:"updatedAt"`
@@ -89,6 +90,7 @@ type CaseInsert struct {
 	UserClose       *string    `json:"userclose"`
 	ResID           *string    `json:"resId"`
 	ResDetail       *string    `json:"resDetail"`
+	Schedule        *bool      `json:"schedule"`
 	ScheduleDate    *time.Time `json:"scheduleDate"`
 }
 
@@ -127,6 +129,7 @@ type CaseUpdate struct {
 	UserClose       string     `json:"userclose"`
 	ResID           *string    `json:"resId"`
 	ResDetail       *string    `json:"resDetail"`
+	Schedule        *bool      `json:"schedule"`
 	ScheduleDate    *time.Time `json:"scheduleDate"`
 }
 

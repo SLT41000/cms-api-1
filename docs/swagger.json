@@ -6624,6 +6624,9 @@
                 "resId": {
                     "type": "string"
                 },
+                "schedule": {
+                    "type": "boolean"
+                },
                 "scheduleDate": {
                     "type": "string"
                 },
@@ -6877,6 +6880,9 @@
                 },
                 "resId": {
                     "type": "string"
+                },
+                "schedule": {
+                    "type": "boolean"
                 },
                 "scheduleDate": {
                     "type": "string"
