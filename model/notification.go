@@ -44,6 +44,11 @@ type Notification struct {
 	Recipients  []Recipient `json:"recipients"` // ใช้ตอนสร้างเท่านั้น
 }
 
+// Error implements error.
+func (n Notification) Error() string {
+	panic("unimplemented")
+}
+
 // Recipient คือเป้าหมายผู้รับ
 type Recipient struct {
 	Type  string `json:"type"`

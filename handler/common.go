@@ -287,3 +287,32 @@ func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]mode
 
 	return createdNotifications, nil
 }
+
+func genNotiCustom(
+	orgId string,
+	createdBy string,
+	senderName string,
+	senderPhoto string,
+	eventType string,
+	data []model.Data,
+	message string,
+	recipients []model.Recipient,
+	redirectUrl string,
+	senderType string,
+) {
+	noti := model.Notification{
+		CreatedBy:   createdBy,
+		Data:        data,
+		EventType:   eventType,
+		Message:     message,
+		OrgID:       orgId,
+		Recipients:  recipients,
+		RedirectUrl: redirectUrl,
+		Sender:      senderName,
+		SenderPhoto: senderPhoto,
+		SenderType:  senderType,
+	}
+	// Broadcast asynchronously
+	notiCopy := noti // shallow copy
+	go BroadcastNotification(notiCopy)
+}
