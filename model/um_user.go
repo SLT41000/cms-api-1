@@ -235,3 +235,15 @@ type UmGroup struct {
 	CreatedBy string    `json:"createdBy"`
 	UpdatedBy string    `json:"updatedBy"`
 }
+
+// UserProfile สำหรับเก็บข้อมูล user profile ที่ใช้ในการจัดการ notifications
+// แยกออกจาก Um_User เพื่อไม่ให้กระทบกับ model เดิม
+type UserProfile struct {
+	EmpID  string `json:"empId"`
+	OrgID  string `json:"orgId"`
+	RoleID string `json:"roleId"`
+	DeptID string `json:"deptId"`
+	StnID  string `json:"stnId"`
+	CommID string `json:"commId"`
+	GrpID  string `json:"grpId"`
+}

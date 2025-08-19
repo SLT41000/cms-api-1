@@ -7,15 +7,17 @@ import (
 )
 
 type UserConnectionInfo struct {
-	Conn     *websocket.Conn `json:"-"`
-	ID       string          `json:"id"`
-	EmpID    string          `json:"empId"`
-	RoleID   string          `json:"roleId"`
-	OrgID    string          `json:"orgID"`
-	StnID    string          `json:"stnID"`
-	DeptID   string          `json:"deptId"`
-	CommID   string          `json:"commId"`
-	Username string          `json:"username"`
+	Conn        *websocket.Conn `json:"-"`
+	ID          string          `json:"id"`
+	EmpID       string          `json:"empId"`
+	RoleID      string          `json:"roleId"`
+	OrgID       string          `json:"orgID"`
+	StnID       string          `json:"stnID"`
+	DeptID      string          `json:"deptId"`
+	CommID      string          `json:"commId"`
+	Username    string          `json:"username"`
+	GrpID       []string        `json:"grpId"`
+	DistIdLists []string        `json:"distIdLists"`
 }
 type RegistrationMessage struct {
 	OrgID    string `json:"orgId"`    // องค์กร
@@ -25,6 +27,7 @@ type RegistrationMessage struct {
 	DeptID   string `json:"deptId"`   // แผนก
 	CommID   string `json:"commId"`   // หน่วยงานย่อย/สายงาน
 	StnID    string `json:"stnId"`    // สถานี/สาขา
+	GrpID    string `json:"grpId"`    // กลุ่มผู้ใช้
 }
 
 // Notification คือข้อมูลการแจ้งเตือนหลัก
@@ -44,11 +47,6 @@ type Notification struct {
 	Recipients  []Recipient `json:"recipients"` // ใช้ตอนสร้างเท่านั้น
 }
 
-// Error implements error.
-func (n Notification) Error() string {
-	panic("unimplemented")
-}
-
 // Recipient คือเป้าหมายผู้รับ
 type Recipient struct {
 	Type  string `json:"type"`
@@ -57,4 +55,20 @@ type Recipient struct {
 type Data struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+// NotificationCreateRequest สำหรับ request body ในการสร้าง notification ใหม่
+// ไม่รวม ID และ CreatedAt เพราะจะถูกสร้างโดยระบบ
+type NotificationCreateRequest struct {
+	OrgID       string      `json:"orgId"`
+	SenderType  string      `json:"senderType"` // "SYSTEM" or "USER"
+	SenderPhoto string      `json:"senderPhoto"`
+	Sender      string      `json:"sender"`
+	Message     string      `json:"message"`
+	EventType   string      `json:"eventType"`
+	RedirectUrl string      `json:"redirectUrl"`
+	CreatedBy   string      `json:"createdBy"`
+	ExpiredAt   time.Time   `json:"expiredAt"`
+	Data        []Data      `json:"data"`
+	Recipients  []Recipient `json:"recipients"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
@@ -20,40 +21,133 @@ import (
 // --- WebSocket Connection Management ---
 
 var (
-	// userConnections stores active connections in memory. Key is the user's Employee ID (empId).
+	// เก็บ connection ที่ online อยู่ ณ ตอนนี้ key = empId
 	userConnections = make(map[string]*model.UserConnectionInfo)
-	// connMutex protects concurrent access to the userConnections map.
-	connMutex = &sync.Mutex{}
+	connMutex       = &sync.Mutex{}
 )
 
-// upgrader upgrades HTTP connections to WebSocket connections.
+// อนุญาตทุก origin (โปรดปรับสำหรับ production)
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		// Allow all origins for development purposes.
-		// For production, implement proper origin checks.
-		return true
-	},
+	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-// getUserProfileFromDB fetches user details from the database to populate the connection info.
+// ---------- Helpers: พื้นที่/จังหวัด ----------
+
+func checkUserInProvince(userDistIdLists []string, provId string) bool {
+	if len(userDistIdLists) == 0 {
+		return false
+	}
+
+	dbConn, ctx, cancel := config.ConnectDB()
+	if dbConn == nil {
+		return false
+	}
+	defer cancel()
+	defer dbConn.Close(ctx)
+
+	placeholders := make([]string, len(userDistIdLists))
+	args := make([]interface{}, len(userDistIdLists)+1)
+	args[0] = provId
+
+	for i, distId := range userDistIdLists {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		args[i+1] = distId
+	}
+
+	var count int
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM area_districts 
+		WHERE "provId" = $1 AND "distId" IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	if err := dbConn.QueryRow(ctx, query, args...).Scan(&count); err != nil {
+		log.Printf("ERROR: Failed to check user in province %s: %v", provId, err)
+		return false
+	}
+	return count > 0
+}
+
+func checkUserInDistrict(userDistIdLists []string, distId string) bool {
+	for _, userDistId := range userDistIdLists {
+		if userDistId == distId {
+			return true
+		}
+	}
+	return false
+}
+
+func contains(ss []string, v string) bool {
+	for _, s := range ss {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
+// ---------- Query User Profile ----------
+
 func getUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username string) (*model.UserConnectionInfo, error) {
 	log.Printf("Database: Querying for user '%s' in organization '%s'", username, orgId)
 
 	var userProfile model.UserConnectionInfo
 	var roleID string
+	var distIdListsJSON []byte
+	var GrpID []string
 
-	query := `
-		SELECT "empId", "username", "orgId", "deptId", "commId", "stnId", "roleId" 
-		FROM um_users 
-		WHERE "orgId" = $1 AND "username" = $2 AND "active" = true 
-		LIMIT 1
-	`
-	err := dbConn.QueryRow(ctx, query, orgId, username).Scan(
+	// 1) ลองอ่านจาก user_connections ก่อน (เก็บ grpId เป็น array อยู่แล้ว)
+	connectionQuery := `
+        SELECT "empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists"
+        FROM user_connections
+        WHERE "orgId" = $1 AND "username" = $2
+        LIMIT 1;
+    `
+	err := dbConn.QueryRow(ctx, connectionQuery, orgId, username).Scan(
 		&userProfile.ID, &userProfile.Username, &userProfile.OrgID,
 		&userProfile.DeptID, &userProfile.CommID, &userProfile.StnID,
-		&roleID,
+		&roleID, &GrpID, &userProfile.DistIdLists, // scan array -> []string
 	)
+	if err == nil {
+		userProfile.RoleID = roleID
+		userProfile.GrpID = GrpID
+		log.Printf("Database: Found existing connection for '%s'", username)
+		return &userProfile, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		log.Printf("ERROR: Failed to query user connections for '%s': %v", username, err)
+		return nil, err
+	}
 
+	// 2) ไม่เจอใน user_connections -> ไปอ่านจาก um_users + um_user_with_groups
+	//    รวมหลายแถวของ grpId ให้เป็น array ด้วย array_agg(DISTINCT ...)
+	query := `
+        SELECT 
+          COALESCE(u."empId"::text, '')  AS "empId",
+          u."username",
+          COALESCE(u."orgId"::text, '')  AS "orgId",
+          COALESCE(u."deptId"::text, '') AS "deptId",
+          COALESCE(u."commId"::text, '') AS "commId",
+          COALESCE(u."stnId"::text, '')  AS "stnId",
+          COALESCE(u."roleId"::text, '') AS "roleId",
+          COALESCE(array_agg(DISTINCT ug."grpId"::text) FILTER (WHERE ug."grpId" IS NOT NULL), '{}') AS "grpIds",
+          COALESCE(uar."distIdLists", '[]'::jsonb) AS "distIdLists"
+        FROM um_users u
+        LEFT JOIN um_user_with_groups ug 
+               ON u."username" = ug."username"
+        LEFT JOIN um_user_with_area_response uar 
+               ON u."username" = uar."username"
+        WHERE u."orgId"::text = $1 
+          AND u."username" = $2 
+          AND u."active" = true
+        GROUP BY u."empId", u."username", u."orgId", u."deptId", u."commId", u."stnId", u."roleId", uar."distIdLists"
+        LIMIT 1;
+    `
+	err = dbConn.QueryRow(ctx, query, orgId, username).Scan(
+		&userProfile.ID, &userProfile.Username, &userProfile.OrgID,
+		&userProfile.DeptID, &userProfile.CommID, &userProfile.StnID,
+		&roleID, &GrpID, &distIdListsJSON,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("user not found or is not active")
@@ -62,11 +156,22 @@ func getUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username
 		return nil, err
 	}
 
-	userProfile.RoleID = roleID // ใช้ string ตรง ๆ ไม่ใช่ slice
+	userProfile.RoleID = roleID
+	userProfile.GrpID = GrpID
+
+	// distIdLists จากตาราง uar เป็น jsonb -> unmarshal เป็น []string
+	if len(distIdListsJSON) > 0 {
+		if err := json.Unmarshal(distIdListsJSON, &userProfile.DistIdLists); err != nil {
+			log.Printf("WARNING: Failed to parse distIdLists for user '%s': %v", username, err)
+			userProfile.DistIdLists = []string{}
+		}
+	}
+
 	return &userProfile, nil
 }
 
-// upsertUserConnectionToDB inserts or updates a user's connection status in the database.
+// ---------- Upsert Connection ----------
+
 func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 	dbConn, ctx, cancel := config.ConnectDB()
 	if dbConn == nil {
@@ -76,24 +181,42 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 	defer cancel()
 	defer dbConn.Close(ctx)
 
+	// หมายเหตุ: คอลัมน์ "grpId" และ "distIdLists" ใน user_connections ควรเป็น text[]/varchar[]
 	query := `
-	INSERT INTO user_connections ("empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "connectedAt")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	ON CONFLICT ("empId") DO UPDATE SET
-		"username" = EXCLUDED."username",
-		"orgId" = EXCLUDED."orgId",
-		"deptId" = EXCLUDED."deptId",
-		"commId" = EXCLUDED."commId",
-		"stnId" = EXCLUDED."stnId",
-		"roleId" = EXCLUDED."roleId",
-		"connectedAt" = EXCLUDED."connectedAt";
-	`
+    INSERT INTO user_connections ("empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists", "connectedAt")
+    VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), $8, $9, $10)
+    ON CONFLICT ("empId") DO UPDATE SET
+        "username"    = EXCLUDED."username",
+        "orgId"       = EXCLUDED."orgId",
+        "deptId"      = EXCLUDED."deptId",
+        "commId"      = EXCLUDED."commId",
+        "stnId"       = EXCLUDED."stnId",
+        "roleId"      = EXCLUDED."roleId",
+        "grpId"       = EXCLUDED."grpId",
+        "distIdLists" = EXCLUDED."distIdLists",
+        "connectedAt" = EXCLUDED."connectedAt";
+    `
+
+	// ส่ง []string ตรง ๆ (pgx v5 encode เป็น array ให้ ถ้าคอลัมน์เป็น text[]/varchar[])
+	var grpIDParam any
+	if len(userInfo.GrpID) == 0 {
+		grpIDParam = nil
+	} else {
+		grpIDParam = userInfo.GrpID
+	}
+
+	var distListsParam any
+	if len(userInfo.DistIdLists) == 0 {
+		distListsParam = nil
+	} else {
+		distListsParam = userInfo.DistIdLists
+	}
 
 	_, err := dbConn.Exec(ctx, query,
 		userInfo.ID, userInfo.Username, userInfo.OrgID,
 		userInfo.DeptID, userInfo.CommID, userInfo.StnID,
-		userInfo.RoleID, time.Now())
-
+		userInfo.RoleID, grpIDParam, distListsParam, time.Now(),
+	)
 	if err != nil {
 		log.Printf("ERROR: Failed to upsert user connection to DB for EmpID %s: %v", userInfo.ID, err)
 	} else {
@@ -102,7 +225,8 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 	return err
 }
 
-// removeUserConnectionFromDB removes a user's connection status from the database.
+// ---------- Remove Connection ----------
+
 func removeUserConnectionFromDB(userID string) {
 	dbConn, ctx, cancel := config.ConnectDB()
 	if dbConn == nil {
@@ -112,15 +236,15 @@ func removeUserConnectionFromDB(userID string) {
 	defer cancel()
 	defer dbConn.Close(ctx)
 
-	_, err := dbConn.Exec(ctx, `DELETE FROM user_connections WHERE "empId" = $1`, userID)
-	if err != nil {
+	if _, err := dbConn.Exec(ctx, `DELETE FROM user_connections WHERE "empId" = $1`, userID); err != nil {
 		log.Printf("ERROR: Failed to remove user connection from DB for EmpID %s: %v", userID, err)
 	} else {
 		log.Printf("Database: Successfully removed connection for EmpID %s", userID)
 	}
 }
 
-// WebSocketHandler godoc
+// ---------- WebSocket Handler ----------
+
 // @Summary WebSocket endpoint for real-time notifications
 // @Description Establishes a WebSocket connection. The client must send a JSON message with `orgId` and `username` to register the session.
 // @Tags Notifications
@@ -138,7 +262,7 @@ func WebSocketHandler(c *gin.Context) {
 	}
 	defer wsConn.Close()
 
-	// 1. Read initial registration message from client.
+	// อ่าน registration message แรกจาก client
 	_, msg, err := wsConn.ReadMessage()
 	if err != nil {
 		log.Println("Failed to read registration message:", err)
@@ -148,13 +272,19 @@ func WebSocketHandler(c *gin.Context) {
 	var regMsg model.RegistrationMessage
 	if err := json.Unmarshal(msg, &regMsg); err != nil {
 		log.Println("Invalid registration message format:", err)
-		wsConn.WriteJSON(gin.H{"error": "invalid registration format"})
+		_ = wsConn.WriteJSON(gin.H{"error": "invalid registration format"})
+		return
+	}
+
+	// (แนะนำ) validate ค่าว่างเบื้องต้น
+	if strings.TrimSpace(regMsg.OrgID) == "" || strings.TrimSpace(regMsg.Username) == "" {
+		_ = wsConn.WriteJSON(gin.H{"error": "orgId and username are required"})
 		return
 	}
 
 	dbConn, ctx, cancel := config.ConnectDB()
 	if dbConn == nil {
-		wsConn.WriteJSON(gin.H{"error": "could not connect to the database"})
+		_ = wsConn.WriteJSON(gin.H{"error": "could not connect to the database"})
 		return
 	}
 
@@ -165,7 +295,7 @@ func WebSocketHandler(c *gin.Context) {
 
 	if err != nil {
 		log.Printf("User registration failed for '%s': %v", regMsg.Username, err)
-		wsConn.WriteJSON(gin.H{"error": "user not found or invalid credentials"})
+		_ = wsConn.WriteJSON(gin.H{"error": "user not found or invalid credentials"})
 		return
 	}
 	connInfo.Conn = wsConn
@@ -185,7 +315,7 @@ func WebSocketHandler(c *gin.Context) {
 		log.Printf("❌ Disconnected: EmpID=%s", connInfo.ID)
 	}()
 
-	// Keep-alive loop: exit when connection closes.
+	// keep-alive: รอจน connection ปิด
 	for {
 		if _, _, err := wsConn.ReadMessage(); err != nil {
 			break
@@ -193,7 +323,8 @@ func WebSocketHandler(c *gin.Context) {
 	}
 }
 
-// BroadcastNotification sends a notification to relevant connected users.
+// ---------- Broadcast ----------
+
 func BroadcastNotification(noti model.Notification) {
 	connMutex.Lock()
 	defer connMutex.Unlock()
@@ -223,29 +354,43 @@ func BroadcastNotification(noti model.Notification) {
 		for _, recipient := range noti.Recipients {
 			shouldReceive := false
 
-			switch strings.ToLower(recipient.Type) {
-			case "orgid":
-				shouldReceive = connInfo.OrgID == recipient.Value
-			case "empid":
-				shouldReceive = connInfo.ID == recipient.Value
-			case "roleid":
-				shouldReceive = connInfo.RoleID == recipient.Value
-			case "deptid":
-				shouldReceive = connInfo.DeptID == recipient.Value
-			case "stnid":
-				shouldReceive = connInfo.StnID == recipient.Value
-			case "commid":
-				shouldReceive = connInfo.CommID == recipient.Value
-			case "username":
-				shouldReceive = connInfo.Username == recipient.Value
+			// รองรับการส่ง value หลายค่าในหนึ่ง rule ด้วย comma
+			values := strings.Split(recipient.Value, ",")
+			for _, value := range values {
+				value = strings.TrimSpace(value)
+
+				switch strings.ToLower(recipient.Type) {
+				case "orgid":
+					shouldReceive = connInfo.OrgID == value
+				case "empid":
+					shouldReceive = connInfo.ID == value
+				case "roleid":
+					shouldReceive = connInfo.RoleID == value
+				case "deptid":
+					shouldReceive = connInfo.DeptID == value
+				case "stnid":
+					shouldReceive = connInfo.StnID == value
+				case "commid":
+					shouldReceive = connInfo.CommID == value
+				case "username":
+					shouldReceive = connInfo.Username == value
+				case "grpid":
+					// เช็คสมาชิกใน array
+					shouldReceive = contains(connInfo.GrpID, value)
+				case "provid":
+					shouldReceive = checkUserInProvince(connInfo.DistIdLists, value)
+				case "distid":
+					shouldReceive = checkUserInDistrict(connInfo.DistIdLists, value)
+				}
+
+				if shouldReceive {
+					break
+				}
 			}
 
 			if shouldReceive {
 				log.Printf("  🚀 Match found! Sending to EmpID: %s (Rule: %s:%s)", connInfo.ID, recipient.Type, recipient.Value)
-
-				payloadToSend := noti
-
-				if err := connInfo.Conn.WriteJSON(payloadToSend); err != nil {
+				if err := connInfo.Conn.WriteJSON(noti); err != nil {
 					log.Printf("    ❌ Failed to send to EmpID %s: %v", connInfo.ID, err)
 				}
 				sentTo[connInfo.ID] = true

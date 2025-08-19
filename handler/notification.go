@@ -33,18 +33,18 @@ func RandomString(n int) string {
 
 // CreateNotifications godoc
 // @Summary Create one or more new notifications
-// @Description Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects.
+// @Description Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects. Note: Do not include 'id' or 'createdAt' fields in the request body - these will be generated automatically.
 // @Tags Notifications
 // @security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param notifications body []model.Notification true "A JSON array of notification objects. The `data` field should be an array of key-value objects, e.g., `\"data\": [{\"key\": \"caseId\", \"value\": \"C1122\"}]`"
+// @Param notifications body []model.NotificationCreateRequest true "A JSON array of notification objects. The `data` field should be an array of key-value objects, e.g., `\"data\": [{\"key\": \"caseId\", \"value\": \"C1122\"}]`. Do not include 'id' or 'createdAt' fields."
 // @Success 201 {array} model.Notification "Notifications created successfully"
 // @Failure 400 {object} map[string]string "Invalid request body"
 // @Failure 500 {object} map[string]string "Internal server error (e.g., database transaction failure)"
 // @Router /api/v1/notifications [post]
 func CreateNotifications(c *gin.Context) {
-	var inputs []model.Notification
+	var inputs []model.NotificationCreateRequest
 	if err := c.ShouldBindJSON(&inputs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
 		return
@@ -218,94 +218,158 @@ func GetNotificationsForUser(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
-	// Step 1: Get the user's full profile using their username and orgId.
-	var userProfile model.Um_User
-	err := conn.QueryRow(ctx, `SELECT "empId", "orgId", "roleId", "deptId", "stnId", "commId" FROM um_users WHERE "username" = $1 AND "orgId" = $2 AND "active" = true`, username, orgId).Scan(
-		&userProfile.EmpID, &userProfile.OrgID, &userProfile.RoleID, &userProfile.DeptID, &userProfile.StnID, &userProfile.CommID,
+	// 1) ดึงโปรไฟล์ผู้ใช้ - แคสต์เป็น text ให้หมด และแก้ COALESCE grpId
+	var userProfile model.UserProfile
+	err := conn.QueryRow(ctx, `
+		SELECT 
+			u."empId"::text,
+			u."orgId"::text,
+			u."roleId"::text,
+			u."deptId"::text,
+			u."stnId"::text,
+			u."commId"::text,
+			COALESCE(ug."grpId"::text, '') AS "grpId"
+		FROM um_users u
+		LEFT JOIN um_user_with_groups ug ON u."username" = ug."username"
+		WHERE u."username" = $1 
+		  AND u."orgId"::text = $2 
+		  AND u."active" = true
+	`, username, orgId).Scan(
+		&userProfile.EmpID,
+		&userProfile.OrgID,
+		&userProfile.RoleID,
+		&userProfile.DeptID,
+		&userProfile.StnID,
+		&userProfile.CommID,
+		&userProfile.GrpID,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found in the specified organization"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch user profile", "detail": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to fetch user profile",
+			"detail": err.Error(),
+		})
 		return
 	}
 
-	// Step 2: Build query conditions and arguments safely.
+	// 2) สร้างเงื่อนไขค้นหาด้วย recipients
 	conditions := []string{}
-	args := []interface{}{userProfile.OrgID} // $1 is always orgId
+	args := []interface{}{userProfile.OrgID} // $1 = orgId เสมอ
 
-	// Helper function to create a JSON string for a recipient rule.
-	createRecipientJSON := func(recipientType, value string) (string, error) {
-		recipient := []model.Recipient{{Type: recipientType, Value: value}}
-		jsonBytes, err := json.Marshal(recipient)
-		return string(jsonBytes), err
-	}
-
-	// Condition for EMP_ID
-	if empIdJson, err := createRecipientJSON("empId", userProfile.EmpID); err == nil {
-		args = append(args, empIdJson)
-		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-	}
-
-	// Condition for ROLE_ID
-	if userProfile.RoleID != "" {
-		if roleIdJson, err := createRecipientJSON("roleId", userProfile.RoleID); err == nil {
-			args = append(args, roleIdJson)
-			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
+	// helper: เพิ่มเงื่อนไข type/value (รองรับ value ที่คั่นด้วยคอมมาในฝั่ง notification)
+	addCond := func(recipientType, userValue string) {
+		if strings.TrimSpace(userValue) == "" {
+			return
 		}
+		// ณ ตอนนี้ len(args) = จำนวน args ที่มีอยู่แล้ว
+		// จะใช้ $N = type, $N+1 = value (อ้างซ้ำได้ใน LIKE)
+		typeIdx := len(args) + 1
+		valIdx := len(args) + 2
+
+		cond := fmt.Sprintf(`(
+			EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements("recipients") AS recipient
+				WHERE recipient->>'type' = $%d
+				  AND (
+						recipient->>'value' = $%d
+					 OR recipient->>'value' LIKE $%d || ',%%'
+					 OR recipient->>'value' LIKE '%%,' || $%d
+					 OR recipient->>'value' LIKE '%%,' || $%d || ',%%'
+				  )
+			)
+		)`, typeIdx, valIdx, valIdx, valIdx, valIdx)
+
+		conditions = append(conditions, cond)
+		args = append(args, recipientType, userValue) // เพิ่มแค่ 2 ค่า: type, value
 	}
 
-	// Condition for DEPARTMENT_ID
-	if userProfile.DeptID != "" {
-		if deptIdJson, err := createRecipientJSON("deptId", userProfile.DeptID); err == nil {
-			args = append(args, deptIdJson)
-			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-		}
-	}
+	// เพิ่มเงื่อนไขพื้นฐาน
+	addCond("empId", userProfile.EmpID)
+	addCond("roleId", userProfile.RoleID)
+	addCond("deptId", userProfile.DeptID)
+	addCond("stnId", userProfile.StnID)
+	addCond("commId", userProfile.CommID)
+	addCond("orgId", userProfile.OrgID)
+	addCond("username", username)
+	addCond("grpId", userProfile.GrpID)
 
-	// Condition for STATION_ID
-	if userProfile.StnID != "" {
-		if stnIdJson, err := createRecipientJSON("stnId", userProfile.StnID); err == nil {
-			args = append(args, stnIdJson)
-			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-		}
-	}
+	// 3) provId: user อยู่จังหวัดไหน (เทียบจาก distIdLists -> join area_districts)
+	// เพิ่ม $ สำหรับ empId
+	// --- provId: ผู้ใช้สังกัดจังหวัดไหนจาก distIdLists ---
+	provIdx := len(args) + 1
+	args = append(args, username) // <— ใช้ username แทน empId
+	provCondition := fmt.Sprintf(`(
+    EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements("recipients") AS recipient
+        WHERE recipient->>'type' = 'provId'
+          AND EXISTS (
+                SELECT 1
+                FROM um_user_with_area_response uar
+                JOIN LATERAL jsonb_array_elements_text(uar."distIdLists"::jsonb) AS d(distId) ON TRUE
+                JOIN area_districts ad ON ad."distId" = d.distId
+                WHERE uar."username" = $%d
+                  AND (
+                        recipient->>'value' = ad."provId"
+                     OR recipient->>'value' LIKE ad."provId" || ',%%'
+                     OR recipient->>'value' LIKE '%%,' || ad."provId"
+                     OR recipient->>'value' LIKE '%%,' || ad."provId" || ',%%'
+                  )
+          )
+    )
+)`, provIdx)
+	conditions = append(conditions, provCondition)
 
-	// Condition for COMMUNITY_ID
-	if userProfile.CommID != "" {
-		if commIdJson, err := createRecipientJSON("commId", userProfile.CommID); err == nil {
-			args = append(args, commIdJson)
-			conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-		}
-	}
-
-	// Condition for ORG_ID (everyone in the organization)
-	if orgIdJson, err := createRecipientJSON("orgId", userProfile.OrgID); err == nil {
-		args = append(args, orgIdJson)
-		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-	}
-
-	// Condition for USERNAME (userName)
-	if usernameJson, err := createRecipientJSON("username", username); err == nil {
-		args = append(args, usernameJson)
-		conditions = append(conditions, fmt.Sprintf(`"recipients"::jsonb @> $%d::jsonb`, len(args)))
-	}
-
+	// 4) distId: user อยู่ในอำเภอไหน (เทียบตรงกับ distIdLists ของ user)
+	distIdx := len(args) + 1
+	args = append(args, username) // <— ใช้ username แทน empId
+	distCondition := fmt.Sprintf(`(
+    EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements("recipients") AS recipient
+        WHERE recipient->>'type' = 'distId'
+          AND EXISTS (
+                SELECT 1
+                FROM um_user_with_area_response uar
+                JOIN LATERAL jsonb_array_elements_text(uar."distIdLists"::jsonb) AS d(distId) ON TRUE
+                WHERE uar."username" = $%d
+                  AND (
+                        recipient->>'value' = d.distId
+                     OR recipient->>'value' LIKE d.distId || ',%%'
+                     OR recipient->>'value' LIKE '%%,' || d.distId
+                     OR recipient->>'value' LIKE '%%,' || d.distId || ',%%'
+                  )
+          )
+    )
+)`, distIdx)
+	conditions = append(conditions, distCondition)
 	fullCondition := strings.Join(conditions, " OR ")
+	if fullCondition == "" {
+		// กันเคสไม่มีเงื่อนไขเลย (ไม่น่าเกิด แต่กันไว้)
+		fullCondition = "TRUE"
+	}
 
-	// UPDATED: SQL SELECT to retrieve all fields from the new model
 	query := fmt.Sprintf(`
-        SELECT "id", "orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data" 
-        FROM notifications
-        WHERE "orgId" = $1 AND (%s)
-        ORDER BY "createdAt" DESC
-    `, fullCondition)
+		SELECT 
+			"id", "orgId", "senderType", "sender", "senderPhoto",
+			"message", "eventType", "redirectUrl", "createdAt", 
+			"createdBy", "expiredAt", "recipients", "data"
+		FROM notifications
+		WHERE "orgId" = $1 AND (%s)
+		ORDER BY "createdAt" DESC
+	`, fullCondition)
 
 	rows, err := conn.Query(ctx, query, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query notifications", "detail": err.Error(), "query": query})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "failed to query notifications",
+			"detail": err.Error(),
+			"query":  query,
+		})
 		return
 	}
 	defer rows.Close()
@@ -314,25 +378,17 @@ func GetNotificationsForUser(c *gin.Context) {
 	for rows.Next() {
 		var n model.Notification
 		var recipientsStr, dataStr []byte
-		// FIX: Use pgtype for nullable fields to prevent scan errors
 		var senderPhoto, createdBy pgtype.Text
 		var expiredAt pgtype.Timestamptz
-
-		// UPDATED: Scan to accommodate all fields from the new model
-
-		var redirectUrl pgtype.Text // เพิ่มตัวแปรสำหรับรองรับ nullable
+		var redirectUrl pgtype.Text
 
 		if err := rows.Scan(
-			&n.ID, &n.OrgID, &n.SenderType, &n.Sender, &senderPhoto, &n.Message,
-			&n.EventType, &redirectUrl, &n.CreatedAt, &createdBy, &expiredAt, &recipientsStr, &dataStr,
+			&n.ID, &n.OrgID, &n.SenderType, &n.Sender, &senderPhoto,
+			&n.Message, &n.EventType, &redirectUrl, &n.CreatedAt,
+			&createdBy, &expiredAt, &recipientsStr, &dataStr,
 		); err != nil {
 			log.Printf("Error scanning notification row: %v", err)
 			continue
-		}
-
-		// assign redirectUrl ถ้ามีค่า
-		if redirectUrl.Valid {
-			n.RedirectUrl = redirectUrl.String
 		}
 
 		if senderPhoto.Valid {
@@ -341,12 +397,15 @@ func GetNotificationsForUser(c *gin.Context) {
 		if createdBy.Valid {
 			n.CreatedBy = createdBy.String
 		}
+		if redirectUrl.Valid {
+			n.RedirectUrl = redirectUrl.String
+		}
 		if expiredAt.Valid {
 			n.ExpiredAt = expiredAt.Time
 		}
 
-		json.Unmarshal(recipientsStr, &n.Recipients)
-		json.Unmarshal(dataStr, &n.Data)
+		_ = json.Unmarshal(recipientsStr, &n.Recipients)
+		_ = json.Unmarshal(dataStr, &n.Data)
 		notifications = append(notifications, n)
 	}
 	if err := rows.Err(); err != nil {

@@ -217,12 +217,10 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 	return nil
 }
 
-func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]model.Notification, error) {
+func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateRequest) ([]model.Notification, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("notification array cannot be empty")
 	}
-
-	orgId := inputs[0].OrgID
 
 	conn, ctx, cancel := config.ConnectDB()
 	defer cancel()
@@ -238,7 +236,7 @@ func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]mode
 
 	for _, input := range inputs {
 		noti := model.Notification{
-			OrgID:       orgId,
+			OrgID:       input.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
 			SenderType:  input.SenderType,
 			Sender:      input.Sender,
 			SenderPhoto: input.SenderPhoto,
@@ -246,7 +244,7 @@ func CoreNotifications(ctx context.Context, inputs []model.Notification) ([]mode
 			EventType:   input.EventType,
 			RedirectUrl: input.RedirectUrl,
 			Data:        input.Data,
-			CreatedAt:   time.Now(),
+			CreatedAt:   time.Now(), // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
 			CreatedBy:   input.CreatedBy,
 			ExpiredAt:   input.ExpiredAt,
 			Recipients:  input.Recipients,
