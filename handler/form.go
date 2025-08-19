@@ -6,7 +6,6 @@ import (
 	"mainPackage/model"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1340,59 +1339,43 @@ WHERE t1."wfId" = $1
 		return
 	}
 	defer rows.Close()
-	rowIndex := 0
 	var formId string
 	var nodeId string
 	var versions string
 	for rows.Next() {
-		rowIndex++
 		var rawJSON []byte
 		var rowsType string
+		var tempNodeId, tempVersions string
 
-		err := rows.Scan(&rowsType, &rawJSON, &nodeId, &versions)
-		versions = versions
+		err := rows.Scan(&rowsType, &rawJSON, &tempNodeId, &tempVersions)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   err.Error(),
-			}
-			c.JSON(http.StatusInternalServerError, response)
+			continue
 		}
 
-		switch rowsType {
-		case "nodes":
-			field, err := unmarshalToMap(rawJSON)
-			if err != nil {
-				logger.Warn("Unmarshal nodes failed", zap.Error(err))
-				continue
-			}
-			if data, ok := field["data"].(map[string]interface{}); ok {
-				if label, ok := data["label"].(string); ok {
-					lowerLabel := strings.ToLower(label)
-					if strings.HasPrefix(lowerLabel, "start") {
-						continue
-					} else {
-						if config, ok := data["config"].(map[string]interface{}); ok {
-							if formVal, ok := config["formId"]; ok {
-								if formStr, ok := formVal.(string); ok {
-									formId = formStr
-								} else {
-									logger.Debug("form is not a string")
-								}
-							} else {
-								logger.Debug("form key not found in config")
-							}
-						} else {
-							logger.Debug("config not found or wrong type")
-						}
+		// Only handle nodes
+		if rowsType != "nodes" {
+			continue
+		}
+
+		var nodeMap map[string]interface{}
+		if err := json.Unmarshal(rawJSON, &nodeMap); err != nil {
+			logger.Warn("Unmarshal failed", zap.Error(err))
+			continue
+		}
+
+		// Access data -> config -> formId if action = S002
+		if data, ok := nodeMap["data"].(map[string]interface{}); ok {
+			if config, ok := data["config"].(map[string]interface{}); ok {
+				if action, ok := config["action"].(string); ok && action == "S002" {
+					if formVal, ok := config["formId"].(string); ok {
+						formId = formVal
+						nodeId = tempNodeId
+						versions = tempVersions
+						break // found, exit loop
 					}
 				}
 			}
-		}
-		if formId != "" {
-			break
 		}
 	}
 	logger.Debug(formId)
