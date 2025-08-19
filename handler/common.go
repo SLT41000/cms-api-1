@@ -298,31 +298,38 @@ func genNotiCustom(
 	recipients []model.Recipient,
 	redirectUrl string,
 	senderType string,
-) {
-	var noti model.Notification
-	noti = model.Notification{
-		CreatedBy:   createdBy,
-		Data:        data,
-		EventType:   eventType,
-		Message:     message,
+) error {
+	// เตรียม request ชุดเดียว
+	req := model.NotificationCreateRequest{
 		OrgID:       orgId,
-		Recipients:  recipients,
-		RedirectUrl: redirectUrl,
+		SenderType:  senderType,
 		Sender:      senderName,
 		SenderPhoto: senderPhoto,
-		SenderType:  senderType,
+		Message:     message,
+		EventType:   eventType,
+		RedirectUrl: redirectUrl,
+		Data:        data,
+		Recipients:  recipients,
+		CreatedBy:   createdBy,
+		ExpiredAt:   time.Now().Add(24 * time.Hour), // default TTL 24 ชม.
 	}
 
-	_, err := CoreNotifications(c.Request.Context(), []model.Notification{noti})
-
-	// Log safely as JSON
-	b, err := json.MarshalIndent(noti, "", "  ")
+	// ยิงเข้า CoreNotifications
+	created, err := CoreNotifications(c.Request.Context(), []model.NotificationCreateRequest{req})
 	if err != nil {
-		log.Println("Failed to marshal notification:", err)
-	} else {
+		return err
+	}
+	if len(created) == 0 {
+		return fmt.Errorf("no notifications were created")
+	}
+
+	// ใช้ตัวที่ DB สร้างจริง (มี id/createdAt) เพื่อ log
+	if b, merr := json.MarshalIndent(created[0], "", "  "); merr == nil {
 		log.Println(string(b))
 	}
 
-	// Broadcast asynchronously
-	go BroadcastNotification(noti)
+	// ถ้า CoreNotifications ยัง "ไม่" broadcast ภายใน ให้เปิดบรรทัดนี้
+	// go BroadcastNotification(created[0])
+
+	return nil
 }
