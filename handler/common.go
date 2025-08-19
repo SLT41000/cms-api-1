@@ -188,16 +188,16 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 	// Step 2: Insert into tix_case_current_stage
 	insertQuery := `
 	INSERT INTO public.tix_case_current_stage(
-		"orgId", "caseId", "wfId", "nodeId", versions, type, section, data, pic, "group", "formId",
+		"orgId", "caseId", "wfId", "nodeId", "stageType", "unitId", "username", versions, type, section, data, pic, "group", "formId",
 		"createdAt", "updatedAt", "createdBy", "updatedBy"
 	) VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-		$12, $13, $14, $15
+		$12, $13, $14, $15, $16, $17, $18
 	)
 	`
 
 	args := []interface{}{
-		workflow.OrgID, req.CaseID, workflow.WfID, req.NodeID, workflow.Versions,
+		workflow.OrgID, req.CaseID, workflow.WfID, req.NodeID, "case", "", "", workflow.Versions,
 		workflow.Type, workflow.Section, workflow.Data, workflow.Pic,
 		workflow.Group, workflow.FormID, now, now, username, username,
 	}
