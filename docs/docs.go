@@ -8369,6 +8369,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "label": {
+                    "type": "string"
+                },
                 "source": {
                     "type": "string"
                 },

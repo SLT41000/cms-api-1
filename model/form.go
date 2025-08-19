@@ -115,6 +115,7 @@ type WorkFlowConnection struct {
 	Id     string `json:"id"`
 	Source string `json:"source"`
 	Target string `json:"target"`
+	Label  string `json:"label"`
 }
 
 type FormByCasesubtype struct {
