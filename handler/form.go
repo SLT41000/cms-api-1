@@ -1312,11 +1312,18 @@ func GetFormByCaseSubType(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT t2."section",t2."data" ,t2."nodeId" , t1."versions"
-	FROM public.wf_definitions t1 
-	INNER JOIN public.wf_nodes t2 
-	ON t1."wfId"=t2."wfId" AND t1."versions" = t2."versions"
-	WHERE t1."wfId" = $1 AND t1."orgId"=$2 AND LOWER(t2."type") != 'start'`
+	query = `SELECT 
+    t2."section",
+    t2."data",
+    t2."nodeId",
+    t1."versions"
+FROM public.wf_definitions t1
+INNER JOIN public.wf_nodes t2
+    ON t1."wfId" = t2."wfId" AND t1."versions" = t2."versions"
+WHERE t1."wfId" = $1
+  AND t1."orgId" = $2
+  AND LOWER(t2."type") = 'process'  
+  AND t2."data"->'data'->'config'->>'action' = 'S002'`
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
 		wfId, orgId,
 	}))
@@ -1334,7 +1341,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 	}
 	defer rows.Close()
 	rowIndex := 0
-	var formName string
+	var formId string
 	var nodeId string
 	var versions string
 	for rows.Next() {
@@ -1370,7 +1377,7 @@ func GetFormByCaseSubType(c *gin.Context) {
 						if config, ok := data["config"].(map[string]interface{}); ok {
 							if formVal, ok := config["formId"]; ok {
 								if formStr, ok := formVal.(string); ok {
-									formName = formStr
+									formId = formStr
 								} else {
 									logger.Debug("form is not a string")
 								}
@@ -1384,11 +1391,11 @@ func GetFormByCaseSubType(c *gin.Context) {
 				}
 			}
 		}
-		if formName != "" {
+		if formId != "" {
 			break
 		}
 	}
-	logger.Debug(formName)
+	logger.Debug(formId)
 	rows.Close()
 	query = `SELECT t1."formId",t1."formName",t1."formColSpan",t2."eleData" 
 	FROM public.form_builder t1
@@ -1397,9 +1404,9 @@ func GetFormByCaseSubType(c *gin.Context) {
 	WHERE t1."formId" = $1 AND t1."orgId"=$2 `
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
-		formName, orgId,
+		formId, orgId,
 	}))
-	rows, err = conn.Query(ctx, query, formName, orgId)
+	rows, err = conn.Query(ctx, query, formId, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
