@@ -846,6 +846,36 @@ definitions:
         description: '"SYSTEM" or "USER"'
         type: string
     type: object
+  model.NotificationCreateRequest:
+    properties:
+      createdBy:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/model.Data'
+        type: array
+      eventType:
+        type: string
+      expiredAt:
+        type: string
+      message:
+        type: string
+      orgId:
+        type: string
+      recipients:
+        items:
+          $ref: '#/definitions/model.Recipient'
+        type: array
+      redirectUrl:
+        type: string
+      sender:
+        type: string
+      senderPhoto:
+        type: string
+      senderType:
+        description: '"SYSTEM" or "USER"'
+        type: string
+    type: object
   model.PermissionInsert:
     properties:
       active:
@@ -3795,9 +3825,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a batch of notifications, saves them to the database in
+      description: 'Creates a batch of notifications, saves them to the database in
         a single transaction, and broadcasts each one to relevant online users. The
-        input should be a JSON array of notification objects.
+        input should be a JSON array of notification objects. Note: Do not include
+        ''id'' or ''createdAt'' fields in the request body - these will be generated
+        automatically.'
       parameters:
       - description: A JSON array of notification objects. The `data` field should
           be an array of key-value objects, e.g., `\
@@ -3806,7 +3838,7 @@ paths:
         required: true
         schema:
           items:
-            $ref: '#/definitions/model.Notification'
+            $ref: '#/definitions/model.NotificationCreateRequest'
           type: array
       produces:
       - application/json

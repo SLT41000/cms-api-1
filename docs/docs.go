@@ -4005,7 +4005,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects.",
+                "description": "Creates a batch of notifications, saves them to the database in a single transaction, and broadcasts each one to relevant online users. The input should be a JSON array of notification objects. Note: Do not include 'id' or 'createdAt' fields in the request body - these will be generated automatically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4025,7 +4025,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Notification"
+                                "$ref": "#/definitions/model.NotificationCreateRequest"
                             }
                         }
                     }
@@ -7774,6 +7774,51 @@ const docTemplate = `{
                 },
                 "senderPhoto": {
                     "description": "เพิ่มใหม่",
+                    "type": "string"
+                },
+                "senderType": {
+                    "description": "\"SYSTEM\" or \"USER\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.NotificationCreateRequest": {
+            "type": "object",
+            "properties": {
+                "createdBy": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Data"
+                    }
+                },
+                "eventType": {
+                    "type": "string"
+                },
+                "expiredAt": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "recipients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Recipient"
+                    }
+                },
+                "redirectUrl": {
+                    "type": "string"
+                },
+                "sender": {
+                    "type": "string"
+                },
+                "senderPhoto": {
                     "type": "string"
                 },
                 "senderType": {

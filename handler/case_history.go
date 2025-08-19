@@ -123,13 +123,15 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+
 	caseId := c.Param("caseId")
 	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `SELECT id, "orgId", "caseId", username, type, "fullMsg", "jsonData", "createdAt", "createdBy"
 	FROM public.tix_case_history_events WHERE "orgId"=$1 AND "caseId"=$2`
 
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug("Query", zap.String("query", query))
+
 	rows, err := conn.Query(ctx, query, orgId, caseId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -141,10 +143,10 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	var errorMsg string
+
 	var CaseHistory model.CaseHistory
 	var CaseHistoryList []model.CaseHistory
-	found := false
+
 	for rows.Next() {
 		err := rows.Scan(
 			&CaseHistory.ID,
@@ -159,33 +161,33 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 		)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
+			c.JSON(http.StatusInternalServerError, model.Response{
 				Status: "-1",
 				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
+				Desc:   err.Error(),
+			})
 			return
 		}
 		CaseHistoryList = append(CaseHistoryList, CaseHistory)
-		found = true
 	}
-	if !found {
-		response := model.Response{
+
+	// ✅ If no rows found, return 200 with "NoData"
+	if len(CaseHistoryList) == 0 {
+		c.JSON(http.StatusOK, model.Response{
 			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   CaseHistoryList,
+			Msg:    "NoData",
 			Desc:   "",
-		}
-		c.JSON(http.StatusOK, response)
+		})
+		return
 	}
+
+	// ✅ Otherwise return success
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   CaseHistoryList,
+		Desc:   "",
+	})
 }
 
 // @summary Create Case History
