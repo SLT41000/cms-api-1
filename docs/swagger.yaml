@@ -33,6 +33,8 @@ definitions:
         type: string
       caseDuration:
         type: integer
+      caseId:
+        type: string
       caseLat:
         type: string
       caseLon:

@@ -6559,6 +6559,9 @@ const docTemplate = `{
                 "caseDuration": {
                     "type": "integer"
                 },
+                "caseId": {
+                    "type": "string"
+                },
                 "caseLat": {
                     "type": "string"
                 },

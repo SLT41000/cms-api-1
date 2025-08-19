@@ -392,8 +392,14 @@ func InsertCase(c *gin.Context) {
 		return
 	}
 	username := GetVariableFromToken(c, "username")
+
 	now := time.Now()
-	caseId := genCaseID()
+	var caseId string
+	if req.CaseId == nil || *req.CaseId == "" || *req.CaseId == "null" {
+		caseId = genCaseID()
+	} else {
+		caseId = *req.CaseId
+	}
 	var id int
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `

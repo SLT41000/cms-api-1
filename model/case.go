@@ -54,6 +54,7 @@ type Case struct {
 }
 
 type CaseInsert struct {
+	CaseId          *string    `json:"caseId" `
 	CaseVersion     string     `json:"caseVersion" binding:"required"`
 	ReferCaseID     *string    `json:"referCaseId"`
 	CaseTypeID      string     `json:"caseTypeId"`
