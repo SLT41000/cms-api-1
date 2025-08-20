@@ -156,7 +156,7 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 		Scan(&wfId, &current.CaseId, &current.NodeId, &current.Versions, &current.Type, &current.Section, &current.Data, &current.Pic, &current.Group, &current.FormId)
 	if err != nil {
 		logger.Error("Failed to fetch current stage", zap.Error(err))
-		return nil, nil, fmt.Errorf("current node not found for caseId=%s", caseId)
+		//return nil, nil, fmt.Errorf("current node not found for caseId=%s", caseId)
 	}
 
 	log.Println("===== current stage =====")
