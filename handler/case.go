@@ -461,7 +461,7 @@ func InsertCase(c *gin.Context) {
 	}
 
 	recipients := []model.Recipient{
-		{Type: "empId", Value: "AI680021"},
+		{Type: "provId", Value: req.ProvID},
 	}
 	genNotiCustom(c, orgId.(string), "System", username.(string), "", "Create", data, "เปิด Work order สำเร็จ : "+caseId, recipients, "", "User")
 
