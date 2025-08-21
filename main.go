@@ -244,6 +244,9 @@ func main() {
 		v1.POST("/case_history/add", handler.InsertCaseHistory)
 		v1.PATCH("/case_history/:id", handler.UpdateCaseHistory)
 		v1.DELETE("/case_history/:id", handler.DeleteCaseHistory)
+
+		v1.GET("/devices", handler.GetDeviceIoT)
+		v1.GET("/devices/:id", handler.GetDeviceIoTById)
 	}
 
 	notifications := router.Group("/api/v1/notifications")
