@@ -2331,6 +2331,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/devices": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device Iot"
+                ],
+                "summary": "Get Device IoT",
+                "operationId": "Get Device IoT",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/devices/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device Iot"
+                ],
+                "summary": "Get Device IoT By ID",
+                "operationId": "Get Device IoT By ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dispatch/event": {
             "post": {
                 "security": [

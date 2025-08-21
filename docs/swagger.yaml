@@ -2789,6 +2789,57 @@ paths:
       summary: Create Department
       tags:
       - Organization
+  /api/v1/devices:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Device IoT
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Device IoT
+      tags:
+      - Device Iot
+  /api/v1/devices/{id}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Device IoT By ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Device IoT By ID
+      tags:
+      - Device Iot
   /api/v1/dispatch/{caseId}/SOP:
     get:
       consumes:
