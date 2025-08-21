@@ -1020,6 +1020,19 @@ definitions:
         description: Thai name
         type: string
     type: object
+  model.UpdateStageRequest:
+    properties:
+      caseId:
+        type: string
+      nodeId:
+        type: string
+      status:
+        type: string
+      unitId:
+        type: string
+      unitUser:
+        type: string
+    type: object
   model.UserAdminInput:
     properties:
       activationToken:
@@ -2820,6 +2833,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Unit
+      tags:
+      - Dispatch
+  /api/v1/dispatch/event:
+    post:
+      consumes:
+      - application/json
+      operationId: updateUnit
+      parameters:
+      - description: Update unit event
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Dispatch unit follow SOP
       tags:
       - Dispatch
   /api/v1/forms:

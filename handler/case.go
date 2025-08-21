@@ -1029,7 +1029,7 @@ func InsertCaseSubType(c *gin.Context) {
 	INSERT INTO public."case_sub_types"(
 	"typeId", "sTypeId", "sTypeCode", "orgId", en, th, "wfId", "caseSla", priority,
 	 "userSkillList", "unitPropLists", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 	RETURNING id ;
 	`
 

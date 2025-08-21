@@ -1322,7 +1322,7 @@ INNER JOIN public.wf_nodes t2
 WHERE t1."wfId" = $1
   AND t1."orgId" = $2
   AND LOWER(t2."type") = 'process'  
-  AND t2."data"->'data'->'config'->>'action' = 'S002'`
+  AND t2."data"->'data'->'config'->>'action' = 'S001'`
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
 		wfId, orgId,
 	}))

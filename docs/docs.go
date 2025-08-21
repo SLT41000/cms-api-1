@@ -2331,6 +2331,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dispatch/event": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Dispatch unit follow SOP",
+                "operationId": "updateUnit",
+                "parameters": [
+                    {
+                        "description": "Update unit event",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateStageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dispatch/{caseId}/SOP": {
             "get": {
                 "security": [
@@ -8041,6 +8080,26 @@ const docTemplate = `{
                 },
                 "th": {
                     "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdateStageRequest": {
+            "type": "object",
+            "properties": {
+                "caseId": {
+                    "type": "string"
+                },
+                "nodeId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "unitId": {
+                    "type": "string"
+                },
+                "unitUser": {
                     "type": "string"
                 }
             }
