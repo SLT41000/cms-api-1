@@ -250,6 +250,11 @@ func main() {
 		v1.GET("/devices/:id", handler.GetDeviceIoTById)
 	}
 
+	minimal := router.Group("/api/minimal")
+	{
+		minimal.POST("/case/create", handler.MinimalCreateCase)
+	}
+
 	notifications := router.Group("/api/v1/notifications")
 	{
 
