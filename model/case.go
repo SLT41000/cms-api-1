@@ -16,16 +16,16 @@ type Case struct {
 	WfID            *string     `json:"wfId"`
 	WfVersions      *string     `json:"versions"`
 	Source          string      `json:"source"`
-	DeviceID        string      `json:"deviceId"`
-	PhoneNo         string      `json:"phoneNo"`
+	DeviceID        *string     `json:"deviceId"`
+	PhoneNo         *string     `json:"phoneNo"`
 	PhoneNoHide     bool        `json:"phoneNoHide"`
 	CaseDetail      *string     `json:"caseDetail"`
-	ExtReceive      string      `json:"extReceive"`
+	ExtReceive      *string     `json:"extReceive"`
 	StatusID        string      `json:"statusId"`
-	CaseLat         string      `json:"caseLat"`
-	CaseLon         string      `json:"caseLon"`
-	CaseLocAddr     string      `json:"caselocAddr"`
-	CaseLocAddrDecs string      `json:"caselocAddrDecs"`
+	CaseLat         *string     `json:"caseLat"`
+	CaseLon         *string     `json:"caseLon"`
+	CaseLocAddr     *string     `json:"caselocAddr"`
+	CaseLocAddrDecs *string     `json:"caselocAddrDecs"`
 	CountryID       string      `json:"countryId"`
 	ProvID          string      `json:"provId"`
 	DistID          string      `json:"distId"`
@@ -36,19 +36,19 @@ type Case struct {
 	ReceivedDate    *time.Time  `json:"receivedDate"`
 	ArrivedDate     *time.Time  `json:"arrivedDate"`
 	ClosedDate      *time.Time  `json:"closedDate"`
-	UserCreate      string      `json:"usercreate"`
-	UserCommand     string      `json:"usercommand"`
-	UserReceive     string      `json:"userreceive"`
-	UserArrive      string      `json:"userarrive"`
-	UserClose       string      `json:"userclose"`
+	UserCreate      *string     `json:"usercreate"`
+	UserCommand     *string     `json:"usercommand"`
+	UserReceive     *string     `json:"userreceive"`
+	UserArrive      *string     `json:"userarrive"`
+	UserClose       *string     `json:"userclose"`
 	ResID           *string     `json:"resId"`
 	ResDetail       *string     `json:"resDetail"`
 	ScheduleFlag    *bool       `json:"scheduleFlag"`
 	ScheduleDate    *time.Time  `json:"scheduleDate"`
 	CreatedAt       *time.Time  `json:"createdAt"`
 	UpdatedAt       *time.Time  `json:"updatedAt"`
-	CreatedBy       string      `json:"createdBy"`
-	UpdatedBy       string      `json:"updatedBy"`
+	CreatedBy       *string     `json:"createdBy"`
+	UpdatedBy       *string     `json:"updatedBy"`
 	SOP             interface{} `json:"sop"`
 	CurrentStage    interface{} `json:"currentStage"`
 	NextStage       interface{} `json:"nextStage"`
