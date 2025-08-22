@@ -1367,7 +1367,7 @@ WHERE t1."wfId" = $1
 		// Access data -> config -> formId if action = S002
 		if data, ok := nodeMap["data"].(map[string]interface{}); ok {
 			if config, ok := data["config"].(map[string]interface{}); ok {
-				if action, ok := config["action"].(string); ok && action == "S002" {
+				if action, ok := config["action"].(string); ok && action == "S001" {
 					if formVal, ok := config["formId"].(string); ok {
 						formId = formVal
 						nodeId = tempNodeId
