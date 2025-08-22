@@ -24,6 +24,40 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/minimal/case/create": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Minimal API Integration"
+                ],
+                "summary": "Trigger Create Case",
+                "operationId": "Trigger Create Case",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.MinimalCaseInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/area/country_province_districts": {
             "get": {
                 "security": [
@@ -7448,6 +7482,44 @@ const docTemplate = `{
                 }
             }
         },
+        "model.IotInfo": {
+            "type": "object",
+            "properties": {
+                "countryId": {
+                    "type": "string"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "deviceType": {
+                    "type": "string"
+                },
+                "distId": {
+                    "type": "string"
+                },
+                "firmwareVer": {
+                    "type": "string"
+                },
+                "ipAddress": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "string"
+                },
+                "macAddress": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "provId": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Login": {
             "type": "object",
             "properties": {
@@ -7458,6 +7530,41 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.MinimalCaseInsert": {
+            "type": "object",
+            "properties": {
+                "caseDetail": {
+                    "type": "string"
+                },
+                "caseId": {
+                    "type": "string"
+                },
+                "caseSTypeId": {
+                    "type": "string"
+                },
+                "caseTypeId": {
+                    "type": "string"
+                },
+                "iotInfo": {
+                    "$ref": "#/definitions/model.IotInfo"
+                },
+                "nodeId": {
+                    "type": "string"
+                },
+                "phoneNo": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "statusId": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }

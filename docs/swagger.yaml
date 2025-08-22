@@ -546,6 +546,31 @@ definitions:
       versions:
         type: string
     type: object
+  model.IotInfo:
+    properties:
+      countryId:
+        type: string
+      deviceId:
+        type: string
+      deviceType:
+        type: string
+      distId:
+        type: string
+      firmwareVer:
+        type: string
+      ipAddress:
+        type: string
+      latitude:
+        type: string
+      longitude:
+        type: string
+      macAddress:
+        type: string
+      model:
+        type: string
+      provId:
+        type: string
+    type: object
   model.Login:
     properties:
       organization:
@@ -553,6 +578,29 @@ definitions:
       password:
         type: string
       username:
+        type: string
+    type: object
+  model.MinimalCaseInsert:
+    properties:
+      caseDetail:
+        type: string
+      caseId:
+        type: string
+      caseSTypeId:
+        type: string
+      caseTypeId:
+        type: string
+      iotInfo:
+        $ref: '#/definitions/model.IotInfo'
+      nodeId:
+        type: string
+      phoneNo:
+        type: string
+      source:
+        type: string
+      statusId:
+        type: string
+      wfId:
         type: string
     type: object
   model.MmdCompaniesInsert:
@@ -1340,6 +1388,28 @@ info:
   title: CMS API
   version: "1.0"
 paths:
+  /api/minimal/case/create:
+    post:
+      consumes:
+      - application/json
+      operationId: Trigger Create Case
+      parameters:
+      - description: Create Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.MinimalCaseInsert'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      summary: Trigger Create Case
+      tags:
+      - Minimal API Integration
   /api/v1/area/country_province_districts:
     get:
       consumes:

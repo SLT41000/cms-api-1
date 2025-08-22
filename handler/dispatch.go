@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"mainPackage/config"
 	"mainPackage/model"
@@ -102,7 +103,7 @@ func GetSOP(c *gin.Context) {
 	}
 	log.Println("=orgId--")
 	log.Println(orgId)
-	allNodes, currentNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId)
+	allNodes, currentNode, nextStage, dispatchNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId)
 	if err != nil {
 		response := model.Response{
 			Status: "-1",
@@ -115,6 +116,8 @@ func GetSOP(c *gin.Context) {
 
 	cusCase.SOP = allNodes
 	cusCase.CurrentStage = currentNode
+	cusCase.NextStage = nextStage
+	cusCase.DispatchStage = dispatchNode
 	log.Println(cusCase)
 	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
 	log.Println(allNodes)
@@ -133,11 +136,11 @@ func GetSOP(c *gin.Context) {
 	logger.Info(logStr)
 }
 
-func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.WorkflowNode, *model.CurrentStage, error) {
+func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.WorkflowNode, *model.CurrentStage, *model.WorkflowNode, *model.WorkflowNode, error) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil, nil
 	}
 	defer cancel()
 	defer conn.Close(ctx)
@@ -156,7 +159,7 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 		Scan(&wfId, &current.CaseId, &current.NodeId, &current.Versions, &current.Type, &current.Section, &current.Data, &current.Pic, &current.Group, &current.FormId)
 	if err != nil {
 		logger.Error("Failed to fetch current stage", zap.Error(err))
-		//return nil, nil, fmt.Errorf("current node not found for caseId=%s", caseId)
+		return nil, nil, nil, nil, fmt.Errorf("current node not found for caseId=%s", caseId)
 	}
 
 	log.Println("===== current stage =====")
@@ -178,24 +181,116 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 	rows, err := conn.Query(ctx, nodesQuery, orgId, wfId, current.Versions)
 	if err != nil {
 		logger.Error("Failed to fetch workflow nodes", zap.Error(err))
-		return nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer rows.Close()
 
+	var dispatchNode model.WorkflowNode
 	var allNodes []model.WorkflowNode
+	var nodeConn []model.WorkFlowConnection
+	allNodesId := make(map[string]model.WorkflowNode)
 	for rows.Next() {
 		var node model.WorkflowNode
 		if err := rows.Scan(&node.NodeId, &node.Type, &node.Section, &node.Data); err != nil {
 			logger.Error("Row scan failed", zap.Error(err))
-			return nil, nil, err
+			return nil, nil, nil, nil, err
 		}
+		allNodesId[node.NodeId] = node
 		allNodes = append(allNodes, node)
+		log.Print("TYPE: ", node.Section)
+		if node.Type == "dispatch" {
+			dispatchNode = node
+		}
+		if node.Section == "connections" {
+			log.Print("----CONNECTION")
+			dataBytes, err := json.Marshal(node.Data)
+			if err != nil {
+				logger.Error("Failed to marshal connection data", zap.Error(err))
+				continue
+			}
+
+			var conns []model.WorkFlowConnection
+			if err := json.Unmarshal(dataBytes, &conns); err != nil {
+				logger.Error("Unmarshal connection failed", zap.Error(err))
+				continue
+			}
+
+			nodeConn = append(nodeConn, conns...)
+		}
 	}
 
 	log.Println("===== all workflow nodes =====")
-	log.Println(allNodes)
+	//log.Println(allNodes)
 
-	return allNodes, &current, nil
+	var nextNode model.WorkflowNode
+	for _, wfConn := range nodeConn {
+		log.Print(wfConn)
+		if wfConn.Source == current.NodeId {
+			candidate := allNodesId[wfConn.Target]
+
+			// ถ้า node type เป็น sla ให้ข้ามไปยัง target ต่อไป
+			for candidate.Type == "sla" {
+				found := false
+				for _, c := range nodeConn {
+					if c.Source == candidate.NodeId && c.Label == "yes" {
+						candidate = allNodesId[c.Target]
+						log.Print("---candidate---")
+						log.Print(candidate.Type)
+						found = true
+						break
+
+					}
+				}
+				if !found {
+					// ไม่มี target "yes" ต่อไปแล้ว ออกจาก loop
+					break
+				}
+			}
+
+			nextNode = candidate
+			log.Printf("Next node (non-SLA): %+v\n", nextNode)
+			break
+		}
+	}
+
+	log.Println("===== next nodes =====")
+	log.Print(nextNode)
+	log.Println("===== END =====")
+
+	// 🔹 Step 3: Get next node
+	// nextQuery := `
+	// 	SELECT n."nodeId", n."type", n."section", n."data"
+	// FROM wf_nodes c
+	// JOIN wf_nodes n
+	//   ON n."nodeId" = (c."data"->>'target')
+	//  AND n."orgId" = c."orgId"
+	//  AND n."wfId" = c."wfId"
+	//  AND n."versions" = c."versions"
+	// WHERE c."type" = 'connections'
+	//   AND (c."data"->>'source') = $1
+	//   AND c."orgId" = $2
+	//   AND c."wfId" = $3
+	//   AND c."versions" = $4
+	// LIMIT 1
+	// `
+	// log.Print(current.NodeId)
+	// log.Print(orgId)
+	// log.Print(wfId)
+	// log.Print(current.Versions)
+
+	// var nextNode model.WorkflowNode
+	// err = conn.QueryRow(ctx, nextQuery, current.NodeId, orgId, wfId, current.Versions).
+	// 	Scan(&nextNode.NodeId, &nextNode.Type, &nextNode.Section, &nextNode.Data)
+	// if err != nil {
+	// 	logger.Warn("No next node found", zap.Error(err))
+	// 	// next node อาจไม่มี เช่น เป็น end node
+	// 	return allNodes, &current, nil, nil
+	// }
+
+	// log.Println("===== next node =====")
+	// log.Printf("%+v\n", nextNode)
+
+	return allNodes, &current, &nextNode, &dispatchNode, nil
 }
 
 // @summary Get Unit
@@ -369,4 +464,47 @@ JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
 		Msg:    "OK",
 		Data:   results,
 	})
+}
+
+// @summary Dispatch unit follow SOP
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id updateUnit
+// @accept json
+// @produce json
+// @param Body body model.UpdateStageRequest true "Update unit event"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/event [post]
+func UpdateCurrentStage(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.UpdateStageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	log.Print(req)
+
+	// username := GetVariableFromToken(c, "username")
+	// orgId := GetVariableFromToken(c, "orgId")
+
+	results, err := UpdateCurrentStageCore(c, conn, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
 }

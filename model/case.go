@@ -51,6 +51,8 @@ type Case struct {
 	UpdatedBy       string      `json:"updatedBy"`
 	SOP             interface{} `json:"sop"`
 	CurrentStage    interface{} `json:"currentStage"`
+	NextStage       interface{} `json:"nextStage"`
+	DispatchStage   interface{} `json:"dispatchStage"`
 }
 
 type CaseInsert struct {

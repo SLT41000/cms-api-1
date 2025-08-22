@@ -333,3 +333,678 @@ func genNotiCustom(
 
 	return nil
 }
+
+// UpdateCurrentStage replaces fn_dispatch_unit_stage
+func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest) (model.Response, error) {
+	var result model.Response
+	logger := config.GetLog()
+	username := GetVariableFromToken(ctx, "username")
+	orgId := GetVariableFromToken(ctx, "orgId")
+
+	// 1. Insert responder
+	_, err := conn.Exec(ctx, `
+        INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+        VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+    `, orgId, req.CaseId, req.UnitId, req.UnitUser, req.Status, username)
+	if err != nil {
+		return result, err
+	}
+
+	log.Print(username)
+	log.Print(orgId)
+	log.Print("---INSERT---")
+
+	query := `
+	SELECT  "caseId"::text, "wfId", "nodeId", "stageType", "unitId", "username", "versions", "type", "section", "data",
+  "pic", "group", "formId"
+		FROM tix_case_current_stage
+		WHERE "caseId"=$1 and ( "stageType" = 'case' OR "unitId" = $2)
+	`
+
+	rows, err := conn.Query(ctx, query, req.CaseId, req.UnitId)
+	if err != nil {
+		log.Println("Query failed:", err)
+		return model.Response{Status: "-1", Msg: "Failure.1", Desc: err.Error()}, err
+	}
+	defer rows.Close()
+
+	log.Print("---XXXX---")
+	log.Print(rows)
+
+	var caseStages model.CurrentStage
+	var unitStages model.CurrentStage
+	for rows.Next() {
+		var stage model.CurrentStage
+		if err := rows.Scan(
+			&stage.CaseId,
+			&stage.WfID,
+			&stage.NodeId,
+			&stage.StageType, // order ต้องตรงกับ SELECT
+			&stage.UnitID,
+			&stage.UserOwner,
+			&stage.Versions,
+			&stage.Type,
+			&stage.Section,
+			&stage.Data,
+			&stage.Pic,
+			&stage.Group,
+			&stage.FormId,
+		); err != nil {
+			log.Println("Row scan failed:", err)
+			continue
+		}
+		log.Println("---CURRENT---", stage.StageType)
+		//stages = append(stages, stage)
+		if stage.StageType == "case" {
+			log.Println("---CASE---")
+			caseStages = stage
+		}
+		if stage.StageType == "unit" {
+			log.Println("---UNIT--->>")
+			log.Println(stage.UnitID)
+			log.Println(req.UnitId)
+			if stage.UnitID == req.UnitId {
+				log.Println("---UNIT--->>2")
+				unitStages = stage
+			}
+
+		}
+	}
+
+	log.Print("------CASE---")
+	log.Print(caseStages)
+	log.Print("------UNIT---")
+	log.Print(unitStages)
+	log.Print("---NEXT---")
+	//return model.Response{}, err
+	// 🔹 Step 2: Get all workflow nodes using wfId
+	//wfId := caseStages.WfID
+	//version := caseStages.Versions
+
+	allNodes, nodeConn, allNodesId, dispatchNode, err := GetAllNodes(ctx, conn, orgId.(string), caseStages.WfID, caseStages.Versions, logger)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.2", Desc: err.Error()}, err
+	}
+
+	log.Print("Total Nodes:", len(allNodes))
+	log.Print("Total Connections:", len(nodeConn))
+	log.Print("Total NodeId:", len(allNodesId))
+
+	log.Print("------NEXT---")
+	log.Print("------nodeConn---")
+	log.Print(nodeConn)
+	log.Print("------allNodesId---")
+	log.Print(allNodesId)
+
+	log.Print("------CHECK---")
+	// 🔹 Step 3: Check next node
+	CaseNextNode, UnitNextNode, caseCount, unitCount := GetNextNode(allNodesId, nodeConn, caseStages, unitStages, logger)
+
+	fmt.Println("Case Next Node:", CaseNextNode)
+	fmt.Println("Unit Next Node:", UnitNextNode)
+	fmt.Println("caseCount:", caseCount)
+	fmt.Println("unitCount:", unitCount)
+
+	//return model.Response{}, err
+	// 🔹 Step 4:  Update data
+	if unitCount == 0 && CaseNextNode.Type == "dispatch" { //--First Unit for case
+		//--Update current stage :  case
+		Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
+		if err != nil {
+			return Result, err
+		}
+
+		//--insert current stage : unit
+		Result, err = InsertUnitCurrentStage(ctx, conn, req, UnitNextNode, "unit", username.(string))
+		if err != nil {
+			return Result, err
+		}
+		//ctx.JSON(http.StatusOK, model.Response{Status: "0", Msg: "Success", Desc: msg})
+		//--Update tix_cases on time (Group status)
+		return Result, err
+
+	} else if unitCount == caseCount { //-- Unit relate Case
+		//--Update current stage :  case
+		Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
+		if err != nil {
+			return Result, err
+		}
+
+		//--Update current stage :  unit
+		Result, err = UpdateCaseCurrentStage(ctx, conn, req, UnitNextNode, "unit", username.(string))
+		if err != nil {
+			return Result, err
+		}
+		//--Update tix_cases on time (Group status)
+
+		return Result, err
+
+	} else if unitCount > 0 && unitCount < caseCount { //--Second Unit follow SOP
+
+		//--Update current stage :  unit
+		log.Print("--> --Second Unit follow SOP ")
+		Result, err := UpdateCaseCurrentStage(ctx, conn, req, UnitNextNode, "unit", username.(string))
+		if err != nil {
+			return Result, err
+		}
+		//--Update tix_cases on time (Group status)
+
+		return Result, err
+
+	} else if unitCount == 0 { //--Second Unit - First dispatch
+		//--insert current stage : unit
+		log.Print("--> --Second Unit - First dispatch ")
+		UnitNextNode = dispatchNode
+		Result, err := InsertUnitCurrentStage(ctx, conn, req, UnitNextNode, "unit", username.(string))
+		if err != nil {
+			return Result, err
+		}
+	}
+
+	return result, err
+
+	//log.Print("---SELECT CURRENT---")
+
+	// // 3. Find next node
+	// err = conn.QueryRow(ctx, `
+	//     dSELECT n."nodeId", n."type"
+	//     FROM wf_connections c
+	//     JOIN wf_nodes n ON n."nodeId"=c."target"
+	//     WHERE c."source"=$1 AND n."orgId"=$2 AND n."wfId"=$3
+	// `, "currentNodeId", "orgId", "wfId").Scan(&result.NextNodeId, &result.NextNodeType)
+	// if err != nil {
+	// 	return result, err
+	// }
+
+	// result.StageType = "unit"
+
+	// // 4. Bypass SLA
+	// if result.NextNodeType == "sla" {
+	// 	err = conn.QueryRow(ctx, `
+	//         SELECT n."nodeId", n."type"
+	//         FROM wf_connections c
+	//         JOIN wf_nodes n ON n."nodeId"=c."target"
+	//         WHERE c."source"=$1 AND n."orgId"=$2 AND n."wfId"=$3 AND c."label"='yes'
+	//     `, result.NextNodeId, "orgId", "wfId").Scan(&result.NextNodeId, &result.NextNodeType)
+	// 	if err != nil {
+	// 		return result, err
+	// 	}
+	// }
+
+	// // 5. Update current stage
+	// _, err = conn.Exec(ctx, `
+	//     UPDATE tix_case_current_stage
+	//     SET "nodeId"=$1, "stageType"=$2, "updatedAt"=NOW(), "updatedBy"=$3
+	//     WHERE "caseId"=$4 AND "orgId"=$5
+	// `, result.NextNodeId, result.StageType, username, req.CaseId, orgId)
+	// if err != nil {
+	// 	return result, err
+	// }
+
+	// result.CaseId = req.CaseId
+	// return result, nil
+}
+
+func GetAllNodes(
+	ctx context.Context,
+	conn *pgx.Conn,
+	orgId, wfId, version string,
+	logger *zap.Logger,
+) ([]model.WorkflowNode, []model.WorkFlowConnection, map[string]model.WorkflowNode, model.WorkflowNode, error) {
+
+	query := `
+		SELECT "nodeId", "type", "section", "data"
+		FROM wf_nodes
+		WHERE "orgId"=$1 AND "wfId"=$2 AND "versions"=$3
+		ORDER BY 
+			CASE 
+				WHEN "section" = 'nodes' THEN 1 
+				WHEN "section" = 'connections' THEN 2 
+				ELSE 3 
+			END
+	`
+
+	rows, err := conn.Query(ctx, query, orgId, wfId, version)
+	if err != nil {
+		logger.Error("Failed to fetch workflow nodes", zap.Error(err))
+		return nil, nil, nil, model.WorkflowNode{}, err
+	}
+	defer rows.Close()
+
+	var dispatchNode model.WorkflowNode
+	var allNodes []model.WorkflowNode
+	var nodeConn []model.WorkFlowConnection
+	allNodesId := make(map[string]model.WorkflowNode)
+
+	for rows.Next() {
+		var node model.WorkflowNode
+		if err := rows.Scan(&node.NodeId, &node.Type, &node.Section, &node.Data); err != nil {
+			logger.Error("Row scan failed", zap.Error(err))
+			return nil, nil, nil, model.WorkflowNode{}, err
+		}
+
+		// เก็บ node ทั้งหมด
+		allNodes = append(allNodes, node)
+		allNodesId[node.NodeId] = node
+		if node.Type == "dispatch" {
+			dispatchNode = node
+		}
+		// ถ้า section เป็น connections → parse data เป็น []WorkFlowConnection
+		if node.Section == "connections" {
+			dataBytes, err := json.Marshal(node.Data)
+			if err != nil {
+				logger.Error("Failed to marshal connection data", zap.Error(err))
+				continue
+			}
+
+			var conns []model.WorkFlowConnection
+			if err := json.Unmarshal(dataBytes, &conns); err != nil {
+				logger.Error("Unmarshal connection failed", zap.Error(err))
+				continue
+			}
+
+			nodeConn = append(nodeConn, conns...)
+		}
+	}
+
+	order, err := OrderConnection(nodeConn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print("===order==")
+	log.Print(order)
+	log.Print("En===order==")
+	return allNodes, order, allNodesId, dispatchNode, nil
+}
+
+func GetNextNode(
+	allNodesId map[string]model.WorkflowNode,
+	nodeConn []model.WorkFlowConnection,
+	caseStages model.CurrentStage,
+	unitStages model.CurrentStage,
+	logger *zap.Logger,
+) (model.WorkflowNode, model.WorkflowNode, int, int) {
+
+	var CaseNextNode model.WorkflowNode
+	var UnitNextNode model.WorkflowNode
+	var unitCount = 0
+	var caseCount = 0
+	var rec = 0
+	for _, wfConn := range nodeConn {
+
+		//----- For Unit Stage
+		logger.Info("---Unit Stage---", zap.Any("node", wfConn))
+		if wfConn.Source == unitStages.NodeId {
+			candidateCase := allNodesId[wfConn.Target]
+
+			for candidateCase.Type == "sla" {
+				found := false
+				for _, c := range nodeConn {
+					if c.Source == candidateCase.NodeId && c.Label == "yes" {
+						candidateCase = allNodesId[c.Target]
+						//logger.Info("---candidate---", zap.Any("node", candidateCase))
+						if candidateCase.Type == "process" {
+							found = true
+							break
+						}
+					}
+				}
+				if !found {
+					break
+				}
+			}
+
+			UnitNextNode = candidateCase
+
+			logger.Info("UNIT Next node (non-SLA)", zap.Any("node", UnitNextNode))
+			break
+		}
+		unitCount = rec
+		rec++
+	}
+
+	rec = 0
+	for _, wfConn := range nodeConn {
+
+		//----- For Case Stage
+		logger.Info("---Case Stage---", zap.Any("node", wfConn))
+		if wfConn.Source == caseStages.NodeId {
+			candidateCase := allNodesId[wfConn.Target]
+
+			// ถ้า node type เป็น SLA → ข้ามไปหา target ต่อไป
+			for candidateCase.Type == "sla" {
+				found := false
+				for _, c := range nodeConn {
+					if c.Source == candidateCase.NodeId && c.Label == "yes" {
+						candidateCase = allNodesId[c.Target]
+						logger.Info("---candidate--CASE-", zap.Any("node", candidateCase))
+						if candidateCase.Type == "process" {
+							found = true
+							break
+						}
+					}
+				}
+				if !found {
+					break
+				}
+			}
+
+			CaseNextNode = candidateCase
+
+			logger.Info("CASE Next node (non-SLA)", zap.Any("node", CaseNextNode))
+			break
+		}
+		caseCount = rec
+		rec++
+	}
+
+	// ✅ ถ้า UnitNextNode ยังว่าง ให้ใช้ CaseNextNode
+	if UnitNextNode.NodeId == "" {
+		UnitNextNode = CaseNextNode
+		unitCount = 0
+		logger.Info("UnitNextNode empty → fallback to CaseNextNode", zap.Any("node", UnitNextNode))
+	}
+
+	return CaseNextNode, UnitNextNode, caseCount, unitCount
+}
+
+// func UpdateCurrentStageService(
+// 	ctx context.Context,
+// 	conn *pgx.Conn,
+// 	req model.UpdateStageRequest,
+// 	nextStage model.WorkflowNode,
+// 	stageType string,
+// 	username string,
+// ) (string, error) {
+// 	//conn, ctx, cancel := config.ConnectDB()
+// 	// if conn == nil {
+// 	// 	return "db connection failed", nil
+// 	// }
+// 	// defer cancel()
+// 	//defer conn.Close(ctx)
+
+// 	now := time.Now()
+
+// 	// 1. Select wf_nodes joined with wf_definitions to get proper versions
+// 	var node model.WfNode
+// 	nodeQuery := `
+// 		SELECT n."wfId", n."nodeId", d."versions", n."type", n."section",
+//        n."formId", n."pic", n."group"
+// 		FROM public."wf_nodes" n
+// 		JOIN public."wf_definitions" d
+// 		ON n."wfId" = d."wfId"
+// 		AND n."versions" = d."versions"
+// 		WHERE n."nodeId" = $1
+// 	`
+// 	log.Print("-----SELECT-NODE--")
+// 	log.Print("-----SELECT-NODE--")
+
+// 	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
+// 		&node.WfID, &node.NodeID, &node.Versions, &node.Type,
+// 		&node.Section, &node.WfID, &node.Pic, &node.Group,
+// 	)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to fetch next workflow node: %w", err)
+// 	}
+// 	log.Print(nextStage.Data)
+
+// 	// 2. Insert or update tix_case_current_stage
+
+// 	dataBytes, err := json.Marshal(nextStage.Data)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to marshal nextStage.Data: %w", err)
+// 	}
+// 	log.Print("----dataBytes--")
+// 	log.Print(string(dataBytes))
+
+// 	// formID := ""
+// 	// if node.FormID != nil {
+// 	// 	formID = *node.FormID
+// 	// }
+
+// 	// pic := ""
+// 	// if node.Pic != nil {
+// 	// 	pic = *node.Pic
+// 	// }
+
+// 	// group := ""
+// 	// if node.Group != nil {
+// 	// 	group = *node.Group
+// 	// }
+// 	upsertQuery := `
+// 		INSERT INTO public."tix_case_current_stage"
+// 		("caseId", "wfId", "nodeId", "versions", "type", "section", "data",
+// 		 "pic", "group", "formId", "stageType", "unitId",
+// 		 "username", "updatedAt", "createdAt", "createdBy", "updatedBy")
+// 		VALUES ($1, $2, $3, $4, $5, $6, $7,
+// 		        $8, $9, $10, $11, $12,
+// 		        $13, $14, $15, $16, $17)
+// 		ON CONFLICT ("caseId", "stageType", "versions", "nodeId")
+// 		DO UPDATE SET
+// 		    "wfId"=EXCLUDED."wfId",
+// 		    "type"=EXCLUDED."type",
+// 		    "section"=EXCLUDED."section",
+// 		    "data"=EXCLUDED."data",
+// 		    "pic"=EXCLUDED."pic",
+// 		    "group"=EXCLUDED."group",
+// 		    "formId"=EXCLUDED."formId",
+// 		    "unitId"=EXCLUDED."unitId",
+// 		    "username"=EXCLUDED."username",
+// 		    "updatedAt"=EXCLUDED."updatedAt",
+// 		    "updatedBy"=EXCLUDED."updatedBy"
+// 	`
+
+// 	args := []interface{}{
+// 		req.CaseId, node.WfID, node.NodeID, node.Versions, node.Type, node.Section, string(dataBytes),
+// 		node.Pic, node.Group, node.FormID, stageType, req.UnitId,
+// 		username, now, now, username, username,
+// 	}
+
+// 	// Print SQL with args expanded
+// 	sqlPreview := upsertQuery
+// 	for i, arg := range args {
+// 		placeholder := fmt.Sprintf("$%d", i+1)
+// 		sqlPreview = strings.Replace(sqlPreview, placeholder, fmt.Sprintf("'%v'", arg), 1)
+// 	}
+
+// 	log.Println("Final SQL:", sqlPreview)
+
+// 	_, err = conn.Exec(ctx, upsertQuery,
+// 		req.CaseId, node.WfID, node.NodeID, node.Versions, node.Type, node.Section, node.Data,
+// 		node.Pic, node.Group, node.FormID, stageType, req.UnitId,
+// 		username, now, now, username, username,
+// 	)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to insert/update current stage: %w", err)
+// 	}
+
+// 	return "Insert/Update CurrentStage successfully", nil
+// }
+
+func InsertUnitCurrentStage(
+	ctx context.Context,
+	conn *pgx.Conn,
+	req model.UpdateStageRequest,
+	nextStage model.WorkflowNode,
+	stageType string,
+	username string,
+) (model.Response, error) {
+
+	var node model.WfNode
+	nodeQuery := `
+		SELECT n."orgId", n."wfId", n."nodeId", d."versions", n."type", n."section", 
+       n."formId", n."pic", n."group"
+		FROM public."wf_nodes" n
+		JOIN public."wf_definitions" d 
+		ON n."wfId" = d."wfId"
+		AND n."versions" = d."versions"
+		WHERE n."nodeId" = $1  
+	`
+	log.Print("-----SELECT-NODE--")
+	log.Print(nextStage.NodeId)
+	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
+		&node.OrgID, &node.WfID, &node.NodeID, &node.Versions, &node.Type,
+		&node.Section, &node.FormID, &node.Pic, &node.Group,
+	)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.InsertUnitCurrentStage.1", Desc: err.Error()}, err
+	}
+	log.Print(nextStage.Data)
+
+	// Marshal nextStage.Data to JSON for jsonb column
+	dataBytes, err := json.Marshal(nextStage.Data)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.InsertUnitCurrentStage.2", Desc: err.Error()}, err
+	}
+
+	// Ensure optional string fields are non-nil
+	// pic := ""
+	// if node.Pic != nil {
+	// 	pic = *node.Pic
+	// }
+
+	// group := ""
+	// if node.Group != nil {
+	// 	group = *node.Group
+	// }
+
+	// formId := ""
+	// if node.FormID != nil {
+	// 	formId = *node.FormID
+	// }
+
+	now := time.Now()
+
+	insertQuery := `
+	INSERT INTO public."tix_case_current_stage"
+	("orgId", "caseId", "wfId", "nodeId", "versions", "type", "section", "data",
+	  "stageType", "unitId",
+	 "username", "updatedAt", "createdAt", "createdBy", "updatedBy")
+	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, $15)
+	`
+	_, err = conn.Exec(ctx, insertQuery,
+		node.OrgID, req.CaseId, node.WfID, req.NodeId, node.Versions, node.Type, node.Section, dataBytes,
+		stageType, req.UnitId,
+		req.UnitUser, now, now, username, username,
+	)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.InsertUnitCurrentStage.3", Desc: err.Error()}, err
+	}
+
+	return model.Response{Status: "0", Msg: "Success", Desc: "InsertUnitCurrentStage"}, nil
+
+}
+
+func UpdateCaseCurrentStage(
+	ctx context.Context,
+	conn *pgx.Conn,
+	req model.UpdateStageRequest,
+	nextStage model.WorkflowNode,
+	stageType string,
+	username string,
+) (model.Response, error) {
+
+	var node model.WfNode
+	nodeQuery := `
+		SELECT n."orgId", n."wfId", n."nodeId", d."versions", n."type", n."section", 
+       n."formId", n."pic", n."group"
+		FROM public."wf_nodes" n
+		JOIN public."wf_definitions" d 
+		ON n."wfId" = d."wfId"
+		AND n."versions" = d."versions"
+		WHERE n."nodeId" = $1  
+	`
+	log.Print("-----SELECT-NODE--")
+	log.Print(nextStage.NodeId)
+	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
+		&node.OrgID, &node.WfID, &node.NodeID, &node.Versions, &node.Type,
+		&node.Section, &node.FormID, &node.Pic, &node.Group,
+	)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.1-" + stageType, Desc: err.Error()}, err
+	}
+
+	// Marshal nextStage.Data to JSON for jsonb column
+	dataBytes, err := json.Marshal(nextStage.Data)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.2-" + stageType, Desc: err.Error()}, err
+	}
+
+	now := time.Now()
+
+	log.Print("---Update---")
+
+	if stageType == "case" {
+		req.UnitId = ""
+		req.UnitUser = ""
+	}
+	updateQuery := `
+	UPDATE public."tix_case_current_stage"
+	SET "wfId" = $1,
+	    "type" = $2,
+	    "section" = $3,
+	    "data" = $4,
+	     
+	    
+	    "username" = $6,
+	    "updatedAt" = $7,
+	    "updatedBy" = $8,
+		"nodeId" = $12,
+		"versions" = $11 
+	WHERE "caseId" = $9
+	  AND "stageType" = $10 
+	  AND "unitId" = $5
+	`
+
+	_, err = conn.Exec(ctx, updateQuery,
+		node.WfID, node.Type, node.Section, dataBytes,
+
+		req.UnitId, req.UnitUser, now, username,
+		req.CaseId, stageType, node.Versions, nextStage.NodeId,
+	)
+
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-" + stageType, Desc: err.Error()}, err
+	}
+
+	return model.Response{Status: "0", Msg: "Success", Desc: "UpdateCaseCurrentStage-" + stageType}, nil
+}
+
+func OrderConnection(connections []model.WorkFlowConnection) ([]model.WorkFlowConnection, error) {
+	// Build graph with adjacency list of connections
+	graph := buildGraph(connections)
+
+	startNode := "node-1755508922505"
+	visited := make(map[string]bool)
+	var orderedConns []model.WorkFlowConnection
+
+	dfsConnections(graph, startNode, visited, &orderedConns)
+
+	return orderedConns, nil
+}
+
+func buildGraph(conns []model.WorkFlowConnection) map[string][]model.WorkFlowConnection {
+	graph := make(map[string][]model.WorkFlowConnection)
+	for _, c := range conns {
+		graph[c.Source] = append(graph[c.Source], c)
+	}
+	return graph
+}
+
+func dfsConnections(
+	graph map[string][]model.WorkFlowConnection,
+	node string,
+	visited map[string]bool,
+	order *[]model.WorkFlowConnection,
+) {
+	if visited[node] {
+		return
+	}
+	visited[node] = true
+
+	// Traverse each outgoing connection
+	for _, conn := range graph[node] {
+		*order = append(*order, conn)
+		dfsConnections(graph, conn.Target, visited, order)
+	}
+}

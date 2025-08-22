@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type SOPRequest struct {
 	CaseID string `json:"caseId" binding:"required"` // จาก JSON หรือ Query param
@@ -15,15 +17,19 @@ type WorkflowNode struct {
 }
 
 type CurrentStage struct {
-	CaseId   string      `json:"caseId"`
-	NodeId   string      `json:"nodeId"`
-	Versions string      `json:"versions"`
-	Type     string      `json:"type"`
-	Section  string      `json:"section"`
-	Data     interface{} `json:"data"` // jsonb
-	Pic      *string     `json:"pic"`
-	Group    *string     `json:"group"`
-	FormId   *string     `json:"formId"`
+	CaseId    string      `json:"caseId" db:"caseId"`
+	WfID      string      `json:"wfId" db:"wfId"`
+	NodeId    string      `json:"nodeId"`
+	Versions  string      `json:"versions"`
+	Type      string      `json:"type"`
+	Section   string      `json:"section"`
+	Data      interface{} `json:"data"` // jsonb
+	Pic       *string     `json:"pic"`
+	Group     *string     `json:"group"`
+	FormId    *string     `json:"formId"`
+	StageType string      `json:"stageType"`
+	UnitID    string      `json:"unitId"`
+	UserOwner *string     `json:"username"`
 }
 
 type UnitUser struct {
@@ -60,4 +66,26 @@ type UnitUser struct {
 	SttID             string    `json:"sttId"`
 	CreatedBy         string    `json:"createdBy"`
 	UpdatedBy         string    `json:"updatedBy"`
+}
+
+type UpdateStageRequest struct {
+	CaseId   string `json:"caseId"`
+	Status   string `json:"status"`
+	UnitId   string `json:"unitId"`
+	UnitUser string `json:"unitUser"`
+	NodeId   string `json:"nodeId"`
+}
+
+type StageResult struct {
+	NextNodeId   string `json:"nextNodeId"`
+	NextNodeType string `json:"nextNodeType"`
+	StageType    string `json:"stageType"`
+	CaseId       string `json:"caseId"`
+}
+
+type Connection struct {
+	Id     string `json:"id"`
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Label  string `json:"label"`
 }

@@ -235,6 +235,7 @@ func main() {
 
 		v1.GET("/dispatch/:caseId/SOP", handler.GetSOP)
 		v1.GET("/dispatch/:caseId/units", handler.GetUnit)
+		v1.POST("/dispatch/event", handler.UpdateCurrentStage)
 
 		v1.GET("/audit_log", handler.GetAuditlog)
 		v1.GET("/audit_log/:username", handler.GetAuditlogByUsername)
