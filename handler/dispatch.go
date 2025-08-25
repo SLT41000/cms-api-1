@@ -11,6 +11,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -122,6 +123,13 @@ func GetSOP(c *gin.Context) {
 	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
 	log.Println(allNodes)
 	log.Println(currentNode)
+
+	//Get Reference Case
+	referCaseLists, err := GetReferCaseList(ctx, conn, orgId.(string), caseId)
+	if err != nil {
+		panic(err)
+	}
+	cusCase.ReferCaseLists = referCaseLists
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -266,39 +274,6 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId stri
 	log.Println("===== next nodes =====")
 	log.Print(nextNode)
 	log.Println("===== END =====")
-
-	// 🔹 Step 3: Get next node
-	// nextQuery := `
-	// 	SELECT n."nodeId", n."type", n."section", n."data"
-	// FROM wf_nodes c
-	// JOIN wf_nodes n
-	//   ON n."nodeId" = (c."data"->>'target')
-	//  AND n."orgId" = c."orgId"
-	//  AND n."wfId" = c."wfId"
-	//  AND n."versions" = c."versions"
-	// WHERE c."type" = 'connections'
-	//   AND (c."data"->>'source') = $1
-	//   AND c."orgId" = $2
-	//   AND c."wfId" = $3
-	//   AND c."versions" = $4
-	// LIMIT 1
-	// `
-	// log.Print(current.NodeId)
-	// log.Print(orgId)
-	// log.Print(wfId)
-	// log.Print(current.Versions)
-
-	// var nextNode model.WorkflowNode
-	// err = conn.QueryRow(ctx, nextQuery, current.NodeId, orgId, wfId, current.Versions).
-	// 	Scan(&nextNode.NodeId, &nextNode.Type, &nextNode.Section, &nextNode.Data)
-	// if err != nil {
-	// 	logger.Warn("No next node found", zap.Error(err))
-	// 	// next node อาจไม่มี เช่น เป็น end node
-	// 	return allNodes, &current, nil, nil
-	// }
-
-	// log.Println("===== next node =====")
-	// log.Printf("%+v\n", nextNode)
 
 	return allNodes, &current, &nextNode, &dispatchNode, nil
 }
@@ -641,4 +616,24 @@ func GetUnitSOP(c *gin.Context) {
 	paramQuery := c.Request.URL.RawQuery
 	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
 	logger.Info(logStr)
+}
+
+// GetReferCaseList calls the PostgreSQL function GetReferCaseId and returns the caseList
+func GetReferCaseList(ctx context.Context, conn *pgx.Conn, orgID string, caseID string) ([]string, error) {
+	var referCaseList []string
+
+	query := `
+	SELECT ARRAY(
+		SELECT "caseId"
+		FROM public.tix_cases
+		WHERE "orgId" = $1 AND ( "referCaseId" = $2)
+	) AS caseList;
+	`
+
+	err := conn.QueryRow(ctx, query, orgID, caseID).Scan(&referCaseList)
+	if err != nil {
+		return []string{}, nil
+	}
+
+	return referCaseList, nil
 }
