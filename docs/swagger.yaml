@@ -707,6 +707,8 @@ definitions:
         type: integer
       locSpeed:
         type: number
+      orgId:
+        type: string
       plateNo:
         type: string
       priority:

@@ -7726,6 +7726,9 @@ const docTemplate = `{
                 "locSpeed": {
                     "type": "number"
                 },
+                "orgId": {
+                    "type": "string"
+                },
                 "plateNo": {
                     "type": "string"
                 },
