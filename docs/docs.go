@@ -2522,6 +2522,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dispatch/{caseId}/SOP/unit/{unitId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Get SOP - UnitId",
+                "operationId": "Case By UnitId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "unitId",
+                        "name": "unitId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dispatch/{caseId}/units": {
             "get": {
                 "security": [
@@ -7682,7 +7726,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "healthChk": {
-                    "type": "boolean"
+                    "type": "string"
                 },
                 "healthChkTime": {
                     "type": "string"

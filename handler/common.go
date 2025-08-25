@@ -176,6 +176,9 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 		&workflow.CreatedAt, &workflow.UpdatedAt, &workflow.CreatedBy, &workflow.UpdatedBy,
 	)
 
+	log.Print("===workflow")
+	log.Print(workflow)
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			logger.Warn("No workflow node found")
@@ -459,8 +462,14 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return Result, err
 		}
-		//ctx.JSON(http.StatusOK, model.Response{Status: "0", Msg: "Success", Desc: msg})
+
 		//--Update tix_cases on time (Group status)
+		Result, err = DispatchUpdateCaseStatus(ctx, conn, req.CaseId, req.Status, username.(string))
+		if err != nil {
+			log.Printf("Update status failed: %v", err)
+		} else {
+			log.Println("Case status updated successfully")
+		}
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
@@ -475,7 +484,14 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return Result, err
 		}
+
 		//--Update tix_cases on time (Group status)
+		Result, err = DispatchUpdateCaseStatus(ctx, conn, req.CaseId, req.Status, username.(string))
+		if err != nil {
+			log.Printf("Update status failed: %v", err)
+		} else {
+			log.Println("Case status updated successfully")
+		}
 
 		return Result, err
 
@@ -487,7 +503,6 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return Result, err
 		}
-		//--Update tix_cases on time (Group status)
 
 		return Result, err
 
@@ -499,50 +514,12 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return Result, err
 		}
+
+		return Result, err
 	}
 
 	return result, err
 
-	//log.Print("---SELECT CURRENT---")
-
-	// // 3. Find next node
-	// err = conn.QueryRow(ctx, `
-	//     dSELECT n."nodeId", n."type"
-	//     FROM wf_connections c
-	//     JOIN wf_nodes n ON n."nodeId"=c."target"
-	//     WHERE c."source"=$1 AND n."orgId"=$2 AND n."wfId"=$3
-	// `, "currentNodeId", "orgId", "wfId").Scan(&result.NextNodeId, &result.NextNodeType)
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// result.StageType = "unit"
-
-	// // 4. Bypass SLA
-	// if result.NextNodeType == "sla" {
-	// 	err = conn.QueryRow(ctx, `
-	//         SELECT n."nodeId", n."type"
-	//         FROM wf_connections c
-	//         JOIN wf_nodes n ON n."nodeId"=c."target"
-	//         WHERE c."source"=$1 AND n."orgId"=$2 AND n."wfId"=$3 AND c."label"='yes'
-	//     `, result.NextNodeId, "orgId", "wfId").Scan(&result.NextNodeId, &result.NextNodeType)
-	// 	if err != nil {
-	// 		return result, err
-	// 	}
-	// }
-
-	// // 5. Update current stage
-	// _, err = conn.Exec(ctx, `
-	//     UPDATE tix_case_current_stage
-	//     SET "nodeId"=$1, "stageType"=$2, "updatedAt"=NOW(), "updatedBy"=$3
-	//     WHERE "caseId"=$4 AND "orgId"=$5
-	// `, result.NextNodeId, result.StageType, username, req.CaseId, orgId)
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// result.CaseId = req.CaseId
-	// return result, nil
 }
 
 func GetAllNodes(
@@ -708,119 +685,6 @@ func GetNextNode(
 	return CaseNextNode, UnitNextNode, caseCount, unitCount
 }
 
-// func UpdateCurrentStageService(
-// 	ctx context.Context,
-// 	conn *pgx.Conn,
-// 	req model.UpdateStageRequest,
-// 	nextStage model.WorkflowNode,
-// 	stageType string,
-// 	username string,
-// ) (string, error) {
-// 	//conn, ctx, cancel := config.ConnectDB()
-// 	// if conn == nil {
-// 	// 	return "db connection failed", nil
-// 	// }
-// 	// defer cancel()
-// 	//defer conn.Close(ctx)
-
-// 	now := time.Now()
-
-// 	// 1. Select wf_nodes joined with wf_definitions to get proper versions
-// 	var node model.WfNode
-// 	nodeQuery := `
-// 		SELECT n."wfId", n."nodeId", d."versions", n."type", n."section",
-//        n."formId", n."pic", n."group"
-// 		FROM public."wf_nodes" n
-// 		JOIN public."wf_definitions" d
-// 		ON n."wfId" = d."wfId"
-// 		AND n."versions" = d."versions"
-// 		WHERE n."nodeId" = $1
-// 	`
-// 	log.Print("-----SELECT-NODE--")
-// 	log.Print("-----SELECT-NODE--")
-
-// 	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
-// 		&node.WfID, &node.NodeID, &node.Versions, &node.Type,
-// 		&node.Section, &node.WfID, &node.Pic, &node.Group,
-// 	)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to fetch next workflow node: %w", err)
-// 	}
-// 	log.Print(nextStage.Data)
-
-// 	// 2. Insert or update tix_case_current_stage
-
-// 	dataBytes, err := json.Marshal(nextStage.Data)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to marshal nextStage.Data: %w", err)
-// 	}
-// 	log.Print("----dataBytes--")
-// 	log.Print(string(dataBytes))
-
-// 	// formID := ""
-// 	// if node.FormID != nil {
-// 	// 	formID = *node.FormID
-// 	// }
-
-// 	// pic := ""
-// 	// if node.Pic != nil {
-// 	// 	pic = *node.Pic
-// 	// }
-
-// 	// group := ""
-// 	// if node.Group != nil {
-// 	// 	group = *node.Group
-// 	// }
-// 	upsertQuery := `
-// 		INSERT INTO public."tix_case_current_stage"
-// 		("caseId", "wfId", "nodeId", "versions", "type", "section", "data",
-// 		 "pic", "group", "formId", "stageType", "unitId",
-// 		 "username", "updatedAt", "createdAt", "createdBy", "updatedBy")
-// 		VALUES ($1, $2, $3, $4, $5, $6, $7,
-// 		        $8, $9, $10, $11, $12,
-// 		        $13, $14, $15, $16, $17)
-// 		ON CONFLICT ("caseId", "stageType", "versions", "nodeId")
-// 		DO UPDATE SET
-// 		    "wfId"=EXCLUDED."wfId",
-// 		    "type"=EXCLUDED."type",
-// 		    "section"=EXCLUDED."section",
-// 		    "data"=EXCLUDED."data",
-// 		    "pic"=EXCLUDED."pic",
-// 		    "group"=EXCLUDED."group",
-// 		    "formId"=EXCLUDED."formId",
-// 		    "unitId"=EXCLUDED."unitId",
-// 		    "username"=EXCLUDED."username",
-// 		    "updatedAt"=EXCLUDED."updatedAt",
-// 		    "updatedBy"=EXCLUDED."updatedBy"
-// 	`
-
-// 	args := []interface{}{
-// 		req.CaseId, node.WfID, node.NodeID, node.Versions, node.Type, node.Section, string(dataBytes),
-// 		node.Pic, node.Group, node.FormID, stageType, req.UnitId,
-// 		username, now, now, username, username,
-// 	}
-
-// 	// Print SQL with args expanded
-// 	sqlPreview := upsertQuery
-// 	for i, arg := range args {
-// 		placeholder := fmt.Sprintf("$%d", i+1)
-// 		sqlPreview = strings.Replace(sqlPreview, placeholder, fmt.Sprintf("'%v'", arg), 1)
-// 	}
-
-// 	log.Println("Final SQL:", sqlPreview)
-
-// 	_, err = conn.Exec(ctx, upsertQuery,
-// 		req.CaseId, node.WfID, node.NodeID, node.Versions, node.Type, node.Section, node.Data,
-// 		node.Pic, node.Group, node.FormID, stageType, req.UnitId,
-// 		username, now, now, username, username,
-// 	)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to insert/update current stage: %w", err)
-// 	}
-
-// 	return "Insert/Update CurrentStage successfully", nil
-// }
-
 func InsertUnitCurrentStage(
 	ctx context.Context,
 	conn *pgx.Conn,
@@ -917,7 +781,7 @@ func UpdateCaseCurrentStage(
 	log.Print("-----SELECT-NODE--")
 	log.Print(nextStage.NodeId)
 	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
-		&node.OrgID, &node.WfID, &node.NodeID, &node.Versions, &node.Type,
+		&node.OrgID, &node.WfID, &nextStage.NodeId, &node.Versions, &node.Type,
 		&node.Section, &node.FormID, &node.Pic, &node.Group,
 	)
 	if err != nil {
@@ -1007,4 +871,27 @@ func dfsConnections(
 		*order = append(*order, conn)
 		dfsConnections(graph, conn.Target, visited, order)
 	}
+}
+
+func DispatchUpdateCaseStatus(ctx context.Context, conn *pgx.Conn, caseId string, statusId string, username string) (model.Response, error) {
+	query := `
+    UPDATE public."tix_cases"
+    SET "statusId" = $1,
+        "updatedAt" = $2,
+        "updatedBy" = $3
+    WHERE "caseId" = $4;
+    `
+
+	now := time.Now()
+
+	cmd, err := conn.Exec(ctx, query, statusId, now, username, caseId)
+	if err != nil {
+		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + caseId, Desc: err.Error()}, err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + caseId, Desc: err.Error()}, err
+	}
+
+	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchUpdateCaseStatus-" + caseId}, nil
 }

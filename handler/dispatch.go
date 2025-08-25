@@ -103,7 +103,7 @@ func GetSOP(c *gin.Context) {
 	}
 	log.Println("=orgId--")
 	log.Println(orgId)
-	allNodes, currentNode, nextStage, dispatchNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId)
+	allNodes, currentNode, nextStage, dispatchNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId, "")
 	if err != nil {
 		response := model.Response{
 			Status: "-1",
@@ -136,7 +136,7 @@ func GetSOP(c *gin.Context) {
 	logger.Info(logStr)
 }
 
-func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.WorkflowNode, *model.CurrentStage, *model.WorkflowNode, *model.WorkflowNode, error) {
+func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId string) ([]model.WorkflowNode, *model.CurrentStage, *model.WorkflowNode, *model.WorkflowNode, error) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
 	if conn == nil {
@@ -149,13 +149,20 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 	currentQuery := `
 		SELECT "wfId", "caseId", "nodeId", "versions", "type", "section", "data", "pic", "group", "formId"
 		FROM tix_case_current_stage
-		WHERE "orgId"=$1 AND "caseId"=$2
+		WHERE "orgId"=$1 AND "caseId"=$2 AND "stageType" = 'case'  AND "unitId" =$3
 	`
+	if unitId != "" {
+		currentQuery = `
+		SELECT "wfId", "caseId", "nodeId", "versions", "type", "section", "data", "pic", "group", "formId"
+		FROM tix_case_current_stage
+		WHERE "orgId"=$1 AND "caseId"=$2 AND "stageType" = 'unit' AND "unitId" =$3
+	`
+	}
 
 	var current model.CurrentStage
 	var wfId string
 
-	err := conn.QueryRow(ctx, currentQuery, orgId, caseId).
+	err := conn.QueryRow(ctx, currentQuery, orgId, caseId, unitId).
 		Scan(&wfId, &current.CaseId, &current.NodeId, &current.Versions, &current.Type, &current.Section, &current.Data, &current.Pic, &current.Group, &current.FormId)
 	if err != nil {
 		logger.Error("Failed to fetch current stage", zap.Error(err))
@@ -196,7 +203,10 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string) ([]model.Wo
 			return nil, nil, nil, nil, err
 		}
 		allNodesId[node.NodeId] = node
-		allNodes = append(allNodes, node)
+		if node.Type != "sla" {
+			allNodes = append(allNodes, node)
+		}
+
 		log.Print("TYPE: ", node.Section)
 		if node.Type == "dispatch" {
 			dispatchNode = node
@@ -507,4 +517,128 @@ func UpdateCurrentStage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, results)
+}
+
+// @summary Get SOP - UnitId
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id Case By UnitId
+// @accept json
+// @produce json
+// @Param caseId path string true "caseId"
+// @Param unitId path string true "unitId"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/{caseId}/SOP/unit/{unitId} [get]
+func GetUnitSOP(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+
+	defer cancel()
+	defer conn.Close(ctx)
+
+	if conn == nil {
+		return
+	}
+
+	fmt.Println("=xcxxxx==xx=x=x=x=x=x")
+	log.Println("===")
+
+	orgId := GetVariableFromToken(c, "orgId")
+	caseId := c.Param("caseId")
+	unitId := c.Param("unitId")
+
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
+	logger.Debug(`Query`, zap.String("query", query))
+	var cusCase model.Case
+	err := conn.QueryRow(ctx, query, orgId, caseId).Scan(
+		&cusCase.ID,
+		&cusCase.OrgID,
+		&cusCase.CaseID,
+		&cusCase.CaseVersion,
+		&cusCase.ReferCaseID,
+		&cusCase.CaseTypeID,
+		&cusCase.CaseSTypeID,
+		&cusCase.Priority,
+		&cusCase.WfID,
+		&cusCase.WfVersions,
+		&cusCase.Source,
+		&cusCase.DeviceID,
+		&cusCase.PhoneNo,
+		&cusCase.PhoneNoHide,
+		&cusCase.CaseDetail,
+		&cusCase.ExtReceive,
+		&cusCase.StatusID,
+		&cusCase.CaseLat,
+		&cusCase.CaseLon,
+		&cusCase.CaseLocAddr,
+		&cusCase.CaseLocAddrDecs,
+		&cusCase.CountryID,
+		&cusCase.ProvID,
+		&cusCase.DistID,
+		&cusCase.CaseDuration,
+		&cusCase.CreatedDate,
+		&cusCase.StartedDate,
+		&cusCase.CommandedDate,
+		&cusCase.ReceivedDate,
+		&cusCase.ArrivedDate,
+		&cusCase.ClosedDate,
+		&cusCase.UserCreate,
+		&cusCase.UserCommand,
+		&cusCase.UserReceive,
+		&cusCase.UserArrive,
+		&cusCase.UserClose,
+		&cusCase.ResID,
+		&cusCase.ResDetail,
+		&cusCase.CreatedAt,
+		&cusCase.UpdatedAt,
+		&cusCase.CreatedBy,
+		&cusCase.UpdatedBy,
+	)
+
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	log.Println("=orgId--")
+	log.Println(orgId)
+	allNodes, currentNode, nextStage, dispatchNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId, unitId)
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   err.Error(),
+		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	cusCase.SOP = allNodes
+	cusCase.CurrentStage = currentNode
+	cusCase.NextStage = nextStage
+	// cusCase.DispatchStage = dispatchNode
+	log.Println(dispatchNode)
+	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
+	log.Println(allNodes)
+	log.Println(currentNode)
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   cusCase,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
 }

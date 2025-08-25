@@ -55,7 +55,7 @@ type UnitUser struct {
 	LocAlt            float64   `json:"locAlt"`
 	LocBearing        float64   `json:"locBearing"`
 	LocSpeed          float64   `json:"locSpeed"`
-	LocProvider       float64   `json:"locProvider"`
+	LocProvider       string    `json:"locProvider"`
 	LocGpsTime        time.Time `json:"locGpsTime"`
 	LocSatellites     int       `json:"locSatellites"`
 	LocAccuracy       float64   `json:"locAccuracy"`

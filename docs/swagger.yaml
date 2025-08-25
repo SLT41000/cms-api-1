@@ -678,7 +678,7 @@ definitions:
       deptId:
         type: string
       healthChk:
-        type: boolean
+        type: string
       healthChkTime:
         type: string
       isFreeze:
@@ -2933,6 +2933,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get SOP
+      tags:
+      - Dispatch
+  /api/v1/dispatch/{caseId}/SOP/unit/{unitId}:
+    get:
+      consumes:
+      - application/json
+      operationId: Case By UnitId
+      parameters:
+      - description: caseId
+        in: path
+        name: caseId
+        required: true
+        type: string
+      - description: unitId
+        in: path
+        name: unitId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get SOP - UnitId
       tags:
       - Dispatch
   /api/v1/dispatch/{caseId}/units:
