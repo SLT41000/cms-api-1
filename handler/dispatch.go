@@ -130,6 +130,15 @@ func GetSOP(c *gin.Context) {
 		panic(err)
 	}
 	cusCase.ReferCaseLists = referCaseLists
+
+	//Get Units
+	unitLists, err := GetUnits(ctx, conn, orgId.(string), caseId, cusCase.StatusID)
+	if err != nil {
+		panic(err)
+	}
+	log.Print(unitLists)
+	cusCase.UnitLists = unitLists
+
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -307,6 +316,138 @@ func GetUnit(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	caseId := c.Param("caseId")
 
+	//		query := `
+	//	  WITH case_info AS (
+	//	  SELECT
+	//	    c."caseSTypeId",
+	//	    c."countryId",
+	//	    c."provId",
+	//	    c."distId",
+	//	    s."unitPropLists",
+	//	    s."userSkillList"
+	//	  FROM "tix_cases" c
+	//	  JOIN "case_sub_types" s ON c."caseSTypeId" = s."sTypeId"
+	//	  WHERE c."caseId" = $1
+	//	    AND s."active" = TRUE
+	//
+	// ),
+	// unit_with_props AS (
+	//
+	//	SELECT
+	//	  "unitId",
+	//	  array_agg("propId") AS props
+	//	FROM "mdm_unit_with_properties"
+	//	WHERE "active" = TRUE
+	//	GROUP BY "unitId"
+	//
+	// ),
+	// units_matched AS (
+	//
+	//	SELECT u."unitId", u."unitName", p.props
+	//	FROM "mdm_units" u
+	//	JOIN unit_with_props p ON u."unitId" = p."unitId"
+	//	CROSS JOIN case_info c
+	//	WHERE u."active" = TRUE
+	//	  AND (
+	//	    SELECT COUNT(DISTINCT prop_uuid)
+	//	    FROM (
+	//	      SELECT (jsonb_array_elements_text(c."unitPropLists"::jsonb))::uuid AS prop_uuid
+	//	    ) AS required_props
+	//	    WHERE prop_uuid = ANY(p.props)
+	//	  ) = (SELECT jsonb_array_length(c."unitPropLists"::jsonb))
+	//
+	// ),
+	// users_on_units AS (
+	//
+	//	SELECT u."unitId", mdm."username"
+	//	FROM units_matched u
+	//	JOIN "mdm_units" mdm ON mdm."unitId" = u."unitId" AND mdm."active" = TRUE
+	//	JOIN "um_users" um ON um."username" = mdm."username" AND um."active" = TRUE
+	//
+	// ),
+	// users_with_skill AS (
+	//
+	//	SELECT DISTINCT "userName"
+	//	FROM "um_user_with_skills"
+	//	WHERE "skillId" IN (
+	//	  SELECT (jsonb_array_elements_text(ci."userSkillList"::jsonb))::uuid
+	//	  FROM case_info ci
+	//	)
+	//	AND "active" = TRUE
+	//
+	// ),
+	// users_in_area AS (
+	//
+	//	SELECT "username"
+	//	FROM "um_user_with_area_response" ua
+	//	CROSS JOIN case_info c
+	//	WHERE ua."orgId" = $2
+	//	  AND EXISTS (
+	//	    SELECT 1
+	//	    FROM jsonb_array_elements_text(ua."distIdLists") AS distId
+	//	    WHERE distId.value = c."distId"
+	//	  )
+	//
+	// )
+	// SELECT mu."orgId",
+	//
+	//	mu."unitId",
+	//	mu."unitName",
+	//	mu."unitSourceId",
+	//	mu."unitTypeId",
+	//	mu."priority",
+	//	mu."compId",
+	//	mu."deptId",
+	//	mu."commId",
+	//	mu."stnId",
+	//	mu."plateNo",
+	//	mu."provinceCode",
+	//	mu."active",
+	//	mu."username",
+	//	mu."isLogin",
+	//	mu."isFreeze",
+	//	mu."isOutArea",
+	//	mu."locLat",
+	//	mu."locLon",
+	//	mu."locAlt",
+	//	mu."locBearing",
+	//	mu."locSpeed",
+	//	mu."locProvider",
+	//	mu."locGpsTime",
+	//	mu."locSatellites",
+	//	mu."locAccuracy",
+	//	mu."locLastUpdateTime",
+	//	mu."breakDuration",
+	//	mu."healthChk",
+	//	mu."healthChkTime",
+	//	mu."sttId",
+	//	mu."createdBy",
+	//	mu."updatedBy"
+	//
+	// FROM users_on_units u
+	// JOIN users_with_skill us ON u."username" = us."userName"
+	// JOIN users_in_area ua ON u."username" = ua."username"
+	// JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
+	// `
+
+	//--Get Skill All
+	Skills, err_ := GetUserSkills(ctx, conn, orgId.(string))
+	log.Print("---Skills---")
+	if err_ != nil {
+		panic(err_)
+	}
+
+	log.Print(Skills)
+
+	//--Get Property All
+	Props, err_ := GetUnitProp(ctx, conn, orgId.(string))
+	log.Print("---Props---")
+	if err_ != nil {
+		panic(err_)
+	}
+
+	log.Print(Props)
+
 	query := `
   WITH case_info AS (
   SELECT 
@@ -370,42 +511,45 @@ users_in_area AS (
     )
 )
 SELECT mu."orgId",
-    mu."unitId",
-    mu."unitName",
-    mu."unitSourceId",
-    mu."unitTypeId",
-    mu."priority",
-    mu."compId",
-    mu."deptId",
-    mu."commId",
-    mu."stnId",
-    mu."plateNo",
-    mu."provinceCode",
-    mu."active",
-    mu."username",
-    mu."isLogin",
-    mu."isFreeze",
-    mu."isOutArea",
-    mu."locLat",
-    mu."locLon",
-    mu."locAlt",
-    mu."locBearing",
-    mu."locSpeed",
-    mu."locProvider",
-    mu."locGpsTime",
-    mu."locSatellites",
-    mu."locAccuracy",
-    mu."locLastUpdateTime",
-    mu."breakDuration",
-    mu."healthChk",
-    mu."healthChkTime",
-    mu."sttId",
-    mu."createdBy",
-    mu."updatedBy"
+       mu."unitId",
+       mu."unitName",
+       mu."unitSourceId",
+       mu."unitTypeId",
+       mu."priority",
+       mu."compId",
+       mu."deptId",
+       mu."commId",
+       mu."stnId",
+       mu."plateNo",
+       mu."provinceCode",
+       mu."active",
+       mu."username",
+       mu."isLogin",
+       mu."isFreeze",
+       mu."isOutArea",
+       mu."locLat",
+       mu."locLon",
+       mu."locAlt",
+       mu."locBearing",
+       mu."locSpeed",
+       mu."locProvider",
+       mu."locGpsTime",
+       mu."locSatellites",
+       mu."locAccuracy",
+       mu."locLastUpdateTime",
+       mu."breakDuration",
+       mu."healthChk",
+       mu."healthChkTime",
+       mu."sttId",
+       mu."createdBy",
+       mu."updatedBy",
+       ci."unitPropLists",
+       ci."userSkillList"
 FROM users_on_units u
 JOIN users_with_skill us ON u."username" = us."userName"
 JOIN users_in_area ua ON u."username" = ua."username"
-JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
+JOIN "mdm_units" mu ON mu."unitId" = u."unitId"
+CROSS JOIN case_info ci;
 `
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err := conn.Query(context.Background(), query, caseId, orgId)
@@ -431,7 +575,7 @@ JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
 			&u.LocLat, &u.LocLon, &u.LocAlt, &u.LocBearing, &u.LocSpeed, &u.LocProvider,
 			&u.LocGpsTime, &u.LocSatellites, &u.LocAccuracy, &u.LocLastUpdateTime,
 			&u.BreakDuration, &u.HealthChk, &u.HealthChkTime, &u.SttID,
-			&u.CreatedBy, &u.UpdatedBy,
+			&u.CreatedBy, &u.UpdatedBy, &u.UnitPropLists, &u.UserSkillList,
 		); err != nil {
 			logger.Warn("Row scan failed", zap.Error(err))
 			c.JSON(http.StatusInternalServerError, model.Response{
@@ -441,6 +585,10 @@ JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
 			})
 			return
 		}
+
+		u.SkillLists = ConvertSkills(Skills, *u.UserSkillList)
+		u.ProplLists = ConvertProps(Props, *u.UnitPropLists)
+
 		results = append(results, u)
 	}
 
@@ -636,4 +784,37 @@ func GetReferCaseList(ctx context.Context, conn *pgx.Conn, orgID string, caseID 
 	}
 
 	return referCaseList, nil
+}
+
+// GetUnits returns a list of units (unitId, username)
+func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, statusId string) ([]model.UnitDispatch, error) {
+	var unitLists []model.UnitDispatch
+	st := []string{"S007", "S016", "S017", "S018"}
+
+	// If statusId is in the skip list, return empty slice
+	if contains(st, statusId) {
+		return unitLists, nil
+	}
+
+	query := `
+		SELECT "unitId", "username"
+		FROM public.tix_case_current_stage
+		WHERE "orgId" = $1 AND "caseId" = $2 AND "stageType" = 'unit'
+	`
+
+	rows, err := conn.Query(ctx, query, orgID, caseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u model.UnitDispatch
+		if err := rows.Scan(&u.UnitID, &u.Username); err != nil {
+			return nil, err
+		}
+		unitLists = append(unitLists, u)
+	}
+
+	return unitLists, nil
 }

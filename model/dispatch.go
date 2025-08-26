@@ -33,39 +33,43 @@ type CurrentStage struct {
 }
 
 type UnitUser struct {
-	OrgID             string    `json:"orgId"`
-	UnitID            string    `json:"unitId"`
-	UnitName          string    `json:"unitName"`
-	UnitSourceID      string    `json:"unitSourceId"`
-	UnitTypeID        string    `json:"unitTypeId"`
-	Priority          int       `json:"priority"`
-	CompID            string    `json:"compId"`
-	DeptID            string    `json:"deptId"`
-	CommID            string    `json:"commId"`
-	StnID             string    `json:"stnId"`
-	PlateNo           string    `json:"plateNo"`
-	ProvinceCode      string    `json:"provinceCode"`
-	Active            bool      `json:"active"`
-	Username          string    `json:"username"`
-	IsLogin           bool      `json:"isLogin"`
-	IsFreeze          bool      `json:"isFreeze"`
-	IsOutArea         bool      `json:"isOutArea"`
-	LocLat            float64   `json:"locLat"`
-	LocLon            float64   `json:"locLon"`
-	LocAlt            float64   `json:"locAlt"`
-	LocBearing        float64   `json:"locBearing"`
-	LocSpeed          float64   `json:"locSpeed"`
-	LocProvider       string    `json:"locProvider"`
-	LocGpsTime        time.Time `json:"locGpsTime"`
-	LocSatellites     int       `json:"locSatellites"`
-	LocAccuracy       float64   `json:"locAccuracy"`
-	LocLastUpdateTime time.Time `json:"locLastUpdateTime"`
-	BreakDuration     int       `json:"breakDuration"`
-	HealthChk         string    `json:"healthChk"`
-	HealthChkTime     time.Time `json:"healthChkTime"`
-	SttID             string    `json:"sttId"`
-	CreatedBy         string    `json:"createdBy"`
-	UpdatedBy         string    `json:"updatedBy"`
+	OrgID             string      `json:"orgId"`
+	UnitID            string      `json:"unitId"`
+	UnitName          string      `json:"unitName"`
+	UnitSourceID      string      `json:"unitSourceId"`
+	UnitTypeID        string      `json:"unitTypeId"`
+	Priority          int         `json:"priority"`
+	CompID            string      `json:"compId"`
+	DeptID            string      `json:"deptId"`
+	CommID            string      `json:"commId"`
+	StnID             string      `json:"stnId"`
+	PlateNo           string      `json:"plateNo"`
+	ProvinceCode      string      `json:"provinceCode"`
+	Active            bool        `json:"active"`
+	Username          string      `json:"username"`
+	IsLogin           bool        `json:"isLogin"`
+	IsFreeze          bool        `json:"isFreeze"`
+	IsOutArea         bool        `json:"isOutArea"`
+	LocLat            float64     `json:"locLat"`
+	LocLon            float64     `json:"locLon"`
+	LocAlt            float64     `json:"locAlt"`
+	LocBearing        float64     `json:"locBearing"`
+	LocSpeed          float64     `json:"locSpeed"`
+	LocProvider       string      `json:"locProvider"`
+	LocGpsTime        time.Time   `json:"locGpsTime"`
+	LocSatellites     int         `json:"locSatellites"`
+	LocAccuracy       float64     `json:"locAccuracy"`
+	LocLastUpdateTime time.Time   `json:"locLastUpdateTime"`
+	BreakDuration     int         `json:"breakDuration"`
+	HealthChk         string      `json:"healthChk"`
+	HealthChkTime     time.Time   `json:"healthChkTime"`
+	SttID             string      `json:"sttId"`
+	CreatedBy         string      `json:"createdBy"`
+	UpdatedBy         string      `json:"updatedBy"`
+	UnitPropLists     *[]string   `json:"unitPropLists"`
+	UserSkillList     *[]string   `json:"userSkillList"`
+	SkillLists        interface{} `json:"skillLists"`
+	ProplLists        interface{} `json:"proplLists"`
 }
 
 type UpdateStageRequest struct {
@@ -88,4 +92,22 @@ type Connection struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 	Label  string `json:"label"`
+}
+
+type GetSkills struct {
+	SkillID string `json:"skillId"`
+	En      string `json:"en"`
+	Th      string `json:"th"`
+}
+
+// Struct for result
+type UnitDispatch struct {
+	UnitID   string `json:"unitId"`
+	Username string `json:"username"`
+}
+
+type GetUnisProp struct {
+	PropId string `json:"propId"`
+	En     string `json:"en"`
+	Th     string `json:"th"`
 }

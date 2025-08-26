@@ -54,6 +54,7 @@ type Case struct {
 	NextStage       interface{} `json:"nextStage"`
 	DispatchStage   interface{} `json:"dispatchStage"`
 	ReferCaseLists  []string    `json:"referCaseLists"`
+	UnitLists       interface{} `json:"unitLists"`
 }
 
 type CaseInsert struct {
