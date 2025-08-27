@@ -6802,6 +6802,9 @@ const docTemplate = `{
                 "extReceive": {
                     "type": "string"
                 },
+                "formData": {
+                    "$ref": "#/definitions/model.FormAnswerRequest"
+                },
                 "nodeId": {
                     "type": "string"
                 },
@@ -7393,6 +7396,36 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "formId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.FormAnswerRequest": {
+            "type": "object",
+            "properties": {
+                "formColSpan": {
+                    "type": "integer"
+                },
+                "formFieldJson": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "formId": {
+                    "type": "string"
+                },
+                "formName": {
+                    "type": "string"
+                },
+                "nextNodeId": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }

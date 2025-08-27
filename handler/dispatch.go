@@ -139,6 +139,13 @@ func GetSOP(c *gin.Context) {
 	log.Print(unitLists)
 	cusCase.UnitLists = unitLists
 
+	formId := currentNode.FormId // จาก JSON
+	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, *formId)
+	if err != nil {
+		log.Fatal("query error:", err)
+	}
+	cusCase.FormAnswer = answers
+
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -817,4 +824,60 @@ func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, 
 	}
 
 	return unitLists, nil
+}
+
+func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string) (map[string]interface{}, error) {
+	// Query both form metadata and answers
+	query := `
+		SELECT 
+			fb."formName",
+			fb."formColSpan",
+			fb."versions" as formVersion,
+			fa."eleData"
+		FROM form_builder fb
+		LEFT JOIN form_answers fa
+			ON fb."orgId" = fa."orgId"::uuid
+			AND fb."formId" = fa."formId"::uuid
+			AND fa."caseId" = $1
+		WHERE fb."orgId" = $2
+			AND fb."formId" = $3
+		ORDER BY fa."eleNumber" ASC NULLS LAST
+	`
+
+	rows, err := conn.Query(ctx, query, caseId, orgId, formId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var formName string
+	var formColSpan int
+	var formVersion string
+	var formFieldJson []map[string]interface{}
+
+	for rows.Next() {
+		var eleDataBytes []byte
+		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes); err != nil {
+			return nil, err
+		}
+
+		if len(eleDataBytes) > 0 {
+			var field map[string]interface{}
+			if err := json.Unmarshal(eleDataBytes, &field); err != nil {
+				return nil, err
+			}
+			formFieldJson = append(formFieldJson, field)
+		}
+	}
+
+	response := map[string]interface{}{
+		"versions":      formVersion,
+		"wfId":          "", // optionally fill from your workflow
+		"formId":        formId,
+		"formName":      formName,
+		"formColSpan":   formColSpan,
+		"formFieldJson": formFieldJson,
+	}
+
+	return response, nil
 }

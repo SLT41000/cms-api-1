@@ -55,48 +55,50 @@ type Case struct {
 	DispatchStage   interface{} `json:"dispatchStage"`
 	ReferCaseLists  []string    `json:"referCaseLists"`
 	UnitLists       interface{} `json:"unitLists"`
+	FormAnswer      interface{} `json:"formAnswer"`
 }
 
 type CaseInsert struct {
-	CaseId          *string    `json:"caseId" `
-	CaseVersion     string     `json:"caseVersion" binding:"required"`
-	ReferCaseID     *string    `json:"referCaseId"`
-	CaseTypeID      string     `json:"caseTypeId"`
-	CaseSTypeID     string     `json:"caseSTypeId"`
-	Priority        int        `json:"priority"`
-	WfID            *string    `json:"wfId"`
-	WfVersions      *string    `json:"versions"`
-	NodeID          string     `json:"nodeId" db:"nodeId"`
-	Source          string     `json:"source"`
-	DeviceID        *string    `json:"deviceId"`
-	PhoneNo         *string    `json:"phoneNo"`
-	PhoneNoHide     bool       `json:"phoneNoHide"`
-	CaseDetail      *string    `json:"caseDetail"`
-	ExtReceive      *string    `json:"extReceive"`
-	StatusID        string     `json:"statusId"`
-	CaseLat         *string    `json:"caseLat"`
-	CaseLon         *string    `json:"caseLon"`
-	CaseLocAddr     *string    `json:"caselocAddr"`
-	CaseLocAddrDecs *string    `json:"caselocAddrDecs"`
-	CountryID       string     `json:"countryId"`
-	ProvID          string     `json:"provId"`
-	DistID          string     `json:"distId"`
-	CaseDuration    int        `json:"caseDuration"`
-	CreatedDate     *time.Time `json:"createdDate"`
-	StartedDate     *time.Time `json:"startedDate"`
-	CommandedDate   *time.Time `json:"commandedDate"`
-	ReceivedDate    *time.Time `json:"receivedDate"`
-	ArrivedDate     *time.Time `json:"arrivedDate"`
-	ClosedDate      *time.Time `json:"closedDate"`
-	UserCreate      *string    `json:"usercreate"`
-	UserCommand     *string    `json:"usercommand"`
-	UserReceive     *string    `json:"userreceive"`
-	UserArrive      *string    `json:"userarrive"`
-	UserClose       *string    `json:"userclose"`
-	ResID           *string    `json:"resId"`
-	ResDetail       *string    `json:"resDetail"`
-	ScheduleFlag    *bool      `json:"scheduleFlag"`
-	ScheduleDate    *time.Time `json:"scheduleDate"`
+	CaseId          *string            `json:"caseId" `
+	CaseVersion     string             `json:"caseVersion" binding:"required"`
+	ReferCaseID     *string            `json:"referCaseId"`
+	CaseTypeID      string             `json:"caseTypeId"`
+	CaseSTypeID     string             `json:"caseSTypeId"`
+	Priority        int                `json:"priority"`
+	WfID            *string            `json:"wfId"`
+	WfVersions      *string            `json:"versions"`
+	NodeID          string             `json:"nodeId" db:"nodeId"`
+	Source          string             `json:"source"`
+	DeviceID        *string            `json:"deviceId"`
+	PhoneNo         *string            `json:"phoneNo"`
+	PhoneNoHide     bool               `json:"phoneNoHide"`
+	CaseDetail      *string            `json:"caseDetail"`
+	ExtReceive      *string            `json:"extReceive"`
+	StatusID        string             `json:"statusId"`
+	CaseLat         *string            `json:"caseLat"`
+	CaseLon         *string            `json:"caseLon"`
+	CaseLocAddr     *string            `json:"caselocAddr"`
+	CaseLocAddrDecs *string            `json:"caselocAddrDecs"`
+	CountryID       string             `json:"countryId"`
+	ProvID          string             `json:"provId"`
+	DistID          string             `json:"distId"`
+	CaseDuration    int                `json:"caseDuration"`
+	CreatedDate     *time.Time         `json:"createdDate"`
+	StartedDate     *time.Time         `json:"startedDate"`
+	CommandedDate   *time.Time         `json:"commandedDate"`
+	ReceivedDate    *time.Time         `json:"receivedDate"`
+	ArrivedDate     *time.Time         `json:"arrivedDate"`
+	ClosedDate      *time.Time         `json:"closedDate"`
+	UserCreate      *string            `json:"usercreate"`
+	UserCommand     *string            `json:"usercommand"`
+	UserReceive     *string            `json:"userreceive"`
+	UserArrive      *string            `json:"userarrive"`
+	UserClose       *string            `json:"userclose"`
+	ResID           *string            `json:"resId"`
+	ResDetail       *string            `json:"resDetail"`
+	ScheduleFlag    *bool              `json:"scheduleFlag"`
+	ScheduleDate    *time.Time         `json:"scheduleDate"`
+	FormData        *FormAnswerRequest `json:"formData"`
 }
 
 type CaseUpdate struct {

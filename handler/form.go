@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"mainPackage/config"
 	"mainPackage/model"
@@ -1453,4 +1454,41 @@ WHERE t1."wfId" = $1
 	}
 	c.JSON(http.StatusOK, response)
 
+}
+
+func InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
+	for i, field := range fa.FormFieldJson { // i = int, field = map[string]interface{}
+		eleDataJSON, err := json.Marshal(field)
+		if err != nil {
+			return err
+		}
+
+		var insertedID int64
+		query := `
+			INSERT INTO form_answers (
+				"orgId", "caseId", "formId", "versions",
+				"eleNumber", "eleData",
+				"createdAt", "updatedAt", "createdBy", "updatedBy"
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			RETURNING id
+		`
+
+		err = conn.QueryRow(ctx, query,
+			orgId,
+			caseId,
+			fa.FormId,
+			fa.Versions,
+			i+1,         // ✅ ตอนนี้ i เป็น int แล้ว ใช้ i+1 ได้
+			eleDataJSON, // eleData = JSON field
+			time.Now(),
+			time.Now(),
+			user,
+			user,
+		).Scan(&insertedID)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

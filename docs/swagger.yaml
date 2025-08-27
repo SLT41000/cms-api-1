@@ -63,6 +63,8 @@ definitions:
         type: string
       extReceive:
         type: string
+      formData:
+        $ref: '#/definitions/model.FormAnswerRequest'
       nodeId:
         type: string
       phoneNo:
@@ -459,6 +461,26 @@ definitions:
       active:
         type: boolean
       formId:
+        type: string
+    type: object
+  model.FormAnswerRequest:
+    properties:
+      formColSpan:
+        type: integer
+      formFieldJson:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      formId:
+        type: string
+      formName:
+        type: string
+      nextNodeId:
+        type: string
+      versions:
+        type: string
+      wfId:
         type: string
     type: object
   model.FormByCasesubtype:

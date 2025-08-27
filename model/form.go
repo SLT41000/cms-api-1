@@ -155,3 +155,27 @@ type WfNode struct {
 	CreatedBy string                 `json:"createdBy" db:"createdBy"`
 	UpdatedBy string                 `json:"updatedBy" db:"updatedBy"`
 }
+
+type FormAnswer struct {
+	ID        int64                  `json:"id"`
+	OrgId     string                 `json:"orgId"`
+	CaseId    string                 `json:"caseId"`
+	FormId    string                 `json:"formId"`
+	Versions  string                 `json:"versions"`
+	EleNumber int                    `json:"eleNumber"`
+	EleData   map[string]interface{} `json:"eleData"`
+	CreatedAt time.Time              `json:"createdAt"`
+	UpdatedAt time.Time              `json:"updatedAt"`
+	CreatedBy string                 `json:"createdBy"`
+	UpdatedBy string                 `json:"updatedBy"`
+}
+
+type FormAnswerRequest struct {
+	NextNodeId    string                   `json:"nextNodeId"`
+	Versions      string                   `json:"versions"`
+	WfId          string                   `json:"wfId"`
+	FormId        string                   `json:"formId"`
+	FormName      string                   `json:"formName"`
+	FormColSpan   int                      `json:"formColSpan"`
+	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+}
