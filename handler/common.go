@@ -895,3 +895,101 @@ func DispatchUpdateCaseStatus(ctx context.Context, conn *pgx.Conn, caseId string
 
 	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchUpdateCaseStatus-" + caseId}, nil
 }
+
+func GetUserSkills(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetSkills, error) {
+	query := `
+		SELECT "skillId", "en", "th"
+		FROM public.um_skills
+		WHERE "orgId" = $1 AND "active" = true
+		ORDER BY id ASC;
+	`
+
+	rows, err := conn.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var skills []model.GetSkills
+	for rows.Next() {
+		var s model.GetSkills
+		if err := rows.Scan(&s.SkillID, &s.En, &s.Th); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		skills = append(skills, s)
+	}
+
+	// If no records, return empty slice instead of nil
+	if skills == nil {
+		return []model.GetSkills{}, nil
+	}
+
+	return skills, nil
+}
+
+// ConvertSkills returns only the skills whose SkillId exists in data
+func ConvertSkills(skills []model.GetSkills, data []string) []model.GetSkills {
+	result := []model.GetSkills{}
+	// build a quick lookup map for data
+	dataMap := make(map[string]bool)
+	for _, id := range data {
+		dataMap[id] = true
+	}
+
+	// filter skills
+	for _, s := range skills {
+		if dataMap[s.SkillID] {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+func GetUnitProp(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetUnisProp, error) {
+	query := `
+		SELECT "propId", "en", "th"
+		FROM public.mdm_properties
+		WHERE "orgId" = $1 AND "active" = true
+		ORDER BY id ASC;
+	`
+
+	rows, err := conn.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var props []model.GetUnisProp
+	for rows.Next() {
+		var s model.GetUnisProp
+		if err := rows.Scan(&s.PropId, &s.En, &s.Th); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		props = append(props, s)
+	}
+
+	// If no records, return empty slice instead of nil
+	if props == nil {
+		return []model.GetUnisProp{}, nil
+	}
+
+	return props, nil
+}
+
+// ConvertProps returns only the skills whose PropId exists in data
+func ConvertProps(props []model.GetUnisProp, data []string) []model.GetUnisProp {
+	result := []model.GetUnisProp{}
+	// build a quick lookup map for data
+	dataMap := make(map[string]bool)
+	for _, id := range data {
+		dataMap[id] = true
+	}
+
+	// filter skills
+	for _, s := range props {
+		if dataMap[s.PropId] {
+			result = append(result, s)
+		}
+	}
+	return result
+}
