@@ -115,6 +115,7 @@ type UserInput struct {
 	LastLogin             *time.Time `json:"lastLogin"`
 }
 
+// Remove Password form UserUpdate by Delta 26/08/2568
 type UserUpdate struct {
 	DisplayName           string     `json:"displayName"`
 	Title                 string     `json:"title"`
@@ -129,7 +130,6 @@ type UserUpdate struct {
 	Address               string     `json:"address"`
 	Photo                 *string    `json:"photo"`
 	Username              string     `json:"username"`
-	Password              string     `json:"password"`
 	Email                 string     `json:"email"`
 	RoleID                string     `json:"roleId"`
 	UserType              *int64     `json:"userType"`
@@ -143,6 +143,19 @@ type UserUpdate struct {
 	SignupStamp           *int64     `json:"signupStamp"`
 	IsLogin               bool       `json:"islogin"`
 	LastLogin             *time.Time `json:"lastLogin"`
+}
+
+//add Reset Password and Change Password form UserUpdate by Delta 26/08/2568
+
+// ResetPasswordRequest สำหรับ reset password
+type ResetPasswordRequest struct {
+	NewPassword string `json:"newPassword" binding:"required"`
+}
+
+// ChangePasswordRequest สำหรับ change password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required"`
 }
 
 type UserContact struct {

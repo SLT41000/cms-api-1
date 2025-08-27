@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
@@ -459,32 +460,26 @@ func UserUpdate(c *gin.Context) {
 
 	// now req is ready to use
 
-	var enc string
 	var err error
 	id := c.Param("id")
-	enc, err = encrypt(req.Password)
-	if err != nil {
-		return
-	}
 	orgId := GetVariableFromToken(c, "orgId")
 	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 	UPDATE public.um_users
 	SET "displayName"=$1, title=$2, "firstName"=$3, "middleName"=$4, "lastName"=$5, "citizenId"=$6,
-	bod=$7, blood=$8, gender=$9, "mobileNo"=$10, address=$11, photo=$12, username=$13, password=$14, email=$15, "roleId"=$16,
-	"userType"=$17, "empId"=$18, "deptId"=$19, "commId"=$20, "stnId"=$21, active=$22,
-	"lastActivationRequest"=$23, "lostPasswordRequest"=$24, "signupStamp"=$25, islogin=$26, "lastLogin"=$27,
-	"updatedAt"=$28,"updatedBy"=$29 WHERE id = $30 AND "orgId"=$31`
+	bod=$7, blood=$8, gender=$9, "mobileNo"=$10, address=$11, photo=$12, username=$13, email=$14, "roleId"=$15,
+	"userType"=$16, "empId"=$17, "deptId"=$18, "commId"=$19, "stnId"=$20, active=$21,
+	"lastActivationRequest"=$22, "lostPasswordRequest"=$23, "signupStamp"=$24, islogin=$25, "lastLogin"=$26,
+	"updatedAt"=$27,"updatedBy"=$28 WHERE id = $29 AND "orgId"=$30`
 
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("Input", []any{req}))
-	logger.Debug(`Encrypt Password :` + enc)
 	_, err = conn.Exec(ctx, query,
 		req.DisplayName, req.Title, req.FirstName, req.MiddleName,
 		req.LastName, req.CitizenID, req.Bod, req.Blood,
 		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
-		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
+		req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
 		req.Active, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
 		req.IsLogin, req.LastLogin, now, username, id, orgId,
 	)
@@ -540,32 +535,26 @@ func UserUpdateByUsername(c *gin.Context) {
 
 	// now req is ready to use
 
-	var enc string
 	var err error
 	id := c.Param("username")
-	enc, err = encrypt(req.Password)
-	if err != nil {
-		return
-	}
 	orgId := GetVariableFromToken(c, "orgId")
 	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 	UPDATE public.um_users
 	SET "displayName"=$1, title=$2, "firstName"=$3, "middleName"=$4, "lastName"=$5, "citizenId"=$6,
-	bod=$7, blood=$8, gender=$9, "mobileNo"=$10, address=$11, photo=$12, username=$13, password=$14, email=$15, "roleId"=$16,
-	"userType"=$17, "empId"=$18, "deptId"=$19, "commId"=$20, "stnId"=$21, active=$22,
-	"lastActivationRequest"=$23, "lostPasswordRequest"=$24, "signupStamp"=$25, islogin=$26, "lastLogin"=$27,
-	"updatedAt"=$28,"updatedBy"=$29 WHERE username = $30 AND "orgId"=$31`
+	bod=$7, blood=$8, gender=$9, "mobileNo"=$10, address=$11, photo=$12, username=$13, email=$14, "roleId"=$15,
+	"userType"=$16, "empId"=$17, "deptId"=$18, "commId"=$19, "stnId"=$20, active=$21,
+	"lastActivationRequest"=$22, "lostPasswordRequest"=$23, "signupStamp"=$24, islogin=$25, "lastLogin"=$26,
+	"updatedAt"=$27,"updatedBy"=$28 WHERE username = $29 AND "orgId"=$30`
 
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("Input", []any{req}))
-	logger.Debug(`Encrypt Password :` + enc)
 	_, err = conn.Exec(ctx, query,
 		req.DisplayName, req.Title, req.FirstName, req.MiddleName,
-		req.LastName, req.CitizenID, req.Bod, req.Bod, req.Blood,
+		req.LastName, req.CitizenID, req.Bod, req.Blood,
 		req.Gender, req.MobileNo, req.Address, req.Photo, req.Username,
-		enc, req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
+		req.Email, req.RoleID, req.UserType, req.EmpID, req.DeptID, req.CommID, req.StnID,
 		req.Active, req.LastActivationRequest, req.LostPasswordRequest, req.SignupStamp,
 		req.IsLogin, req.LastLogin, now, username, id, orgId,
 	)
@@ -862,7 +851,6 @@ func GetUserWithSkillsBySkillId(c *gin.Context) {
 	// 	}
 	// 	c.JSON(http.StatusInternalServerError, response)
 	// 	return
-	// }
 
 	response := model.Response{
 		Status: "0",
@@ -1727,6 +1715,182 @@ func DeleteUserWithSocials(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
+	})
+}
+
+// @summary Reset User Password
+// @tags User
+// @security ApiKeyAuth
+// @id Reset User Password
+// @accept json
+// @produce json
+// @param id path string true "User ID"
+// @param Body body model.ResetPasswordRequest true "Reset Password Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/reset_password/{id} [patch]
+func ResetUserPassword(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Reset password failed", zap.Error(err))
+		return
+	}
+
+	id := c.Param("id")
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+
+	// Encrypt new password (ไม่มีการตรวจสอบเงื่อนไข)
+	encPassword, err := encrypt(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Password encryption failed",
+		})
+		logger.Warn("Password encryption failed", zap.Error(err))
+		return
+	}
+
+	now := time.Now()
+	query := `UPDATE public.um_users SET password=$1, "updatedAt"=$2, "updatedBy"=$3 WHERE id=$4 AND "orgId"=$5`
+
+	logger.Debug(`Query`, zap.String("query", query))
+	logger.Debug(`User ID`, zap.String("id", id))
+
+	_, err = conn.Exec(ctx, query, encPassword, now, username, id, orgId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Reset password failed", zap.Error(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Password reset successfully",
+	})
+}
+
+// @summary Change User Password
+// @tags User
+// @security ApiKeyAuth
+// @id Change User Password
+// @accept json
+// @produce json
+// @param id path string true "User ID"
+// @param Body body model.ChangePasswordRequest true "Change Password Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/change_password/{id} [patch]
+func ChangeUserPassword(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Change password failed", zap.Error(err))
+		return
+	}
+
+	id := c.Param("id")
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+
+	// First, verify current password
+	var currentPassword string
+	query := `SELECT password FROM public.um_users WHERE id=$1 AND "orgId"=$2`
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(&currentPassword)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "User not found",
+		})
+		logger.Warn("User not found", zap.Error(err))
+		return
+	}
+
+	// Decrypt current password and verify
+	decryptedPassword, err := decrypt(currentPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Password verification failed",
+		})
+		logger.Warn("Password decryption failed", zap.Error(err))
+		return
+	}
+
+	// Compare current password
+	if subtle.ConstantTimeCompare([]byte(decryptedPassword), []byte(req.CurrentPassword)) != 1 {
+		c.JSON(http.StatusUnauthorized, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Current password is incorrect",
+		})
+		return
+	}
+
+	// Encrypt new password
+	encPassword, err := encrypt(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Password encryption failed",
+		})
+		logger.Warn("Password encryption failed", zap.Error(err))
+		return
+	}
+
+	now := time.Now()
+	updateQuery := `UPDATE public.um_users SET password=$1, "updatedAt"=$2, "updatedBy"=$3 WHERE id=$4 AND "orgId"=$5`
+
+	logger.Debug(`Query`, zap.String("query", updateQuery))
+	logger.Debug(`User ID`, zap.String("id", id))
+
+	_, err = conn.Exec(ctx, updateQuery, encPassword, now, username, id, orgId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Change password failed", zap.Error(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Password changed successfully",
 	})
 }
 

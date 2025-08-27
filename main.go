@@ -175,6 +175,8 @@ func main() {
 		v1.POST("/users/add", handler.UserAdd)
 		v1.PATCH("/users/:id", handler.UserUpdate)
 		v1.DELETE("/users/:id", handler.UserDelete)
+		v1.PATCH("/users/reset_password/:id", handler.ResetUserPassword)
+		v1.PATCH("/users/change_password/:id", handler.ChangeUserPassword)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.PATCH("/users/username/:username", handler.UserUpdateByUsername)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
