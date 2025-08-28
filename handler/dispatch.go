@@ -753,7 +753,26 @@ func GetUnitSOP(c *gin.Context) {
 
 	cusCase.SOP = allNodes
 	cusCase.CurrentStage = currentNode
+	st := []string{"S007", "S016", "S017", "S018"}
+
+	// If statusId is in the skip list, return empty slice
+	raw, _ := json.Marshal(currentNode.Data)
+	var stageData struct {
+		Data struct {
+			Config struct {
+				Action string `json:"action"`
+			} `json:"config"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(raw, &stageData)
+	action := stageData.Data.Config.Action
+	fmt.Println("action =", action)
+
 	cusCase.NextStage = nextStage
+	if contains(st, action) {
+		cusCase.NextStage = nil
+	}
+
 	// cusCase.DispatchStage = dispatchNode
 	log.Println(dispatchNode)
 	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
@@ -800,7 +819,7 @@ func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, 
 
 	// If statusId is in the skip list, return empty slice
 	if contains(st, statusId) {
-		return unitLists, nil
+		//return unitLists, nil
 	}
 
 	query := `
