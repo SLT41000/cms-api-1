@@ -106,9 +106,15 @@ func ListCase(c *gin.Context) {
 	distId := c.Query("distId")
 
 	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.tix_cases WHERE "orgId" = $1`
-
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", 
+       priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", 
+       "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", 
+       "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", 
+       "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, 
+       usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  
+       "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId" = $1 `
+ 
 	params := []interface{}{orgId}
 	paramIndex := 2 // start at $2 because $1 is already used for orgId
 
@@ -169,9 +175,9 @@ func ListCase(c *gin.Context) {
 	}
 
 	// Add pagination
-	baseQuery += fmt.Sprintf(" ORDER BY \"createdAt\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+	baseQuery += fmt.Sprintf(" ORDER BY priority ASC, \"createdAt\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
 	params = append(params, length, start)
-
+ 
 	rows, err := conn.Query(ctx, baseQuery, params...)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -213,7 +219,7 @@ func ListCase(c *gin.Context) {
 			&cusCase.ProvID,
 			&cusCase.DistID,
 			&cusCase.CaseDuration,
-			&cusCase.CreatedDate,
+			&cusCase.CreatedAt, // "createdAt"
 			&cusCase.StartedDate,
 			&cusCase.CommandedDate,
 			&cusCase.ReceivedDate,
@@ -228,10 +234,9 @@ func ListCase(c *gin.Context) {
 			&cusCase.ResDetail,
 			&cusCase.ScheduleFlag,
 			&cusCase.ScheduleDate,
-			&cusCase.CreatedAt,
-			&cusCase.UpdatedAt,
-			&cusCase.CreatedBy,
-			&cusCase.UpdatedBy,
+			&cusCase.UpdatedAt, // "updatedAt"
+			&cusCase.CreatedBy, // "createdBy"
+			&cusCase.UpdatedBy, // "updatedBy"
 		)
 
 		if err != nil {
