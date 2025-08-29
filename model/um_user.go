@@ -149,6 +149,8 @@ type UserUpdate struct {
 
 // ResetPasswordRequest สำหรับ reset password
 type ResetPasswordRequest struct {
+	Username    string `json:"username" binding:"required"`
+	Email       string `json:"email" binding:"required"`
 	NewPassword string `json:"newPassword" binding:"required"`
 }
 

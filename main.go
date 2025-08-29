@@ -72,6 +72,10 @@ func main() {
 		auth.POST("/add", handler.UserAddAuth)
 		auth.POST("/refresh", handler.RefreshToken)
 	}
+
+	// Routes ที่ไม่ต้องใช้ authentication
+	router.POST("/api/v1/users/reset_password", handler.ResetUserPassword)
+
 	v1 := router.Group("/api/v1")
 	{
 		v1.Use(handler.ProtectedHandler)
@@ -175,7 +179,6 @@ func main() {
 		v1.POST("/users/add", handler.UserAdd)
 		v1.PATCH("/users/:id", handler.UserUpdate)
 		v1.DELETE("/users/:id", handler.UserDelete)
-		v1.PATCH("/users/reset_password/:id", handler.ResetUserPassword)
 		v1.PATCH("/users/change_password/:id", handler.ChangeUserPassword)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.PATCH("/users/username/:username", handler.UserUpdateByUsername)

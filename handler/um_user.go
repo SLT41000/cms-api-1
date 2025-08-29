@@ -1720,14 +1720,12 @@ func DeleteUserWithSocials(c *gin.Context) {
 
 // @summary Reset User Password
 // @tags User
-// @security ApiKeyAuth
 // @id Reset User Password
 // @accept json
 // @produce json
-// @param id path string true "User ID"
-// @param Body body model.ResetPasswordRequest true "Reset Password Data"
+// @param Body body model.ResetPasswordRequest true "Reset Password Data (username, email, newPassword)"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/users/reset_password/{id} [patch]
+// @Router /api/v1/users/reset_password [post]
 func ResetUserPassword(c *gin.Context) {
 	logger := config.GetLog()
 	conn, ctx, cancel := config.ConnectDB()
@@ -1748,9 +1746,19 @@ func ResetUserPassword(c *gin.Context) {
 		return
 	}
 
-	id := c.Param("id")
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
+	// ตรวจสอบว่า user มีอยู่จริงโดยใช้ username และ email
+	var userID string
+	checkQuery := `SELECT id FROM public.um_users WHERE username=$1 AND email=$2 AND active=true`
+	err := conn.QueryRow(ctx, checkQuery, req.Username, req.Email).Scan(&userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "User not found or inactive",
+		})
+		logger.Warn("User not found", zap.Error(err))
+		return
+	}
 
 	// Encrypt new password (ไม่มีการตรวจสอบเงื่อนไข)
 	encPassword, err := encrypt(req.NewPassword)
@@ -1765,12 +1773,13 @@ func ResetUserPassword(c *gin.Context) {
 	}
 
 	now := time.Now()
-	query := `UPDATE public.um_users SET password=$1, "updatedAt"=$2, "updatedBy"=$3 WHERE id=$4 AND "orgId"=$5`
+	query := `UPDATE public.um_users SET password=$1, "updatedAt"=$2, "updatedBy"=$3 WHERE username=$4 AND email=$5`
 
 	logger.Debug(`Query`, zap.String("query", query))
-	logger.Debug(`User ID`, zap.String("id", id))
+	logger.Debug(`Username`, zap.String("username", req.Username))
+	logger.Debug(`Email`, zap.String("email", req.Email))
 
-	_, err = conn.Exec(ctx, query, encPassword, now, username, id, orgId)
+	_, err = conn.Exec(ctx, query, encPassword, now, "system", req.Username, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
