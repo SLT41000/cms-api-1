@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
@@ -436,7 +437,8 @@ func InsertCase(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	fmt.Printf("=======xxxx========")
+
+	fmt.Printf("=======CurrentStage========")
 	if req.NodeID != "" {
 		var data = model.CustomCaseCurrentStage{
 			CaseID: caseId,
@@ -445,6 +447,23 @@ func InsertCase(c *gin.Context) {
 		}
 		fmt.Printf("=======yyy========")
 		err = CaseCurrentStageInsert(conn, ctx, c, data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			return
+		}
+	}
+	fmt.Printf("=======AnswerForm========")
+	if req.FormData.FormId == "" {
+
+	} else {
+		err = InsertFormAnswer(conn, ctx, orgId.(string), caseId, *req.FormData, username.(string))
+		if err != nil {
+			log.Fatal("Insert error:", err)
+		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, model.Response{
 				Status: "-1",
@@ -465,10 +484,11 @@ func InsertCase(c *gin.Context) {
 	}
 	genNotiCustom(c, orgId.(string), "System", username.(string), "", "Create", data, "เปิด Work order สำเร็จ : "+caseId, recipients, "", "User")
 
-	c.JSON(http.StatusOK, model.Response{
+	c.JSON(http.StatusOK, model.ResponseCreateCase{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
+		CaseID: caseId,
 	})
 
 }

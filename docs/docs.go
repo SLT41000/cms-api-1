@@ -5675,6 +5675,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/change_password/{id}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Change User Password",
+                "operationId": "Change User Password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Change Password Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/reset_password/{id}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset User Password",
+                "operationId": "Reset User Password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reset Password Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/username/{username}": {
             "get": {
                 "security": [
@@ -6802,6 +6894,9 @@ const docTemplate = `{
                 "extReceive": {
                     "type": "string"
                 },
+                "formData": {
+                    "$ref": "#/definitions/model.FormAnswerRequest"
+                },
                 "nodeId": {
                     "type": "string"
                 },
@@ -7121,6 +7216,21 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "currentPassword",
+                "newPassword"
+            ],
+            "properties": {
+                "currentPassword": {
+                    "type": "string"
+                },
+                "newPassword": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CommandInsert": {
             "type": "object",
             "properties": {
@@ -7393,6 +7503,36 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "formId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.FormAnswerRequest": {
+            "type": "object",
+            "properties": {
+                "formColSpan": {
+                    "type": "integer"
+                },
+                "formFieldJson": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "formId": {
+                    "type": "string"
+                },
+                "formName": {
+                    "type": "string"
+                },
+                "nextNodeId": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "string"
+                },
+                "wfId": {
                     "type": "string"
                 }
             }
@@ -8148,6 +8288,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "newPassword"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Response": {
             "type": "object",
             "properties": {
@@ -8677,9 +8828,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "mobileNo": {
-                    "type": "string"
-                },
-                "password": {
                     "type": "string"
                 },
                 "photo": {

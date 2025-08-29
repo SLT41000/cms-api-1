@@ -63,6 +63,8 @@ definitions:
         type: string
       extReceive:
         type: string
+      formData:
+        $ref: '#/definitions/model.FormAnswerRequest'
       nodeId:
         type: string
       phoneNo:
@@ -275,6 +277,16 @@ definitions:
       wfId:
         type: string
     type: object
+  model.ChangePasswordRequest:
+    properties:
+      currentPassword:
+        type: string
+      newPassword:
+        type: string
+    required:
+    - currentPassword
+    - newPassword
+    type: object
   model.CommandInsert:
     properties:
       active:
@@ -459,6 +471,26 @@ definitions:
       active:
         type: boolean
       formId:
+        type: string
+    type: object
+  model.FormAnswerRequest:
+    properties:
+      formColSpan:
+        type: integer
+      formFieldJson:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      formId:
+        type: string
+      formName:
+        type: string
+      nextNodeId:
+        type: string
+      versions:
+        type: string
+      wfId:
         type: string
     type: object
   model.FormByCasesubtype:
@@ -956,6 +988,13 @@ definitions:
       refreshToken:
         type: string
     type: object
+  model.ResetPasswordRequest:
+    properties:
+      newPassword:
+        type: string
+    required:
+    - newPassword
+    type: object
   model.Response:
     properties:
       data: {}
@@ -1307,8 +1346,6 @@ definitions:
       middleName:
         type: string
       mobileNo:
-        type: string
-      password:
         type: string
       photo:
         type: string
@@ -5018,6 +5055,64 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create User
+      tags:
+      - User
+  /api/v1/users/change_password/{id}:
+    patch:
+      consumes:
+      - application/json
+      operationId: Change User Password
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Change Password Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Change User Password
+      tags:
+      - User
+  /api/v1/users/reset_password/{id}:
+    patch:
+      consumes:
+      - application/json
+      operationId: Reset User Password
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reset Password Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Reset User Password
       tags:
       - User
   /api/v1/users/username/{username}:

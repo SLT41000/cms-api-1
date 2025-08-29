@@ -139,6 +139,13 @@ func GetSOP(c *gin.Context) {
 	log.Print(unitLists)
 	cusCase.UnitLists = unitLists
 
+	formId := currentNode.FormId // จาก JSON
+	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, *formId)
+	if err != nil {
+		log.Fatal("query error:", err)
+	}
+	cusCase.FormAnswer = answers
+
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -746,7 +753,26 @@ func GetUnitSOP(c *gin.Context) {
 
 	cusCase.SOP = allNodes
 	cusCase.CurrentStage = currentNode
+	st := []string{"S007", "S016", "S017", "S018"}
+
+	// If statusId is in the skip list, return empty slice
+	raw, _ := json.Marshal(currentNode.Data)
+	var stageData struct {
+		Data struct {
+			Config struct {
+				Action string `json:"action"`
+			} `json:"config"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(raw, &stageData)
+	action := stageData.Data.Config.Action
+	fmt.Println("action =", action)
+
 	cusCase.NextStage = nextStage
+	if contains(st, action) {
+		cusCase.NextStage = nil
+	}
+
 	// cusCase.DispatchStage = dispatchNode
 	log.Println(dispatchNode)
 	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
@@ -793,7 +819,7 @@ func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, 
 
 	// If statusId is in the skip list, return empty slice
 	if contains(st, statusId) {
-		return unitLists, nil
+		//return unitLists, nil
 	}
 
 	query := `
@@ -817,4 +843,60 @@ func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, 
 	}
 
 	return unitLists, nil
+}
+
+func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string) (map[string]interface{}, error) {
+	// Query both form metadata and answers
+	query := `
+		SELECT 
+			fb."formName",
+			fb."formColSpan",
+			fb."versions" as formVersion,
+			fa."eleData"
+		FROM form_builder fb
+		LEFT JOIN form_answers fa
+			ON fb."orgId" = fa."orgId"::uuid
+			AND fb."formId" = fa."formId"::uuid
+			AND fa."caseId" = $1
+		WHERE fb."orgId" = $2
+			AND fb."formId" = $3
+		ORDER BY fa."eleNumber" ASC NULLS LAST
+	`
+
+	rows, err := conn.Query(ctx, query, caseId, orgId, formId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var formName string
+	var formColSpan int
+	var formVersion string
+	var formFieldJson []map[string]interface{}
+
+	for rows.Next() {
+		var eleDataBytes []byte
+		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes); err != nil {
+			return nil, err
+		}
+
+		if len(eleDataBytes) > 0 {
+			var field map[string]interface{}
+			if err := json.Unmarshal(eleDataBytes, &field); err != nil {
+				return nil, err
+			}
+			formFieldJson = append(formFieldJson, field)
+		}
+	}
+
+	response := map[string]interface{}{
+		"versions":      formVersion,
+		"wfId":          "", // optionally fill from your workflow
+		"formId":        formId,
+		"formName":      formName,
+		"formColSpan":   formColSpan,
+		"formFieldJson": formFieldJson,
+	}
+
+	return response, nil
 }
