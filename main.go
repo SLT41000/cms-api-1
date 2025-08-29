@@ -20,6 +20,7 @@ import (
 	"mainPackage/config"
 	_ "mainPackage/docs"
 	"mainPackage/handler"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -72,10 +73,6 @@ func main() {
 		auth.POST("/add", handler.UserAddAuth)
 		auth.POST("/refresh", handler.RefreshToken)
 	}
-
-	// Routes ที่ไม่ต้องใช้ authentication
-	router.POST("/api/v1/users/reset_password", handler.ResetUserPassword)
-
 	v1 := router.Group("/api/v1")
 	{
 		v1.Use(handler.ProtectedHandler)
@@ -179,6 +176,7 @@ func main() {
 		v1.POST("/users/add", handler.UserAdd)
 		v1.PATCH("/users/:id", handler.UserUpdate)
 		v1.DELETE("/users/:id", handler.UserDelete)
+
 		v1.PATCH("/users/change_password/:id", handler.ChangeUserPassword)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
 		v1.PATCH("/users/username/:username", handler.UserUpdateByUsername)
@@ -263,6 +261,11 @@ func main() {
 		minimal.POST("/case/create", handler.MinimalCreateCase)
 	}
 
+	nonAuth := router.Group("/api/minimal")
+	{
+		nonAuth.POST("/api/v1/users/reset_password", handler.ResetUserPassword)
+	}
+
 	notifications := router.Group("/api/v1/notifications")
 	{
 
@@ -274,10 +277,13 @@ func main() {
 		notifications.DELETE("/:id", handler.DeleteNotification)
 	}
 	logger := config.GetLog()
+	SERV_ADDR := os.Getenv("SERV_ADDR")
+	SERV_PORT := os.Getenv("SERV_PORT")
+	URL := "http://" + SERV_ADDR + ":" + SERV_PORT
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	logger.Info("Server started at: http://localhost:8080")
-	logger.Info("Swagger docs available at: http://localhost:8080/swagger/index.html")
-	if err := router.Run(":8080"); err != nil {
+	logger.Info("Server started at:" + URL)
+	logger.Info("Swagger docs available at: " + URL)
+	if err := router.Run(SERV_ADDR + ":" + SERV_PORT); err != nil {
 		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 
