@@ -107,7 +107,7 @@ func ListCase(c *gin.Context) {
 
 	// Dynamic query builder
 	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.tix_cases WHERE "orgId" = $1`
+	FROM public.tix_cases WHERE "orgId" = $1 ORDER BY priority ASC, "createdAt" DESC;`
 
 	params := []interface{}{orgId}
 	paramIndex := 2 // start at $2 because $1 is already used for orgId
@@ -476,13 +476,12 @@ func InsertCase(c *gin.Context) {
 
 	//Noti Custom
 	data := []model.Data{
-		{Key: "Create", Value: "2"},
+		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
 	}
-
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.ProvID},
 	}
-	genNotiCustom(c, orgId.(string), "System", username.(string), "", "Create", data, "เปิด Work order สำเร็จ : "+caseId, recipients, "", "User")
+	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "", "User")
 
 	c.JSON(http.StatusOK, model.ResponseCreateCase{
 		Status: "0",
