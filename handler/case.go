@@ -106,9 +106,9 @@ func ListCase(c *gin.Context) {
 	distId := c.Query("distId")
 
 	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy"
-	FROM public.tix_cases WHERE "orgId" = $1 `
-	fmt.Printf("baseQuery: %v\n", baseQuery)
+	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId" = $1`
+
 	params := []interface{}{orgId}
 	paramIndex := 2 // start at $2 because $1 is already used for orgId
 
