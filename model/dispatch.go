@@ -121,4 +121,5 @@ type CaseResponderCustom struct {
 	StatusTh  *string   `json:"statusTh" db:"statusTh"`
 	StatusEn  *string   `json:"statusEn" db:"statusEn"`
 	CreatedAt time.Time `json:"createdAt" db:"createdAt"`
+	Duration  int64     `json:"duration"` // duration in seconds
 }

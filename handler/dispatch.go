@@ -1004,7 +1004,9 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 		responders = append(responders, r)
 	}
 
-	return responders, nil
+	respondersNew := CalSLA(responders)
+	//log.Print(respondersNew)
+	return respondersNew, nil
 }
 
 func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.CaseStatus, error) {
@@ -1032,4 +1034,21 @@ func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.
 	}
 
 	return statuses, nil
+}
+
+func CalSLA(timelines []model.CaseResponderCustom) []model.CaseResponderCustom {
+	if len(timelines) == 0 {
+		return timelines
+	}
+
+	for i := range timelines {
+		if i == 0 {
+			timelines[i].Duration = 0
+		} else {
+			diff := timelines[i].CreatedAt.Sub(timelines[i-1].CreatedAt)
+			timelines[i].Duration = int64(diff.Seconds())
+		}
+	}
+
+	return timelines
 }
