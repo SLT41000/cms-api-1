@@ -113,11 +113,12 @@ type GetUnisProp struct {
 }
 
 type CaseResponderCustom struct {
-	OrgID     string  `json:"orgId" db:"orgId"`
-	CaseID    string  `json:"caseId" db:"caseId"`
-	UnitID    string  `json:"unitId" db:"unitId"`
-	UserOwner string  `json:"userOwner" db:"userOwner"`
-	StatusID  string  `json:"statusId" db:"statusId"`
-	StatusTh  *string `json:"statusTh" db:"statusTh"`
-	StatusEn  *string `json:"statusEn" db:"statusEn"`
+	OrgID     string    `json:"orgId" db:"orgId"`
+	CaseID    string    `json:"caseId" db:"caseId"`
+	UnitID    string    `json:"unitId" db:"unitId"`
+	UserOwner string    `json:"userOwner" db:"userOwner"`
+	StatusID  string    `json:"statusId" db:"statusId"`
+	StatusTh  *string   `json:"statusTh" db:"statusTh"`
+	StatusEn  *string   `json:"statusEn" db:"statusEn"`
+	CreatedAt time.Time `json:"createdAt" db:"createdAt"`
 }

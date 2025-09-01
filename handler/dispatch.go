@@ -976,7 +976,7 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 
 	// 2. Query responders
 	query := `
-        SELECT "orgId", "caseId", "unitId", "userOwner", "statusId" 
+        SELECT "orgId", "caseId", "unitId", "userOwner", "statusId" , "createdAt"
         FROM public.tix_case_responders
         WHERE "orgId" = $1 AND "caseId" = $2 AND "unitId" = $3 ORDER BY "createdAt" asc
     `
@@ -991,7 +991,7 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 
 	for rows.Next() {
 		var r model.CaseResponderCustom
-		if err := rows.Scan(&r.OrgID, &r.CaseID, &r.UnitID, &r.UserOwner, &r.StatusID); err != nil {
+		if err := rows.Scan(&r.OrgID, &r.CaseID, &r.UnitID, &r.UserOwner, &r.StatusID, &r.CreatedAt); err != nil {
 			return nil, err
 		}
 
