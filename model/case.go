@@ -56,6 +56,7 @@ type Case struct {
 	ReferCaseLists  []string    `json:"referCaseLists"`
 	UnitLists       interface{} `json:"unitLists"`
 	FormAnswer      interface{} `json:"formAnswer"`
+	SlaTimelines    interface{} `json:"slaTimelines"`
 }
 
 type CaseInsert struct {

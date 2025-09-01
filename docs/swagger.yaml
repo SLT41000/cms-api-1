@@ -990,10 +990,16 @@ definitions:
     type: object
   model.ResetPasswordRequest:
     properties:
+      email:
+        type: string
       newPassword:
         type: string
+      username:
+        type: string
     required:
+    - email
     - newPassword
+    - username
     type: object
   model.Response:
     properties:
@@ -2998,6 +3004,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get SOP - UnitId
+      tags:
+      - Dispatch
+  /api/v1/dispatch/{caseId}/close:
+    post:
+      consumes:
+      - application/json
+      operationId: close case
+      parameters:
+      - description: Update unit event
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Dispatch unit follow SOP
       tags:
       - Dispatch
   /api/v1/dispatch/{caseId}/units:
@@ -5086,18 +5116,13 @@ paths:
       summary: Change User Password
       tags:
       - User
-  /api/v1/users/reset_password/{id}:
-    patch:
+  /api/v1/users/reset_password:
+    post:
       consumes:
       - application/json
       operationId: Reset User Password
       parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Reset Password Data
+      - description: Reset Password Data (username, email, newPassword)
         in: body
         name: Body
         required: true
@@ -5110,8 +5135,6 @@ paths:
           description: OK - Request successful
           schema:
             $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
       summary: Reset User Password
       tags:
       - User

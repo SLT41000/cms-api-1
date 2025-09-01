@@ -2566,6 +2566,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dispatch/{caseId}/close": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Dispatch unit follow SOP",
+                "operationId": "close case",
+                "parameters": [
+                    {
+                        "description": "Update unit event",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateStageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dispatch/{caseId}/units": {
             "get": {
                 "security": [
@@ -5721,13 +5760,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/reset_password/{id}": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
+        "/api/v1/users/reset_password": {
+            "post": {
                 "consumes": [
                     "application/json"
                 ],
@@ -5741,14 +5775,7 @@ const docTemplate = `{
                 "operationId": "Reset User Password",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Reset Password Data",
+                        "description": "Reset Password Data (username, email, newPassword)",
                         "name": "Body",
                         "in": "body",
                         "required": true,
@@ -8291,10 +8318,18 @@ const docTemplate = `{
         "model.ResetPasswordRequest": {
             "type": "object",
             "required": [
-                "newPassword"
+                "email",
+                "newPassword",
+                "username"
             ],
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "newPassword": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

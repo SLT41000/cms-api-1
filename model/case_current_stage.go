@@ -5,9 +5,10 @@ import (
 )
 
 type CustomCaseCurrentStage struct {
-	CaseID string  `json:"caseId" db:"caseId"`
-	WfID   *string `json:"wfId" db:"wfId"`
-	NodeID string  `json:"nodeId" db:"nodeId"`
+	CaseID   string  `json:"caseId" db:"caseId"`
+	WfID     *string `json:"wfId" db:"wfId"`
+	NodeID   string  `json:"nodeId" db:"nodeId"`
+	StatusID string  `json:"statusId" db:"statusId"`
 }
 
 type CaseCurrentStage struct {

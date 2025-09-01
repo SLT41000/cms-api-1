@@ -139,12 +139,20 @@ func GetSOP(c *gin.Context) {
 	log.Print(unitLists)
 	cusCase.UnitLists = unitLists
 
+	//Get Cuurent dynamic form
 	formId := currentNode.FormId // จาก JSON
 	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, *formId)
 	if err != nil {
 		log.Fatal("query error:", err)
 	}
 	cusCase.FormAnswer = answers
+
+	//Get SLA
+	slaTimelines, err := GetSLA(c, conn, orgId.(string), caseId, "case")
+	if err != nil {
+		log.Fatal("query error:", err)
+	}
+	cusCase.SlaTimelines = slaTimelines
 
 	// Final JSON
 	response := model.Response{
@@ -773,6 +781,13 @@ func GetUnitSOP(c *gin.Context) {
 		cusCase.NextStage = nil
 	}
 
+	//Get SLA
+	slaTimelines, err := GetSLA(c, conn, orgId.(string), caseId, unitId)
+	if err != nil {
+		log.Fatal("query error:", err)
+	}
+	cusCase.SlaTimelines = slaTimelines
+
 	// cusCase.DispatchStage = dispatchNode
 	log.Println(dispatchNode)
 	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
@@ -899,4 +914,122 @@ func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId s
 	}
 
 	return response, nil
+}
+
+// @summary Dispatch unit follow SOP
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id close case
+// @accept json
+// @produce json
+// @param Body body model.UpdateStageRequest true "Update unit event"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/{caseId}/close [post]
+func CloseCase(c *gin.Context) {
+	logger := config.GetLog()
+
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.UpdateStageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+	log.Print(req)
+
+	// username := GetVariableFromToken(c, "username")
+	// orgId := GetVariableFromToken(c, "orgId")
+
+	results, err := UpdateCurrentStageCore(c, conn, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {
+	// 1. Get master status list
+	statuses, err := GetCaseStatusList(ctx, conn, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build lookup map for quick access
+	statusMap := make(map[string]model.CaseStatus)
+	for _, s := range statuses {
+		if s.StatusID != nil {
+			statusMap[*s.StatusID] = s
+		}
+	}
+
+	// 2. Query responders
+	query := `
+        SELECT "orgId", "caseId", "unitId", "userOwner", "statusId" 
+        FROM public.tix_case_responders
+        WHERE "orgId" = $1 AND "caseId" = $2 AND "unitId" = $3 ORDER BY "createdAt" asc
+    `
+
+	rows, err := conn.Query(ctx, query, orgID, caseID, unitId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var responders []model.CaseResponderCustom
+
+	for rows.Next() {
+		var r model.CaseResponderCustom
+		if err := rows.Scan(&r.OrgID, &r.CaseID, &r.UnitID, &r.UserOwner, &r.StatusID); err != nil {
+			return nil, err
+		}
+
+		// 3. Enrich with status.th & status.en
+		if status, ok := statusMap[r.StatusID]; ok {
+			r.StatusTh = status.Th
+			r.StatusEn = status.En
+		}
+
+		responders = append(responders, r)
+	}
+
+	return responders, nil
+}
+
+func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.CaseStatus, error) {
+	query := `
+		SELECT  "statusId", th, en, color, active 
+		FROM public.case_status 
+	`
+	log.Print("===GetCaseStatusList=")
+	log.Print(query)
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var statuses []model.CaseStatus
+	for rows.Next() {
+		var s model.CaseStatus
+		if err := rows.Scan(
+			&s.StatusID, &s.Th, &s.En, &s.Color, &s.Active,
+		); err != nil {
+			return nil, err
+		}
+		statuses = append(statuses, s)
+	}
+
+	return statuses, nil
 }

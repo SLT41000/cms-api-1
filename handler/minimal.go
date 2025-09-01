@@ -94,9 +94,10 @@ func MinimalCreateCase(c *gin.Context) {
 	fmt.Printf("=======xxxx========")
 	if req.NodeID != "" {
 		var data = model.CustomCaseCurrentStage{
-			CaseID: caseId,
-			WfID:   &req.WfID,
-			NodeID: req.NodeID,
+			CaseID:   caseId,
+			WfID:     &req.WfID,
+			NodeID:   req.NodeID,
+			StatusID: req.StatusID,
 		}
 		fmt.Printf("=======yyy========")
 		err = MinCaseCurrentStageInsert(username, orgId, conn, ctx, c, data)
@@ -141,7 +142,16 @@ func MinCaseCurrentStageInsert(username string, orgId string, conn *pgx.Conn, ct
 
 	now := time.Now()
 
-	// Step 1: Load workflow node from DB
+	// 1. Insert responder
+	_, err := conn.Exec(ctx, `
+        INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+        VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+    `, orgId, req.CaseID, "case", username, req.StatusID, username)
+	if err != nil {
+		return err
+	}
+
+	// Step 2: Load workflow node from DB
 	query := `
 	SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data,
 	       t1.pic, t1."group", t1."formId", t1."createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy"
@@ -157,7 +167,7 @@ func MinCaseCurrentStageInsert(username string, orgId string, conn *pgx.Conn, ct
 	)
 
 	var workflow model.WfNode
-	err := conn.QueryRow(ctx, query, req.WfID, req.NodeID, orgId).Scan(
+	err = conn.QueryRow(ctx, query, req.WfID, req.NodeID, orgId).Scan(
 		&workflow.ID, &workflow.OrgID, &workflow.WfID, &workflow.NodeID,
 		&workflow.Versions, &workflow.Type, &workflow.Section,
 		&workflow.Data, &workflow.Pic, &workflow.Group, &workflow.FormID,
@@ -176,7 +186,7 @@ func MinCaseCurrentStageInsert(username string, orgId string, conn *pgx.Conn, ct
 		return err
 	}
 
-	// Step 2: Insert into tix_case_current_stage
+	// Step 3: Insert into tix_case_current_stage
 	insertQuery := `
 	INSERT INTO public.tix_case_current_stage(
 		"orgId", "caseId", "wfId", "nodeId", "stageType", "unitId", "username", versions, type, section, data, pic, "group", "formId",

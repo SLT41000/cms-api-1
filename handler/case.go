@@ -114,7 +114,7 @@ func ListCase(c *gin.Context) {
        usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  
        "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy"
 	FROM public.tix_cases WHERE "orgId" = $1 `
- 
+
 	params := []interface{}{orgId}
 	paramIndex := 2 // start at $2 because $1 is already used for orgId
 
@@ -177,7 +177,7 @@ func ListCase(c *gin.Context) {
 	// Add pagination
 	baseQuery += fmt.Sprintf(" ORDER BY priority ASC, \"createdAt\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
 	params = append(params, length, start)
- 
+
 	rows, err := conn.Query(ctx, baseQuery, params...)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -444,11 +444,13 @@ func InsertCase(c *gin.Context) {
 	}
 
 	fmt.Printf("=======CurrentStage========")
+	fmt.Printf("%s", req.NodeID)
 	if req.NodeID != "" {
 		var data = model.CustomCaseCurrentStage{
-			CaseID: caseId,
-			WfID:   req.WfID,
-			NodeID: req.NodeID,
+			CaseID:   caseId,
+			WfID:     req.WfID,
+			NodeID:   req.NodeID,
+			StatusID: req.StatusID,
 		}
 		fmt.Printf("=======yyy========")
 		err = CaseCurrentStageInsert(conn, ctx, c, data)
