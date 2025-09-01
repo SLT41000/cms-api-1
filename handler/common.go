@@ -481,6 +481,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		} else {
 			log.Println("Case status updated successfully")
 		}
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
@@ -504,6 +505,8 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			log.Println("Case status updated successfully")
 		}
 
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+
 		return Result, err
 
 	} else if unitCount > 0 && unitCount < caseCount { //--Second Unit follow SOP
@@ -515,6 +518,8 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			return Result, err
 		}
 
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+
 		return Result, err
 
 	} else if unitCount == 0 { //--Second Unit - First dispatch
@@ -525,6 +530,8 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return Result, err
 		}
+
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
 
 		return Result, err
 	}
@@ -842,26 +849,7 @@ func UpdateCaseCurrentStage(
 		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-" + stageType, Desc: err.Error()}, err
 	}
 
-	GenerateNotiAndComment(ctx, conn, req, node.OrgID)
-	// statuses, err := GetCaseStatusList(ctx, conn, node.OrgID)
-	// if err != nil {
-	// 	return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-1" + stageType, Desc: err.Error()}, err
-	// }
-	// statusMap := make(map[string]model.CaseStatus)
-	// for _, s := range statuses {
-	// 	statusMap[*s.StatusID] = s
-	// }
-	// statusName := statusMap[req.Status]
-
-	// log.Print("====statusName===")
-	// log.Print(statusName)
-	// data := []model.Data{
-	// 	{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
-	// }
-	// recipients := []model.Recipient{
-	// 	{Type: "provId", Value: req.ProvID},
-	// }
-	// genNotiCustom(ctx, node.OrgID, username, username, "/case/"+req.CaseId, req.Status, data, "สร้าง Case สำเร็จ : "+req.CaseId, recipients, "", "User")
+	//GenerateNotiAndComment(ctx, conn, req, node.OrgID)
 
 	return model.Response{Status: "0", Msg: "Success", Desc: "UpdateCaseCurrentStage-" + stageType}, nil
 }
@@ -1078,7 +1066,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	st2 := []string{"S004", "S005", "S006", "S017"}
 	if contains(st2, req.Status) {
 		msg = req.UnitUser + " :: " + *statusName.Th + " :: " + req.CaseId
-		username = req.UnitUser
+		//username = req.UnitUser
 	}
 	st3 := []string{"S008", "S009", "S010", "S011", "S012", "S016"}
 	if contains(st3, req.Status) {
