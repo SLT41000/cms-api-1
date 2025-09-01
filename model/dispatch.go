@@ -123,3 +123,13 @@ type CaseResponderCustom struct {
 	CreatedAt time.Time `json:"createdAt" db:"createdAt"`
 	Duration  int64     `json:"duration"` // duration in seconds
 }
+
+type CaseHistoryEvent struct {
+	OrgID     string      `json:"orgId"`
+	CaseID    string      `json:"caseId"`
+	Username  string      `json:"username"`
+	Type      string      `json:"type"`     // 'comment' หรือ 'event'
+	FullMsg   string      `json:"fullMsg"`  // optional
+	JsonData  interface{} `json:"jsonData"` // optional, will be marshaled to TEXT
+	CreatedBy string      `json:"createdBy"`
+}

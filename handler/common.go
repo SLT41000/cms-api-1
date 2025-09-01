@@ -771,7 +771,7 @@ func InsertUnitCurrentStage(
 }
 
 func UpdateCaseCurrentStage(
-	ctx context.Context,
+	ctx *gin.Context,
 	conn *pgx.Conn,
 	req model.UpdateStageRequest,
 	nextStage model.WorkflowNode,
@@ -841,6 +841,27 @@ func UpdateCaseCurrentStage(
 	if err != nil {
 		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-" + stageType, Desc: err.Error()}, err
 	}
+
+	GenerateNotiAndComment(ctx, conn, req, node.OrgID)
+	// statuses, err := GetCaseStatusList(ctx, conn, node.OrgID)
+	// if err != nil {
+	// 	return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-1" + stageType, Desc: err.Error()}, err
+	// }
+	// statusMap := make(map[string]model.CaseStatus)
+	// for _, s := range statuses {
+	// 	statusMap[*s.StatusID] = s
+	// }
+	// statusName := statusMap[req.Status]
+
+	// log.Print("====statusName===")
+	// log.Print(statusName)
+	// data := []model.Data{
+	// 	{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
+	// }
+	// recipients := []model.Recipient{
+	// 	{Type: "provId", Value: req.ProvID},
+	// }
+	// genNotiCustom(ctx, node.OrgID, username, username, "/case/"+req.CaseId, req.Status, data, "สร้าง Case สำเร็จ : "+req.CaseId, recipients, "", "User")
 
 	return model.Response{Status: "0", Msg: "Success", Desc: "UpdateCaseCurrentStage-" + stageType}, nil
 }
@@ -1016,4 +1037,121 @@ func ConvertProps(props []model.GetUnisProp, data []string) []model.GetUnisProp 
 		}
 	}
 	return result
+}
+
+func GenerateNotiAndComment(ctx *gin.Context,
+	conn *pgx.Conn,
+	req model.UpdateStageRequest,
+	orgId string) error {
+	statuses, err := GetCaseStatusList(ctx, conn, orgId)
+	if err != nil {
+		return err
+	}
+	statusMap := make(map[string]model.CaseStatus)
+	for _, s := range statuses {
+		statusMap[*s.StatusID] = s
+	}
+	statusName := statusMap[req.Status]
+
+	log.Print("====statusName===")
+	log.Print(statusName)
+	provID, err := GetProvIDFromCase(ctx, conn, req.CaseId)
+	if err != nil {
+		log.Printf("error getting provId: %v", err)
+	} else {
+		log.Printf("provId = %s", provID)
+	}
+
+	data := []model.Data{
+		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
+	}
+	recipients := []model.Recipient{
+		{Type: "provId", Value: provID},
+	}
+
+	username := GetVariableFromToken(ctx, "username")
+	msg := *statusName.Th + " :: " + req.CaseId
+	st := []string{"S001", "S002", "S003", "S007", "S013", "S014", "S018", "S019"}
+	if contains(st, req.Status) {
+		msg = username.(string) + " :: " + *statusName.Th + " :: " + req.CaseId
+	}
+	st2 := []string{"S004", "S005", "S006", "S017"}
+	if contains(st2, req.Status) {
+		msg = req.UnitUser + " :: " + *statusName.Th + " :: " + req.CaseId
+		username = req.UnitUser
+	}
+	st3 := []string{"S008", "S009", "S010", "S011", "S012", "S016"}
+	if contains(st3, req.Status) {
+		msg = *statusName.Th + " :: " + req.CaseId
+	}
+
+	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg, recipients, "", "User")
+
+	evt := model.CaseHistoryEvent{
+		OrgID:     orgId,
+		CaseID:    req.CaseId,
+		Username:  username.(string),
+		Type:      "event",
+		FullMsg:   msg,
+		JsonData:  "",
+		CreatedBy: username.(string),
+	}
+
+	err = InsertCaseHistoryEvent(ctx, conn, evt)
+	if err != nil {
+		log.Fatalf("Insert failed: %v", err)
+	}
+
+	return nil
+}
+
+func GetProvIDFromCase(ctx context.Context, conn *pgx.Conn, caseID string) (string, error) {
+	var provID string
+
+	query := `
+        SELECT "provId"
+        FROM public.tix_cases
+        WHERE "caseId" = $1
+        LIMIT 1
+    `
+	err := conn.QueryRow(ctx, query, caseID).Scan(&provID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return "", fmt.Errorf("no provId found for caseId: %s", caseID)
+		}
+		return "", err
+	}
+
+	return provID, nil
+}
+
+func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseHistoryEvent) error {
+	// แปลง JsonData เป็น JSON string
+	var jsonDataStr *string
+	if evt.JsonData != nil {
+		b, err := json.Marshal(evt.JsonData)
+		if err != nil {
+			return err
+		}
+		s := string(b)
+		jsonDataStr = &s
+	}
+
+	query := `
+        INSERT INTO tix_case_history_events (
+            "orgId", "caseId", username, type, "fullMsg", "jsonData", "createdBy"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `
+
+	_, err := conn.Exec(ctx, query,
+		evt.OrgID,
+		evt.CaseID,
+		evt.Username,
+		evt.Type,
+		evt.FullMsg,
+		jsonDataStr,
+		evt.CreatedBy,
+	)
+
+	return err
 }
