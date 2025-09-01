@@ -570,7 +570,7 @@ func GetAllNodes(
 	var allNodes []model.WorkflowNode
 	var nodeConn []model.WorkFlowConnection
 	allNodesId := make(map[string]model.WorkflowNode)
-
+	nodeStart := ""
 	for rows.Next() {
 		var node model.WorkflowNode
 		if err := rows.Scan(&node.NodeId, &node.Type, &node.Section, &node.Data); err != nil {
@@ -583,6 +583,9 @@ func GetAllNodes(
 		allNodesId[node.NodeId] = node
 		if node.Type == "dispatch" {
 			dispatchNode = node
+		}
+		if node.Type == "start" {
+			nodeStart = node.NodeId
 		}
 		// ถ้า section เป็น connections → parse data เป็น []WorkFlowConnection
 		if node.Section == "connections" {
@@ -602,7 +605,7 @@ func GetAllNodes(
 		}
 	}
 
-	order, err := OrderConnection(nodeConn)
+	order, err := OrderConnection(nodeConn, nodeStart)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -854,11 +857,11 @@ func UpdateCaseCurrentStage(
 	return model.Response{Status: "0", Msg: "Success", Desc: "UpdateCaseCurrentStage-" + stageType}, nil
 }
 
-func OrderConnection(connections []model.WorkFlowConnection) ([]model.WorkFlowConnection, error) {
+func OrderConnection(connections []model.WorkFlowConnection, nodeStart string) ([]model.WorkFlowConnection, error) {
 	// Build graph with adjacency list of connections
 	graph := buildGraph(connections)
 
-	startNode := "node-1755508922505"
+	startNode := nodeStart
 	visited := make(map[string]bool)
 	var orderedConns []model.WorkFlowConnection
 
