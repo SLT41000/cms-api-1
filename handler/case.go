@@ -72,6 +72,7 @@ func genCaseID() string {
 // @Param provId query string false "provId"
 // @Param distId query string false "distId"
 // @Param category query string false "category"
+// @Param createBy query string false "createBy"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
 func ListCase(c *gin.Context) {
@@ -104,6 +105,7 @@ func ListCase(c *gin.Context) {
 	countryId := c.Query("countryId")
 	provId := c.Query("provId")
 	distId := c.Query("distId")
+	createBy := c.Query("createBy")
 
 	// Dynamic query builder
 	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", 
@@ -171,6 +173,12 @@ func ListCase(c *gin.Context) {
 	if distId != "" {
 		baseQuery += fmt.Sprintf(" AND \"distId\" = $%d", paramIndex)
 		params = append(params, distId)
+		paramIndex++
+	}
+
+	if createBy != "" {
+		baseQuery += fmt.Sprintf(" AND \"createdBy\" = $%d", paramIndex)
+		params = append(params, createBy)
 		paramIndex++
 	}
 

@@ -419,6 +419,12 @@ const docTemplate = `{
                         "description": "category",
                         "name": "category",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "createBy",
+                        "name": "createBy",
+                        "in": "query"
                     }
                 ],
                 "responses": {
