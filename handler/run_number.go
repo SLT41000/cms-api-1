@@ -61,7 +61,7 @@ func GenerateCaseIDHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, model.Response{
 			Status: "-1",
 			Msg:    "Unauthorized",
-			Desc:   "Invalid API key: " + apiKey + "===" + os.Getenv("API_KEY"),
+			Desc:   "Invalid API key",
 		})
 		return
 	}
