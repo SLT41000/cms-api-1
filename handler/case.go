@@ -496,7 +496,7 @@ func InsertCase(c *gin.Context) {
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.ProvID},
 	}
-	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "", "User")
+	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "/case/"+caseId, "User")
 
 	c.JSON(http.StatusOK, model.ResponseCreateCase{
 		Status: "0",
