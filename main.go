@@ -261,9 +261,10 @@ func main() {
 		minimal.POST("/case/create", handler.MinimalCreateCase)
 	}
 
-	nonAuth := router.Group("/api/minimal")
+	nonAuth := router.Group("/api/v1")
 	{
-		nonAuth.POST("/api/v1/users/reset_password", handler.ResetUserPassword)
+		nonAuth.POST("/users/reset_password", handler.ResetUserPassword)
+		nonAuth.GET("/generate_caseid", handler.GenerateCaseIDHandler)
 	}
 
 	notifications := router.Group("/api/v1/notifications")
