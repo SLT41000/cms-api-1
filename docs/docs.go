@@ -2990,6 +2990,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/generate_caseid": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Generate Case ID",
+                "operationId": "Generate Case ID",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdm/companies": {
             "get": {
                 "security": [
@@ -6814,6 +6837,34 @@ const docTemplate = `{
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AS Health"
+                ],
+                "summary": "AS Health",
+                "operationId": "Health",
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",

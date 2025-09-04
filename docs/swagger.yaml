@@ -3293,6 +3293,21 @@ paths:
       summary: Update Form Publish
       tags:
       - Form and Workflow
+  /api/v1/generate_caseid:
+    get:
+      consumes:
+      - application/json
+      operationId: Generate Case ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      summary: Generate Case ID
+      tags:
+      - Public
   /api/v1/mdm/companies:
     get:
       consumes:
@@ -5712,6 +5727,23 @@ paths:
       summary: Update Workflow
       tags:
       - Form and Workflow
+  /health:
+    get:
+      consumes:
+      - application/json
+      operationId: Health
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: AS Health
+      tags:
+      - AS Health
 schemes:
 - http
 - https
