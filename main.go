@@ -17,6 +17,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"mainPackage/config"
 	_ "mainPackage/docs"
 	"mainPackage/handler"
