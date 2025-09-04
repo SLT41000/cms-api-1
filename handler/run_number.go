@@ -55,7 +55,8 @@ func GenerateCaseIDHandler(c *gin.Context) {
 
 	// ✅ ตรวจสอบ API Key
 	apiKey := c.GetHeader("X-API-KEY")
-	if apiKey != os.Getenv("API_KEY") { // ตรงนี้คุณเปลี่ยน "xxx" เป็นค่าที่คุณเก็บใน config ได้
+	apiKeyConf := os.Getenv("API_KEY")
+	if apiKey != apiKeyConf && apiKeyConf != "" { // ตรงนี้คุณเปลี่ยน "xxx" เป็นค่าที่คุณเก็บใน config ได้
 		logger.Warn("X-API-KEY Error : " + apiKey)
 		c.JSON(http.StatusUnauthorized, model.Response{
 			Status: "-1",
