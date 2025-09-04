@@ -16,9 +16,7 @@
 // @name Authorization
 package main
 
-import (
-	"fmt"
-	"log"
+import ( 
 	"mainPackage/config"
 	_ "mainPackage/docs"
 	"mainPackage/handler"
