@@ -5731,23 +5731,6 @@ paths:
       summary: Update Workflow
       tags:
       - Form and Workflow
-  /health:
-    get:
-      consumes:
-      - application/json
-      operationId: Health
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: AS Health
-      tags:
-      - AS Health
 schemes:
 - http
 - https

@@ -6852,34 +6852,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/health": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AS Health"
-                ],
-                "summary": "AS Health",
-                "operationId": "Health",
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
