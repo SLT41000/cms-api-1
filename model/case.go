@@ -103,6 +103,7 @@ type CaseInsert struct {
 }
 
 type CaseUpdate struct {
+	CaseId          *string    `json:"caseId" `
 	CaseVersion     string     `json:"caseVersion"`
 	ReferCaseID     *string    `json:"referCaseId"`
 	CaseTypeID      string     `json:"caseTypeId"`

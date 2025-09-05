@@ -496,7 +496,7 @@ func InsertCase(c *gin.Context) {
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.ProvID},
 	}
-	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "/case/"+caseId, "User")
+	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "", "User")
 
 	c.JSON(http.StatusOK, model.ResponseCreateCase{
 		Status: "0",
@@ -577,6 +577,21 @@ func UpdateCase(c *gin.Context) {
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
+
+	//Noti Custom
+	data := []model.Data{
+		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
+	}
+	recipients := []model.Recipient{
+		{Type: "provId", Value: req.ProvID},
+	}
+	var caseId string
+	if req.CaseId == nil {
+		caseId = ""
+	} else {
+		caseId = *req.CaseId
+	}
+	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "", "User")
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
