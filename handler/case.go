@@ -668,7 +668,7 @@ func ListCaseTypeWithSubtype(c *gin.Context) {
 	FROM public.case_types t1
 	FULL JOIN public.case_sub_types t2
 	ON t1."typeId" = t2."typeId"
-	WHERE t1."orgId"=$1`
+	WHERE t1."orgId"=$1 ORDER BY t2."sTypeCode"::INTEGER`
 	logger.Debug(`Query`, zap.String("query", query))
 
 	rows, err := conn.Query(ctx, query, orgId)
