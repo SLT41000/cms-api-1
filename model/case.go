@@ -57,6 +57,7 @@ type Case struct {
 	UnitLists       interface{} `json:"unitLists"`
 	FormAnswer      interface{} `json:"formAnswer"`
 	SlaTimelines    interface{} `json:"slaTimelines"`
+	CaseSLA         *int        `json:"caseSla" `
 }
 
 type CaseInsert struct {

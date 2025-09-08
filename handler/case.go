@@ -114,7 +114,7 @@ func ListCase(c *gin.Context) {
        "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", 
        "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, 
        usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  
-       "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy"
+       "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy", "caseSla"
 	FROM public.tix_cases WHERE "orgId" = $1 `
 
 	params := []interface{}{orgId}
@@ -245,6 +245,7 @@ func ListCase(c *gin.Context) {
 			&cusCase.UpdatedAt, // "updatedAt"
 			&cusCase.CreatedBy, // "createdBy"
 			&cusCase.UpdatedBy, // "updatedBy"
+			&cusCase.CaseSLA,
 		)
 
 		if err != nil {
