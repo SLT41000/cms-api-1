@@ -44,7 +44,7 @@ func GetSOP(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	caseId := c.Param("caseId")
 
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla", "deviceMetaData"
 	FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
 	logger.Debug(`Query`, zap.String("query", query))
 	var cusCase model.Case
@@ -91,6 +91,8 @@ func GetSOP(c *gin.Context) {
 		&cusCase.UpdatedAt,
 		&cusCase.CreatedBy,
 		&cusCase.UpdatedBy,
+		&cusCase.CaseSLA,
+		&cusCase.DeviceMetaData,
 	)
 
 	if err != nil {
@@ -947,10 +949,10 @@ func CloseCase(c *gin.Context) {
 	}
 	log.Print(req)
 
-	// username := GetVariableFromToken(c, "username")
+	username := GetVariableFromToken(c, "username")
 	// orgId := GetVariableFromToken(c, "orgId")
 
-	results, err := UpdateCurrentStageCore(c, conn, req)
+	results, err := DispatchUpdateCaseStatus(c, conn, req, username.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

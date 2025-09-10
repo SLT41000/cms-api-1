@@ -419,12 +419,6 @@ const docTemplate = `{
                         "description": "category",
                         "name": "category",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "createBy",
-                        "name": "createBy",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6843,6 +6837,34 @@ const docTemplate = `{
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AS Health"
+                ],
+                "summary": "AS Health",
+                "operationId": "Health",
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
