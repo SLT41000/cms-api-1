@@ -491,13 +491,30 @@ func InsertCase(c *gin.Context) {
 	}
 
 	//Noti Custom
+	msg := "สร้าง Case สำเร็จ"
 	data := []model.Data{
 		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
 	}
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.ProvID},
 	}
-	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, "สร้าง Case สำเร็จ : "+caseId, recipients, "/case/"+caseId, "User")
+	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, msg+" : "+caseId, recipients, "/case/"+caseId, "User")
+
+	//Add Comment
+	evt := model.CaseHistoryEvent{
+		OrgID:     orgId.(string),
+		CaseID:    caseId,
+		Username:  username.(string),
+		Type:      "event",
+		FullMsg:   username.(string) + " :: " + msg + " :: " + caseId,
+		JsonData:  "",
+		CreatedBy: username.(string),
+	}
+
+	err = InsertCaseHistoryEvent(ctx, conn, evt)
+	if err != nil {
+		log.Fatalf("Insert failed: %v", err)
+	}
 
 	c.JSON(http.StatusOK, model.ResponseCreateCase{
 		Status: "0",
@@ -668,7 +685,7 @@ func ListCaseTypeWithSubtype(c *gin.Context) {
 	FROM public.case_types t1
 	FULL JOIN public.case_sub_types t2
 	ON t1."typeId" = t2."typeId"
-	WHERE t1."orgId"=$1 ORDER BY t2."sTypeCode"::INTEGER`
+	WHERE t1."orgId"=$1`
 	logger.Debug(`Query`, zap.String("query", query))
 
 	rows, err := conn.Query(ctx, query, orgId)

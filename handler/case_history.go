@@ -127,7 +127,7 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 	caseId := c.Param("caseId")
 	orgId := GetVariableFromToken(c, "orgId")
 
-	query := `SELECT id, "orgId", "caseId", username, type, "fullMsg", "jsonData", "createdAt", "createdBy"
+	query := `SELECT id, type, "fullMsg","createdAt", "createdBy"
 	FROM public.tix_case_history_events WHERE "orgId"=$1 AND "caseId"=$2`
 
 	logger.Debug("Query", zap.String("query", query))
@@ -150,12 +150,8 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 	for rows.Next() {
 		err := rows.Scan(
 			&CaseHistory.ID,
-			&CaseHistory.OrgID,
-			&CaseHistory.CaseID,
-			&CaseHistory.Username,
 			&CaseHistory.Type,
 			&CaseHistory.FullMsg,
-			&CaseHistory.JSONData,
 			&CaseHistory.CreatedAt,
 			&CaseHistory.CreatedBy,
 		)
