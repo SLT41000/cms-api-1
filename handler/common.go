@@ -355,14 +355,14 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	username := GetVariableFromToken(ctx, "username")
 	orgId := GetVariableFromToken(ctx, "orgId")
 
-	// 1. Insert responder
-	_, err := conn.Exec(ctx, `
-        INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-        VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-    `, orgId, req.CaseId, req.UnitId, req.UnitUser, req.Status, username)
-	if err != nil {
-		return result, err
-	}
+	// // 1. Insert responder
+	// _, err := conn.Exec(ctx, `
+	//     INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+	//     VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+	// `, orgId, req.CaseId, req.UnitId, req.UnitUser, req.Status, username)
+	// if err != nil {
+	// 	return result, err
+	// }
 
 	log.Print(username)
 	log.Print(orgId)
@@ -459,6 +459,25 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	fmt.Println("caseCount:", caseCount)
 	fmt.Println("unitCount:", unitCount)
 
+	//Check Stage
+	dataMaps := UnitNextNode.Data.(map[string]interface{})
+	data2 := dataMaps["data"].(map[string]interface{})
+	config := data2["config"].(map[string]interface{})
+	log.Print("======dataMaps==")
+	log.Print(config["action"])
+	if unitCount == 0 || (config["action"] == req.Status) {
+		// 1. Insert responder
+		_, err := conn.Exec(ctx, `
+		    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+		    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+		`, orgId, req.CaseId, req.UnitId, req.UnitUser, req.Status, username)
+		if err != nil {
+			return result, err
+		}
+	} else {
+		log.Println(" Status worng number :", err)
+		return model.Response{Status: "-1", Msg: "Failure.3", Desc: "Status worng number!"}, err
+	}
 	//return model.Response{}, err
 	// 🔹 Step 4:  Update data
 	if unitCount == 0 && CaseNextNode.Type == "dispatch" { //--First Unit for case

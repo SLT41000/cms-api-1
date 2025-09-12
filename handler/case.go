@@ -411,7 +411,14 @@ func InsertCase(c *gin.Context) {
 	now := time.Now()
 	var caseId string
 	if req.CaseId == nil || *req.CaseId == "" || *req.CaseId == "null" {
-		caseId = genCaseID()
+		//caseId = genCaseID()
+		caseId_, err := GenerateCaseID(ctx, conn, "D")
+		if err != nil {
+			caseId = genCaseID()
+		} else {
+			caseId = caseId_
+		}
+
 	} else {
 		caseId = *req.CaseId
 	}
@@ -491,7 +498,7 @@ func InsertCase(c *gin.Context) {
 	}
 
 	//Noti Custom
-	msg := "สร้าง Case สำเร็จ"
+	msg := "สร้าง Work Order สำเร็จ"
 	data := []model.Data{
 		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
 	}
