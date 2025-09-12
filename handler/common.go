@@ -1103,9 +1103,9 @@ func GenerateNotiAndComment(ctx *gin.Context,
 		// }
 	}
 
-	msg = msg + " :: " + req.CaseId
+	msg_alert := msg + " :: " + req.CaseId
 
-	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg, recipients, "", "User")
+	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg_alert, recipients, "", "User")
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
