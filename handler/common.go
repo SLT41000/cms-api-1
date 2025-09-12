@@ -1083,16 +1083,30 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	msg := *statusName.Th + " :: " + req.CaseId
 	st := []string{"S001", "S002", "S003", "S007", "S013", "S014", "S018", "S019"}
 	if contains(st, req.Status) {
-		msg = username.(string) + " :: " + *statusName.Th + " :: " + req.CaseId
+		if username != req.UnitUser {
+			msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
+		} else {
+			msg = *statusName.Th
+		}
 	}
 	st2 := []string{"S004", "S005", "S006", "S017"}
 	if contains(st2, req.Status) {
-		msg = req.UnitUser + " :: " + *statusName.Th + " :: " + req.CaseId
+		//msg = req.UnitUser + " :: " + *statusName.Th + " :: " + req.CaseId
 		//username = req.UnitUser
+		if username != req.UnitUser {
+			msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
+		} else {
+			msg = *statusName.Th
+		}
 	}
 	st3 := []string{"S008", "S009", "S010", "S011", "S012", "S016"}
 	if contains(st3, req.Status) {
-		msg = *statusName.Th + " :: " + req.CaseId
+		//msg = *statusName.Th + " :: " + req.CaseId
+		if username != req.UnitUser {
+			msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
+		} else {
+			msg = *statusName.Th
+		}
 	}
 
 	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg, recipients, "", "User")
