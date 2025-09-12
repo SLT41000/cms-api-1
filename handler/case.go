@@ -574,7 +574,7 @@ func UpdateCase(c *gin.Context) {
 	   "provId"=$20, "distId"=$21, "caseDuration"=$22, "createdDate"=$23, "startedDate"=$24, "commandedDate"=$25,
 	    "receivedDate"=$26, "arrivedDate"=$27, "closedDate"=$28, usercreate=$29, usercommand=$30, userreceive=$31,
 		 userarrive=$32, userclose=$33, "resId"=$34, "resDetail"=$35, "scheduleFlag"=$36 , "scheduleDate"=$37, "updatedAt"=$38,"updatedBy"=$39 ,"wfId"=$40
-	WHERE id = $1 AND "orgId"=$2`
+	WHERE "caseId" = $1 AND "orgId"=$2`
 	_, err := conn.Exec(ctx, query,
 		id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
