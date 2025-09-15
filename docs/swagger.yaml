@@ -210,6 +210,8 @@ definitions:
         type: string
       caseDuration:
         type: integer
+      caseId:
+        type: string
       caseLat:
         type: string
       caseLon:
@@ -892,6 +894,8 @@ definitions:
     type: object
   model.Notification:
     properties:
+      additional:
+        type: object
       createdAt:
         type: string
       createdBy:
@@ -930,6 +934,8 @@ definitions:
     type: object
   model.NotificationCreateRequest:
     properties:
+      additional:
+        type: object
       createdBy:
         type: string
       data:
@@ -1679,6 +1685,10 @@ paths:
         in: query
         name: category
         type: string
+      - description: createBy
+        in: query
+        name: createBy
+        type: string
       produces:
       - application/json
       responses:
@@ -2037,6 +2047,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Case Status
+      tags:
+      - Cases
+  /api/v1/caseId/{caseId}:
+    get:
+      consumes:
+      - application/json
+      operationId: CaseData By CaseId
+      parameters:
+      - description: caseId
+        in: path
+        name: caseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Case not found
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Cases By CaseId
       tags:
       - Cases
   /api/v1/casesubtypes:
@@ -5727,23 +5772,6 @@ paths:
       summary: Update Workflow
       tags:
       - Form and Workflow
-  /health:
-    get:
-      consumes:
-      - application/json
-      operationId: Health
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: AS Health
-      tags:
-      - AS Health
 schemes:
 - http
 - https

@@ -95,6 +95,7 @@ func main() {
 
 		v1.GET("/case", handler.ListCase)
 		v1.GET("/case/:id", handler.CaseById)
+		v1.GET("/caseId/:caseId", handler.CaseByCaseId)
 		v1.POST("/case/add", handler.InsertCase)
 		v1.PATCH("/case/:id", handler.UpdateCase)
 		v1.DELETE("/case/:id", handler.DeleteCase)

@@ -377,6 +377,102 @@ func CaseById(c *gin.Context) {
 	logger.Info(logStr)
 }
 
+// @summary Cases By CaseId
+// @tags Cases
+// @security ApiKeyAuth
+// @id CaseData By CaseId
+// @accept json
+// @produce json
+// @Param caseId path string true "caseId"
+// @response 200 {object} model.Response "OK - Request successful"
+// @response 400 {object} model.Response "Bad Request"
+// @response 404 {object} model.Response "Case not found"
+// @response 500 {object} model.Response "Internal Server Error"
+// @Router /api/v1/caseId/{caseId} [get]
+func CaseByCaseId(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("caseId")
+	println("test eq1", id)
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
+	logger.Debug(`Query`, zap.String("query", query))
+	var cusCase model.Case
+	err := conn.QueryRow(ctx, query, orgId, id).Scan(
+		&cusCase.ID,
+		&cusCase.OrgID,
+		&cusCase.CaseID,
+		&cusCase.CaseVersion,
+		&cusCase.ReferCaseID,
+		&cusCase.CaseTypeID,
+		&cusCase.CaseSTypeID,
+		&cusCase.Priority,
+		&cusCase.WfID,
+		&cusCase.WfVersions,
+		&cusCase.Source,
+		&cusCase.DeviceID,
+		&cusCase.PhoneNo,
+		&cusCase.PhoneNoHide,
+		&cusCase.CaseDetail,
+		&cusCase.ExtReceive,
+		&cusCase.StatusID,
+		&cusCase.CaseLat,
+		&cusCase.CaseLon,
+		&cusCase.CaseLocAddr,
+		&cusCase.CaseLocAddrDecs,
+		&cusCase.CountryID,
+		&cusCase.ProvID,
+		&cusCase.DistID,
+		&cusCase.CaseDuration,
+		&cusCase.CreatedDate,
+		&cusCase.StartedDate,
+		&cusCase.CommandedDate,
+		&cusCase.ReceivedDate,
+		&cusCase.ArrivedDate,
+		&cusCase.ClosedDate,
+		&cusCase.UserCreate,
+		&cusCase.UserCommand,
+		&cusCase.UserReceive,
+		&cusCase.UserArrive,
+		&cusCase.UserClose,
+		&cusCase.ResID,
+		&cusCase.ResDetail,
+		&cusCase.ScheduleDate,
+		&cusCase.CreatedAt,
+		&cusCase.UpdatedAt,
+		&cusCase.CreatedBy,
+		&cusCase.UpdatedBy,
+	)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	// Final JSON
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   cusCase,
+		Desc:   "",
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
 // @summary Create Case
 // @id Create Case
 // @security ApiKeyAuth
