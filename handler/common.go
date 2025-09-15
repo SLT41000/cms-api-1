@@ -262,6 +262,7 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 			CreatedBy:   input.CreatedBy,
 			ExpiredAt:   input.ExpiredAt,
 			Recipients:  input.Recipients,
+			Additional:  input.Additional,
 		}
 
 		recipientsJSON, err := json.Marshal(noti.Recipients)
@@ -312,7 +313,9 @@ func genNotiCustom(
 	recipients []model.Recipient,
 	redirectUrl string,
 	senderType string,
+	additional ...*json.RawMessage,
 ) error {
+
 	// เตรียม request ชุดเดียว
 	req := model.NotificationCreateRequest{
 		OrgID:       orgId,
@@ -327,7 +330,12 @@ func genNotiCustom(
 		CreatedBy:   createdBy,
 		ExpiredAt:   time.Now().Add(24 * time.Hour), // default TTL 24 ชม.
 	}
-
+	if len(additional) > 0 && additional[0] != nil {
+		req.Additional = *additional[0]
+		log.Printf("Additional data set: %s", string(*additional[0]))
+	} else {
+		log.Println("No additional data provided")
+	}
 	// ยิงเข้า CoreNotifications
 	created, err := CoreNotifications(c.Request.Context(), []model.NotificationCreateRequest{req})
 	if err != nil {
@@ -1105,7 +1113,15 @@ func GenerateNotiAndComment(ctx *gin.Context,
 
 	msg_alert := msg + " :: " + req.CaseId
 
-	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg_alert, recipients, "", "User")
+	additionalJsonMap := map[string]interface{}{
+		"event":  "STATUS UPDATE",
+		"caseId": req.CaseId,
+		"status": req.Status,
+	}
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	additionalData := json.RawMessage(additionalJSON)
+	log.Printf("covent additionalData Error :", err)
+	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg_alert, recipients, "", "User", &additionalData)
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
