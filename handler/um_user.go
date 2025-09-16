@@ -50,7 +50,9 @@ func GetUmUserList(c *gin.Context) {
 	"deptId", "commId", "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest",
 	"signupStamp", islogin, "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
 	FROM public.um_users 
-	WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	WHERE "orgId"=$1 
+	ORDER BY "firstName" ASC, "lastName" ASC 
+	LIMIT $2 OFFSET $3 `
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
