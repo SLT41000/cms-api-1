@@ -594,7 +594,20 @@ func InsertCase(c *gin.Context) {
 	}
 
 	//Noti Custom
-	msg := "สร้าง Work Order สำเร็จ"
+	statuses, err := GetCaseStatusList(c, conn, orgId.(string))
+	if err != nil {
+
+	}
+	statusMap := make(map[string]model.CaseStatus)
+	for _, s := range statuses {
+		statusMap[*s.StatusID] = s
+	}
+	statusName := statusMap["S001"]
+
+	msg := *statusName.Th
+
+	msg_alert := msg + " :: " + caseId
+
 	data := []model.Data{
 		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
 	}
@@ -602,7 +615,7 @@ func InsertCase(c *gin.Context) {
 		{Type: "provId", Value: req.ProvID},
 	}
 
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Create", data, msg+" : "+caseId, recipients, "/case/"+caseId, "User")
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User")
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -610,7 +623,7 @@ func InsertCase(c *gin.Context) {
 		CaseID:    caseId,
 		Username:  username.(string),
 		Type:      "event",
-		FullMsg:   username.(string) + " :: " + msg + " :: " + caseId,
+		FullMsg:   msg,
 		JsonData:  "",
 		CreatedBy: username.(string),
 	}

@@ -1133,7 +1133,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	additionalData := json.RawMessage(additionalJSON)
 	log.Printf("covent additionalData Error :", err)
-	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.En, data, msg_alert, recipients, "", "User", &additionalData)
+	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "", "User", &additionalData)
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
