@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"log"
 	"mainPackage/config"
 	"mainPackage/model"
 	"net/http"
@@ -239,6 +241,11 @@ func InsertCaseHistory(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
+	additionalJsonMap := req
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	additionalData := json.RawMessage(additionalJSON)
+	log.Printf("covent additionalData Error :", err)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", nil, "/case/"+req.CaseID, "User", &additionalData)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
