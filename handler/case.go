@@ -601,7 +601,8 @@ func InsertCase(c *gin.Context) {
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.ProvID},
 	}
-	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Create", data, msg+" : "+caseId, recipients, "/case/"+caseId, "User")
+
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Create", data, msg+" : "+caseId, recipients, "/case/"+caseId, "User")
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -712,7 +713,7 @@ func UpdateCase(c *gin.Context) {
 	} else {
 		caseId = *req.CaseId
 	}
-	genNotiCustom(c, orgId.(string), username.(string), username.(string), "/case/"+caseId, "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User")
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User")
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{

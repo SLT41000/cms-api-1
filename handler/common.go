@@ -302,7 +302,8 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 }
 
 func genNotiCustom(
-	c *gin.Context,
+	c context.Context,
+	conn *pgx.Conn,
 	orgId string,
 	createdBy string,
 	senderName string,
@@ -315,6 +316,17 @@ func genNotiCustom(
 	senderType string,
 	additional ...*json.RawMessage,
 ) error {
+
+	user, err := GetUserByUsername(c, conn, orgId, senderName)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	}
+
+	if user == nil {
+		log.Printf("User not found")
+	} else {
+		senderPhoto = *user.Photo
+	}
 
 	// เตรียม request ชุดเดียว
 	req := model.NotificationCreateRequest{
@@ -337,7 +349,7 @@ func genNotiCustom(
 		log.Println("No additional data provided")
 	}
 	// ยิงเข้า CoreNotifications
-	created, err := CoreNotifications(c.Request.Context(), []model.NotificationCreateRequest{req})
+	created, err := CoreNotifications(c, []model.NotificationCreateRequest{req})
 	if err != nil {
 		return err
 	}
@@ -1121,7 +1133,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	additionalData := json.RawMessage(additionalJSON)
 	log.Printf("covent additionalData Error :", err)
-	genNotiCustom(ctx, orgId, username.(string), username.(string), "/case/"+req.CaseId, *statusName.En, data, msg_alert, recipients, "", "User", &additionalData)
+	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.En, data, msg_alert, recipients, "", "User", &additionalData)
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
