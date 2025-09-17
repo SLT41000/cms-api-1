@@ -129,7 +129,7 @@ type CaseUpdate struct {
 	DistID          string     `json:"distId"`
 	CaseDuration    int        `json:"caseDuration"`
 	CreatedDate     time.Time  `json:"createdDate"`
-	StartedDate     time.Time  `json:"startedDate"`
+	StartedDate     *time.Time `json:"startedDate"`
 	CommandedDate   time.Time  `json:"commandedDate"`
 	ReceivedDate    time.Time  `json:"receivedDate"`
 	ArrivedDate     time.Time  `json:"arrivedDate"`
