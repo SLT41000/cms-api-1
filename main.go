@@ -268,6 +268,10 @@ func main() {
 		nonAuth.POST("/users/reset_password", handler.ResetUserPassword)
 		nonAuth.GET("/generate_caseid", handler.GenerateCaseIDHandler)
 	}
+	health := router.Group("/")
+	{
+		health.GET("/health", handler.Health)
+	}
 
 	notifications := router.Group("/api/v1/notifications")
 	{
