@@ -615,7 +615,13 @@ func InsertCase(c *gin.Context) {
 		{Type: "provId", Value: req.ProvID},
 	}
 
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User")
+	additionalJsonMap := map[string]interface{}{
+		"event": "Create",
+	}
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	additionalData := json.RawMessage(additionalJSON)
+	log.Printf("covent additionalData Error :", err)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", &additionalData)
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -726,7 +732,14 @@ func UpdateCase(c *gin.Context) {
 	} else {
 		caseId = *req.CaseId
 	}
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User")
+
+	additionalJsonMap := map[string]interface{}{
+		"event": "Update",
+	}
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	additionalData := json.RawMessage(additionalJSON)
+	log.Printf("covent additionalData Error :", err)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User", &additionalData)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
