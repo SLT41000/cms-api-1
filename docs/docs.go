@@ -419,12 +419,6 @@ const docTemplate = `{
                         "description": "category",
                         "name": "category",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "createBy",
-                        "name": "createBy",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -585,61 +579,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/caseId/{caseId}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Cases By CaseId",
-                "operationId": "CaseData By CaseId",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "caseId",
-                        "name": "caseId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Case not found",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -6907,6 +6846,34 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AS Health"
+                ],
+                "summary": "AS Health",
+                "operationId": "Health",
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -7225,9 +7192,6 @@ const docTemplate = `{
                 },
                 "caseDuration": {
                     "type": "integer"
-                },
-                "caseId": {
-                    "type": "string"
                 },
                 "caseLat": {
                     "type": "string"
@@ -8258,9 +8222,6 @@ const docTemplate = `{
         "model.Notification": {
             "type": "object",
             "properties": {
-                "additional": {
-                    "type": "object"
-                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -8316,9 +8277,6 @@ const docTemplate = `{
         "model.NotificationCreateRequest": {
             "type": "object",
             "properties": {
-                "additional": {
-                    "type": "object"
-                },
                 "createdBy": {
                     "type": "string"
                 },
