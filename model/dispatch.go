@@ -44,26 +44,26 @@ type UnitUser struct {
 	CommID            string      `json:"commId"`
 	StnID             string      `json:"stnId"`
 	PlateNo           string      `json:"plateNo"`
-	ProvinceCode      string      `json:"provinceCode"`
+	ProvinceCode      *string     `json:"provinceCode"`
 	Active            bool        `json:"active"`
 	Username          string      `json:"username"`
 	IsLogin           bool        `json:"isLogin"`
 	IsFreeze          bool        `json:"isFreeze"`
 	IsOutArea         bool        `json:"isOutArea"`
-	LocLat            float64     `json:"locLat"`
-	LocLon            float64     `json:"locLon"`
-	LocAlt            float64     `json:"locAlt"`
-	LocBearing        float64     `json:"locBearing"`
-	LocSpeed          float64     `json:"locSpeed"`
-	LocProvider       string      `json:"locProvider"`
-	LocGpsTime        time.Time   `json:"locGpsTime"`
-	LocSatellites     int         `json:"locSatellites"`
-	LocAccuracy       float64     `json:"locAccuracy"`
-	LocLastUpdateTime time.Time   `json:"locLastUpdateTime"`
-	BreakDuration     int         `json:"breakDuration"`
-	HealthChk         string      `json:"healthChk"`
-	HealthChkTime     time.Time   `json:"healthChkTime"`
-	SttID             string      `json:"sttId"`
+	LocLat            *float64    `json:"locLat"`
+	LocLon            *float64    `json:"locLon"`
+	LocAlt            *float64    `json:"locAlt"`
+	LocBearing        *float64    `json:"locBearing"`
+	LocSpeed          *float64    `json:"locSpeed"`
+	LocProvider       *string     `json:"locProvider"`
+	LocGpsTime        *time.Time  `json:"locGpsTime"`
+	LocSatellites     *int        `json:"locSatellites"`
+	LocAccuracy       *float64    `json:"locAccuracy"`
+	LocLastUpdateTime *time.Time  `json:"locLastUpdateTime"`
+	BreakDuration     *int        `json:"breakDuration"`
+	HealthChk         *string     `json:"healthChk"`
+	HealthChkTime     *time.Time  `json:"healthChkTime"`
+	SttID             *string     `json:"sttId"`
 	CreatedBy         string      `json:"createdBy"`
 	UpdatedBy         string      `json:"updatedBy"`
 	UnitPropLists     *[]string   `json:"unitPropLists"`
