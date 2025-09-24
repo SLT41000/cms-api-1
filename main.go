@@ -58,6 +58,8 @@ func main() {
 			"http://localhost:5173",             // dev
 			"https://cms-sigma-woad.vercel.app", // production frontend
 			"https://cms.welcomedcc.com",
+			"https://welcome-cms-stg.metthier.ai",
+			"https://welcome-cms-dev.metthier.ai"
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
