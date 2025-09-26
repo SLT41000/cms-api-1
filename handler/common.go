@@ -521,6 +521,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			log.Println("Case status updated successfully")
 		}
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		UpdateBusKafka_WO(req)
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
@@ -545,6 +546,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		UpdateBusKafka_WO(req)
 
 		return Result, err
 
@@ -558,7 +560,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-
+		UpdateBusKafka_WO(req)
 		return Result, err
 
 	} else if unitCount == 0 { //--Second Unit - First dispatch
@@ -571,7 +573,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-
+		UpdateBusKafka_WO(req)
 		return Result, err
 	}
 
@@ -1104,24 +1106,6 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	if username != req.UnitUser {
 		msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
 	}
-	//msg_alert := *statusName.Th + " :: " + req.CaseId
-	st := []string{"S001", "S002", "S003", "S007", "S013", "S014", "S018", "S019"}
-	if contains(st, req.Status) {
-		//msg_alert = username.(string) + " :: " + *statusName.Th + " :: " + req.CaseId
-	}
-	st2 := []string{"S004", "S005", "S006", "S017"}
-	if contains(st2, req.Status) {
-		//msg_alert = req.UnitUser + " :: " + *statusName.Th + " :: " + req.CaseId
-	}
-	st3 := []string{"S008", "S009", "S010", "S011", "S012", "S016"}
-	if contains(st3, req.Status) {
-		//msg = *statusName.Th + " :: " + req.CaseId
-		// if username != req.UnitUser {
-		// 	msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
-		// } else {
-		// 	msg = *statusName.Th
-		// }
-	}
 
 	msg_alert := msg + " :: " + req.CaseId
 
@@ -1132,7 +1116,9 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	additionalData := json.RawMessage(additionalJSON)
-	log.Printf("covent additionalData Error :", err)
+	if err != nil {
+		log.Printf("covent additionalData Error :", err)
+	}
 	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "", "User", &additionalData)
 
 	evt := model.CaseHistoryEvent{
@@ -1202,4 +1188,28 @@ func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseH
 	)
 
 	return err
+}
+
+func UpdateBusKafka_WO(req model.UpdateStageRequest) error {
+	log.Print("=====UpdateBusKafka_WO===")
+
+	stName := mapStatus(req.Status)
+	//---> REF Number
+	data := map[string]interface{}{
+		"work_order_number": req.CaseId,
+		"user_metadata": map[string]interface{}{
+			"assigned_employee_code":  req.UnitUser,
+			"associate_employee_code": []string{},
+		},
+		"status": stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
+	}
+	log.Print(data)
+	res, err := callAPI(os.Getenv("METTTER_SERVER")+"/mettriq/v1/work_order/update", "POST", data)
+	if err != nil {
+		return err
+	}
+
+	log.Print(res)
+
+	return nil
 }

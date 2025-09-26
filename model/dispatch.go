@@ -133,3 +133,11 @@ type CaseHistoryEvent struct {
 	JsonData  interface{} `json:"jsonData"` // optional, will be marshaled to TEXT
 	CreatedBy string      `json:"createdBy"`
 }
+
+type CloseCaseRequest struct {
+	CaseID    string `json:"caseId"`
+	StatusID  string `json:"statusId"`
+	ResID     string `json:"resId"`
+	ResDetail string `json:"resDetail"`
+	UpdatedBy string `json:"updatedBy"`
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mainPackage/model"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -100,4 +101,33 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 	}
 
 	return &u, nil
+}
+
+func GetAreaByNamespace(ctx context.Context, conn *pgx.Conn, orgId, namespace string) (*model.AreaDistrict, error) {
+	// Example: "bma.n3-laksi-district" → "n3-laksi-district"
+	parts := strings.Split(namespace, ".")
+	ns := parts[len(parts)-1]
+
+	query := `
+		SELECT "countryId", "provId", "distId"
+		FROM public.area_districts
+		WHERE "orgId" = $1 AND "nameSpace" = $2
+		LIMIT 1;
+	`
+
+	var a model.AreaDistrict
+	err := conn.QueryRow(ctx, query, orgId, ns).Scan(
+		&a.CountryID,
+		&a.ProvID,
+		&a.DistID,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, nil // not found
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query area failed: %w", err)
+	}
+
+	return &a, nil
 }

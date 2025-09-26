@@ -58,8 +58,8 @@ func main() {
 			"http://localhost:5173",             // dev
 			"https://cms-sigma-woad.vercel.app", // production frontend
 			"https://cms.welcomedcc.com",
-			"https://welcome-cms-stg.metthier.ai",
-			"https://welcome-cms-dev.metthier.ai"
+			"https://welcome-service-stg.metthier.ai:65000",
+			"https://welcome-cms-stg.metthier.ai:65000",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
@@ -292,6 +292,9 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	logger.Info("Server started at:" + URL)
 	logger.Info("Swagger docs available at: " + URL)
+	for _, env := range os.Environ() {
+		logger.Info(env)
+	}
 	if err := router.Run(SERV_ADDR + ":" + SERV_PORT); err != nil {
 		logger.Fatal("Failed to start server", zap.Error(err))
 	}
