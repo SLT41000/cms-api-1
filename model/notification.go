@@ -33,21 +33,21 @@ type RegistrationMessage struct {
 
 // Notification คือข้อมูลการแจ้งเตือนหลัก
 type Notification struct {
-	Event       *string     `json:"EVENT"`
-	ID          int         `json:"id,omitempty"`
-	OrgID       string      `json:"orgId,omitempty"`
-	SenderType  string      `json:"senderType,omitempty"`  // "SYSTEM" or "USER"
-	SenderPhoto string      `json:"senderPhoto,omitempty"` // เพิ่มใหม่
-	Sender      string      `json:"sender,omitempty"`
-	Message     string      `json:"message,omitempty"`
-	EventType   string      `json:"eventType"`
-	RedirectUrl string      `json:"redirectUrl,omitempty"`
-	CreatedAt   *time.Time  `json:"createdAt,omitempty"`
-	CreatedBy   string      `json:"createdBy,omitempty"` // เพิ่มใหม่
-	ExpiredAt   *time.Time  `json:"expiredAt,omitempty"` // เพิ่มใหม่
-	Data        []Data      `json:"data,omitempty"`
-	Recipients  []Recipient `json:"recipients,omitempty"` // ใช้ตอนสร้างเท่านั้น
-	Additional  interface{} `json:"additionalJson,omitempty" swaggertype:"object"`
+	Event       *string      `json:"EVENT"`
+	ID          int          `json:"id,omitempty"`
+	OrgID       string       `json:"orgId,omitempty"`
+	SenderType  string       `json:"senderType,omitempty"`  // "SYSTEM" or "USER"
+	SenderPhoto string       `json:"senderPhoto,omitempty"` // เพิ่มใหม่
+	Sender      string       `json:"sender,omitempty"`
+	Message     string       `json:"message,omitempty"`
+	EventType   string       `json:"eventType"`
+	RedirectUrl string       `json:"redirectUrl,omitempty"`
+	CreatedAt   *time.Time   `json:"createdAt,omitempty"`
+	CreatedBy   string       `json:"createdBy,omitempty"` // เพิ่มใหม่
+	ExpiredAt   *time.Time   `json:"expiredAt,omitempty"` // เพิ่มใหม่
+	Data        *[]Data      `json:"data,omitempty"`
+	Recipients  *[]Recipient `json:"recipients,omitempty"` // ใช้ตอนสร้างเท่านั้น
+	Additional  interface{}  `json:"additionalJson,omitempty" swaggertype:"object"`
 }
 
 // ใช้สำหรับการตอบกลับสถานะ connection

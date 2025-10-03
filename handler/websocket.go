@@ -382,13 +382,13 @@ func BroadcastNotification(noti model.Notification) {
 		if sentTo[connInfo.ID] {
 			continue
 		}
-		if connInfo.OrgID != noti.OrgID {
-			continue
-		}
+		// if connInfo.OrgID != noti.OrgID {
+		// 	continue
+		// }
 
 		var isTrueBroadcast bool
 		if noti.Recipients != nil {
-			isTrueBroadcast = len(noti.Recipients) == 0
+			isTrueBroadcast = len(*noti.Recipients) == 0
 
 			if isTrueBroadcast {
 				log.Printf("  🚀 True broadcast! Sending to EmpID: %s (OrgID: %s)", connInfo.ID, connInfo.OrgID)
@@ -399,7 +399,7 @@ func BroadcastNotification(noti model.Notification) {
 				continue
 			}
 
-			for _, recipient := range noti.Recipients {
+			for _, recipient := range *noti.Recipients {
 				shouldReceive := false
 
 				// รองรับการส่ง value หลายค่าในหนึ่ง rule ด้วย comma
@@ -463,7 +463,8 @@ func BroadcastNotification(noti model.Notification) {
 							Event:       noti.Event,
 						}
 					}
-
+					b, _ := json.Marshal(socketPayload)
+					log.Printf("Socket Payload: %s", b)
 					if err := connInfo.Conn.WriteJSON(socketPayload); err != nil {
 						log.Printf("    ❌ Failed to send to EmpID %s: %v", connInfo.ID, err)
 					}

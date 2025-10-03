@@ -242,27 +242,9 @@ func InsertCaseHistory(c *gin.Context) {
 		return
 	}
 
-	// query to get proid
-	query = `
-	SELECT "provId" 
-	FROM public."tix_cases" 
-	WHERE "caseId" = $1
-	`
-
-	var proid string
-	err = conn.QueryRow(ctx, query, req.CaseID).Scan(&proid)
-	if err != nil {
-		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		logger.Warn("add history failed", zap.Error(err))
-		return
-	}
+	provID, err := GetProvIDFromCase(ctx, conn, req.CaseID)
 	recipients := []model.Recipient{
-		{Type: "provId", Value: proid},
+		{Type: "provId", Value: provID},
 	}
 
 	additionalJsonMap := req

@@ -258,11 +258,11 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 			Message:     input.Message,
 			EventType:   input.EventType,
 			RedirectUrl: input.RedirectUrl,
-			Data:        *input.Data,
+			Data:        input.Data,
 			CreatedAt:   &now, // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
 			CreatedBy:   input.CreatedBy,
 			ExpiredAt:   input.ExpiredAt,
-			Recipients:  *input.Recipients,
+			Recipients:  input.Recipients,
 			Additional:  input.Additional,
 			Event:       input.Event,
 		}
