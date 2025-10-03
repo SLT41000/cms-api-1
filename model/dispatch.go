@@ -73,11 +73,13 @@ type UnitUser struct {
 }
 
 type UpdateStageRequest struct {
-	CaseId   string `json:"caseId"`
-	Status   string `json:"status"`
-	UnitId   string `json:"unitId"`
-	UnitUser string `json:"unitUser"`
-	NodeId   string `json:"nodeId"`
+	CaseId    string `json:"caseId"`
+	Status    string `json:"status"`
+	UnitId    string `json:"unitId"`
+	UnitUser  string `json:"unitUser"`
+	NodeId    string `json:"nodeId"`
+	ResID     string `json:"resId"`
+	ResDetail string `json:"resDetail"`
 }
 
 type StageResult struct {

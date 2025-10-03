@@ -263,6 +263,7 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 			ExpiredAt:   input.ExpiredAt,
 			Recipients:  input.Recipients,
 			Additional:  input.Additional,
+			Event:       &input.Event,
 		}
 
 		recipientsJSON, err := json.Marshal(noti.Recipients)
@@ -314,6 +315,7 @@ func genNotiCustom(
 	recipients []model.Recipient,
 	redirectUrl string,
 	senderType string,
+	event *string,
 	additional ...*json.RawMessage,
 ) error {
 
@@ -341,6 +343,7 @@ func genNotiCustom(
 		Recipients:  recipients,
 		CreatedBy:   createdBy,
 		ExpiredAt:   time.Now().Add(24 * time.Hour), // default TTL 24 ชม.
+		Event:       *event,
 	}
 	if len(additional) > 0 && additional[0] != nil {
 		req.Additional = *additional[0]
@@ -374,7 +377,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	logger := config.GetLog()
 	username := GetVariableFromToken(ctx, "username")
 	orgId := GetVariableFromToken(ctx, "orgId")
-
+	log.Print("====9===")
 	// // 1. Insert responder
 	// _, err := conn.Exec(ctx, `
 	//     INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
@@ -387,7 +390,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	log.Print(username)
 	log.Print(orgId)
 	log.Print("---INSERT---")
-
+	log.Print("====10===")
 	query := `
 	SELECT  "caseId"::text, "wfId", "nodeId", "stageType", "unitId", "username", "versions", "type", "section", "data",
   "pic", "group", "formId"
@@ -485,8 +488,39 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	config := data2["config"].(map[string]interface{})
 	log.Print("======dataMaps==")
 	log.Print(config["action"])
+
+	//Check Close Case
+	if req.ResID != "" {
+		if config["action"] == req.Status {
+			log.Print("--> 1. Case Close")
+			Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
+			if err != nil {
+				return Result, err
+			}
+
+			//--Update tix_cases on time (Group status)
+			Result_, err := DispatchUpdateCaseStatus(ctx, conn, req, username.(string))
+			if err != nil {
+
+				log.Printf("Update status failed: %v", err)
+			} else {
+				log.Print(Result_)
+				log.Println("Case status updated successfully")
+			}
+			GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+			//-->New Function for close
+			// UpdateBusKafka_WO(ctx, conn, req)
+			return Result, err
+		} else {
+			log.Println(" Status worng number :", err)
+			return model.Response{Status: "-1", Msg: "Failure.3", Desc: "Status worng number!"}, err
+		}
+
+	}
+
 	if unitCount == 0 || (config["action"] == req.Status) {
 		// 1. Insert responder
+		log.Print("--> 1. Insert responder")
 		_, err := conn.Exec(ctx, `
 		    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
 		    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
@@ -498,6 +532,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		log.Println(" Status worng number :", err)
 		return model.Response{Status: "-1", Msg: "Failure.3", Desc: "Status worng number!"}, err
 	}
+
 	//return model.Response{}, err
 	// 🔹 Step 4:  Update data
 	if unitCount == 0 && CaseNextNode.Type == "dispatch" { //--First Unit for case
@@ -521,7 +556,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			log.Println("Case status updated successfully")
 		}
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-		UpdateBusKafka_WO(req)
+		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
@@ -546,7 +581,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-		UpdateBusKafka_WO(req)
+		UpdateBusKafka_WO(ctx, conn, req)
 
 		return Result, err
 
@@ -560,7 +595,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-		UpdateBusKafka_WO(req)
+		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 
 	} else if unitCount == 0 { //--Second Unit - First dispatch
@@ -573,7 +608,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
-		UpdateBusKafka_WO(req)
+		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 	}
 
@@ -940,7 +975,7 @@ func dfsConnections(
 func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest, username string) (model.Response, error) {
 
 	orgId := GetVariableFromToken(ctx, "orgId")
-	log.Print("===CaseCurrentStageInsert===")
+	log.Print("===DispatchUpdateCaseStatus===")
 	// 1. Insert responder
 	_, err := conn.Exec(ctx, `
         INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
@@ -951,7 +986,30 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.0-" + req.CaseId, Desc: err.Error()}, err
 	}
 
-	query := `
+	now := time.Now()
+
+	if req.ResID != "" {
+		query := `
+    UPDATE public."tix_cases"
+    SET "statusId" = $1,
+        "updatedAt" = $2,
+        "updatedBy" = $3,
+		"resId" = $4,
+		"resDetail" = $5
+    WHERE "caseId" = $6;
+    `
+
+		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.ResID, req.ResDetail, req.CaseId)
+		if err != nil {
+			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
+		}
+
+		if cmd.RowsAffected() == 0 {
+			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
+		}
+
+	} else {
+		query := `
     UPDATE public."tix_cases"
     SET "statusId" = $1,
         "updatedAt" = $2,
@@ -959,15 +1017,14 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
     WHERE "caseId" = $4;
     `
 
-	now := time.Now()
+		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.CaseId)
+		if err != nil {
+			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
+		}
 
-	cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.CaseId)
-	if err != nil {
-		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
-	}
-
-	if cmd.RowsAffected() == 0 {
-		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
+		if cmd.RowsAffected() == 0 {
+			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
+		}
 	}
 
 	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchUpdateCaseStatus-" + req.CaseId}, nil
@@ -1108,18 +1165,18 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 
 	msg_alert := msg + " :: " + req.CaseId
-
+	var event = "CASE-STATUS-CHANGE"
 	additionalJsonMap := map[string]interface{}{
-		"event":  "STATUS UPDATE",
+		"event":  event,
 		"caseId": req.CaseId,
 		"status": req.Status,
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
-	additionalData := json.RawMessage(additionalJSON)
 	if err != nil {
 		log.Printf("covent additionalData Error :", err)
 	}
-	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "", "User", &additionalData)
+	additionalData := json.RawMessage(additionalJSON)
+	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "", "User", &event, &additionalData)
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
@@ -1188,28 +1245,4 @@ func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseH
 	)
 
 	return err
-}
-
-func UpdateBusKafka_WO(req model.UpdateStageRequest) error {
-	log.Print("=====UpdateBusKafka_WO===")
-
-	stName := mapStatus(req.Status)
-	//---> REF Number
-	data := map[string]interface{}{
-		"work_order_number": req.CaseId,
-		"user_metadata": map[string]interface{}{
-			"assigned_employee_code":  req.UnitUser,
-			"associate_employee_code": []string{},
-		},
-		"status": stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
-	}
-	log.Print(data)
-	res, err := callAPI(os.Getenv("METTTER_SERVER")+"/mettriq/v1/work_order/update", "POST", data)
-	if err != nil {
-		return err
-	}
-
-	log.Print(res)
-
-	return nil
 }

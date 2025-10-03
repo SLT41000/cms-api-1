@@ -926,40 +926,63 @@ func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId s
 // @produce json
 // @param Body body model.UpdateStageRequest true "Update unit event"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/dispatch/{caseId}/close [post]
-func CloseCase(c *gin.Context) {
-	logger := config.GetLog()
+// //  @Router /api/v1/dispatch/{caseId}/close [post]
+// func CloseCase(c *gin.Context) {
+// 	logger := config.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
-	if conn == nil {
-		return
-	}
-	defer cancel()
-	defer conn.Close(ctx)
+// 	conn, ctx, cancel := config.ConnectDB()
+// 	if conn == nil {
+// 		return
+// 	}
+// 	defer cancel()
+// 	defer conn.Close(ctx)
 
-	var req model.UpdateStageRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
-		logger.Warn("Insert failed", zap.Error(err))
-		return
-	}
-	log.Print(req)
+// 	var req model.CloseCaseRequest
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		c.JSON(http.StatusBadRequest, model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		})
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+// 	log.Print(req)
 
-	username := GetVariableFromToken(c, "username")
-	// orgId := GetVariableFromToken(c, "orgId")
+// 	username := GetVariableFromToken(c, "username")
+// 	orgId := GetVariableFromToken(c, "orgId")
 
-	results, err := DispatchUpdateCaseStatus(c, conn, req, username.(string))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+// 	updateReq := model.UpdateStageRequest{
+// 		CaseId:   req.CaseID,
+// 		Status:   req.StatusID,
+// 		UnitId:   "", // mapping ResID → UnitId
+// 		UnitUser: "", // mapping ResDetail → UnitUser
+// 		NodeId:   "", // no NodeId in CloseCaseRequest, leave blank
+// 	}
 
-	c.JSON(http.StatusOK, results)
-}
+// 	results, err := DispatchUpdateCaseStatus(c, conn, updateReq, username.(string))
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// allNodes, nodeConn, allNodesId, dispatchNode, err := GetAllNodes(ctx, conn, orgId.(string), caseStages.WfID, caseStages.Versions, logger)
+// 	// if err != nil {
+// 	// 	return model.Response{Status: "-1", Msg: "Failure.2", Desc: err.Error()}, err
+// 	// }
+
+// 	CaseNextNode, UnitNextNode, caseCount, unitCount := GetNextNode(allNodesId, nodeConn, caseStages, unitStages, logger)
+
+// 	fmt.Println("Case Next Node:", CaseNextNode)
+// 	fmt.Println("Unit Next Node:", UnitNextNode)
+// 	fmt.Println("caseCount:", caseCount)
+// 	fmt.Println("unitCount:", unitCount)
+// 	Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
+// 	if err != nil {
+// 		return Result, err
+// 	}
+// 	c.JSON(http.StatusOK, results)
+// }
 
 func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {
 	// 1. Get master status list

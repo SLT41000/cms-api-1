@@ -131,3 +131,78 @@ func GetAreaByNamespace(ctx context.Context, conn *pgx.Conn, orgId, namespace st
 
 	return &a, nil
 }
+
+func GetAreaById(ctx context.Context, conn *pgx.Conn, orgId, Id string) (*model.AreaDistrict, error) {
+	// Example: "bma.n3-laksi-district" → "n3-laksi-district"
+
+	query := `
+		SELECT "countryId", "provId", "distId", "nameSpace"
+		FROM public.area_districts
+		WHERE "orgId" = $1 AND "distId" = $2
+		LIMIT 1;
+	`
+
+	var a model.AreaDistrict
+	err := conn.QueryRow(ctx, query, orgId, Id).Scan(
+		&a.CountryID,
+		&a.ProvID,
+		&a.DistID,
+		&a.NameSpace,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, nil // not found
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query area failed: %w", err)
+	}
+
+	return &a, nil
+}
+
+func GetCaseSubTypeByCode(ctx context.Context, conn *pgx.Conn, orgId string, sTypeCode string) (*model.CaseSubType, error) {
+	query := `
+	SELECT 
+	    "id", "typeId", "sTypeId", "sTypeCode", "orgId",
+	    "en", "th", "wfId", "caseSla", "priority",
+	    "userSkillList", "unitPropLists", "active",
+	    "createdAt", "updatedAt", "createdBy", "updatedBy",
+		"mDeviceType", "mWorkOrderType"
+	FROM public.case_sub_types
+	WHERE "orgId" = $1
+	  AND "sTypeId" = $2
+	  AND "active" = TRUE
+	LIMIT 1;
+	`
+
+	var subType model.CaseSubType
+	err := conn.QueryRow(ctx, query, orgId, sTypeCode).Scan(
+		&subType.Id,
+		&subType.TypeID,
+		&subType.STypeID,
+		&subType.STypeCode,
+		&subType.OrgID,
+		&subType.EN,
+		&subType.TH,
+		&subType.WFID,
+		&subType.CaseSLA,
+		&subType.Priority,
+		&subType.UserSkillList,
+		&subType.UnitPropLists,
+		&subType.Active,
+		&subType.CreatedAt,
+		&subType.UpdatedAt,
+		&subType.CreatedBy,
+		&subType.UpdatedBy,
+		&subType.MDeviceType,
+		&subType.MWorkOrderType,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("query CaseSubType failed: %w", err)
+	}
+
+	return &subType, nil
+}

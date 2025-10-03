@@ -243,9 +243,12 @@ func InsertCaseHistory(c *gin.Context) {
 	}
 	additionalJsonMap := req
 	additionalJSON, err := json.Marshal(additionalJsonMap)
+	if err != nil {
+		log.Printf("covent additionalData Error :", err)
+	}
 	additionalData := json.RawMessage(additionalJSON)
-	log.Printf("covent additionalData Error :", err)
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", nil, "/case/"+req.CaseID, "User", &additionalData)
+	event := "CASE-HISTORY"
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", nil, "/case/"+req.CaseID, "User", &event, &additionalData)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{

@@ -7,6 +7,8 @@ import (
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -167,7 +169,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	recipients := []model.Recipient{
 		{Type: "provId", Value: *provId},
 	}
-	err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", *statusName.Th, data_, msg_alert, recipients, "", "User")
+	err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", *statusName.Th, data_, msg_alert, recipients, "", "User", nil)
 
 	//err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", "Create", dataNoti, msg+" : "+caseId, recipients, "", "User")
 	if err_ != nil {
@@ -275,7 +277,7 @@ func IntegrateCaseCurrentStageInsert(username string, orgId string, conn *pgx.Co
 func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId string) (*model.Case, error) {
 	query := `
 	SELECT 
-		"caseId", "integration_ref_number"
+		"caseId", "integration_ref_number", "distId"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -287,6 +289,7 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 	err := conn.QueryRow(ctx, query, orgId, caseId).Scan(
 		&c.CaseID,
 		&c.IntegrationRefNumber,
+		&c.DistID,
 	)
 
 	// ✅ case not found
@@ -307,10 +310,10 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 	return &c, nil
 }
 
-func IntegrateUpdateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
+func IntegrateUpdateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
 	now := time.Now()
 	caseId := workOrder.WorkOrderNumber
-
+	log.Print("====3===")
 	// หา case เดิมก่อน
 	caseData, err := GetCaseByID(ctx, conn, orgId, caseId)
 	if err != nil {
@@ -319,27 +322,7 @@ func IntegrateUpdateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	if caseData == nil {
 		return fmt.Errorf("case not found for update: %s", caseId)
 	}
-
-	// Mapping Subtype / Workflow
-	//DeviceType := workOrder.DeviceMetadata.DeviceType
-	//WorkOrderType := workOrder.WorkOrderType
-	// sType, err := GetSubTypeByID(ctx, conn, orgId, DeviceType, WorkOrderType)
-	// if err != nil {
-	// 	return fmt.Errorf("error getting subtype: %w", err)
-	// }
-	// if sType == nil {
-	// 	return fmt.Errorf("failed to get subtype for DeviceType: %s, WorkOrderType: %s", DeviceType, WorkOrderType)
-	// }
-
-	// caseTypeId := sType.TypeID
-	// caseSTypeId := sType.STypeID
-	// wfId := sType.WFID
-	// wfVersion := sType.WfVersions
-	// caseSla := sType.CaseSLA
-	// wfNodeId := sType.WfNodeId
-	// source := "05"
-	// statusId := "S001"
-
+	log.Print("====4===")
 	statusMap := GetCaseStatusMap()
 	statusId := statusMap[workOrder.Status]
 
@@ -355,7 +338,7 @@ func IntegrateUpdateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	if err != nil {
 		return fmt.Errorf("failed to marshal device: %w", err)
 	}
-
+	log.Print("====5===")
 	// Master data mapping
 	//countryId := "TH"
 	//provId := "10"
@@ -387,7 +370,7 @@ WHERE
 	"orgId" = $10 AND 
 	"caseId" = $11;
 `
-
+	log.Print("====6===")
 	_, err = conn.Exec(ctx, query,
 		"publish",                               // $1  caseVersion
 		Priority,                                // $2  priority
@@ -405,21 +388,151 @@ WHERE
 	if err != nil {
 		return fmt.Errorf("update case failed: %w", err)
 	}
-
+	log.Print("====7===")
 	// === Stage update ===
 	var data = model.UpdateStageRequest{
-		CaseId:   caseId,
-		Status:   statusId,
-		UnitId:   workOrder.UserMetadata.AssignedEmployeeCode,
-		UnitUser: workOrder.UserMetadata.AssignedEmployeeCode,
-		NodeId:   "",
+		CaseId:    caseId,
+		Status:    statusId,
+		UnitId:    workOrder.UserMetadata.AssignedEmployeeCode,
+		UnitUser:  workOrder.UserMetadata.AssignedEmployeeCode,
+		NodeId:    "",
+		ResID:     "",
+		ResDetail: "",
 	}
 
-	results, err := UpdateCurrentStageCore(&gin.Context{}, conn, data)
+	log.Print("====8===")
+	results, err := UpdateCurrentStageCore(ctx, conn, data)
 	if err != nil {
 		return fmt.Errorf("UpdateCurrentStageCore failed: %w", err)
 	}
 	log.Print(results)
+
+	return nil
+}
+
+func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, sType *model.CaseSubType, integration_ref_number string) error {
+	log.Print("=====CreateBusKafka_WO===")
+
+	//username := GetVariableFromToken(ctx, "username")
+	orgId := GetVariableFromToken(ctx, "orgId")
+	log.Print("=====orgId===", orgId)
+	log.Print("=====CaseSTypeID===", req.CaseSTypeID)
+	// sType, err := GetCaseSubTypeByCode(ctx, conn, orgId.(string), req.CaseSTypeID)
+	// if err != nil {
+	// 	log.Printf("sType Error: %v", err)
+	// }
+	// if sType == nil {
+	// 	return fmt.Errorf("failed for CaseSTypeID: %s", req.CaseSTypeID)
+	// }
+	log.Print("=====sType===", sType.TH)
+	log.Print("=====DistID===", req.DistID)
+	areaDist, err := GetAreaById(ctx, conn, orgId.(string), req.DistID)
+	if err != nil {
+		log.Printf("areaDist Error: %v", err)
+	}
+	if areaDist == nil {
+		return fmt.Errorf("failed for areaDist: %s", req.DistID)
+	}
+	log.Print("=====areaDist===", areaDist.Th)
+	currentDate := time.Now().Format("2006-01-02")
+
+	num, err := strconv.Atoi(sType.Priority)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	data := map[string]interface{}{
+		"work_order_number":     req.CaseId,
+		"work_order_ref_number": integration_ref_number,
+		"work_order_type":       sType.MWorkOrderType,
+		"work_order_metadata": map[string]interface{}{
+			"title":       sType.TH,
+			"description": req.CaseDetail,
+			"severity":    GetPriorityName_TXT(num), // CRITICAL, HIGH, MEDIUM, LOW
+			"location": map[string]interface{}{
+				"latitude":  req.CaseLat,
+				"longitude": req.CaseLon,
+			},
+			"images": []interface{}{},
+		},
+		"user_metadata": map[string]interface{}{
+			"assigned_employee_code":  "",
+			"associate_employee_code": []string{},
+		},
+		"device_metadata": map[string]interface{}{}, // ตอนนี้ว่าง
+		"sop_metadata":    map[string]interface{}{},
+		"status":          "NEW",
+		"work_date":       currentDate,
+		"workspace":       "bma",
+		"namespace":       "bma." + *areaDist.NameSpace,
+	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+	}
+
+	jsonStr := string(jsonBytes)
+	fmt.Println(jsonStr)
+	log.Print("===END===CreateBusKafka_WO=")
+	res, err := callAPI(os.Getenv("METTTER_SERVER")+"/mettriq/v1/work_order/create", "POST", data)
+	if err != nil {
+		return err
+	}
+
+	log.Print(res)
+
+	return nil
+}
+
+func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest) error {
+	log.Print("=====UpdateBusKafka_WO===")
+	currentDate := time.Now().Format("2006-01-02")
+	orgId := GetVariableFromToken(ctx, "orgId")
+
+	caseData, err := GetCaseByID(ctx, conn, orgId.(string), req.CaseId)
+	if err != nil {
+		log.Printf("Error getting case: %v", err)
+	}
+
+	areaDist, err := GetAreaById(ctx, conn, orgId.(string), caseData.DistID)
+	if err != nil {
+		log.Printf("areaDist Error: %v", err)
+	}
+	if areaDist == nil {
+		return fmt.Errorf("failed for areaDist: %s", caseData.DistID)
+	}
+	log.Print("=====areaDist===", areaDist.Th)
+
+	stName := mapStatus(req.Status)
+	//---> REF Number
+	data := map[string]interface{}{
+		"work_order_number":     req.CaseId,
+		"work_order_ref_number": caseData.IntegrationRefNumber,
+		"user_metadata": map[string]interface{}{
+			"assigned_employee_code":  req.UnitUser,
+			"associate_employee_code": []string{},
+		},
+		"sop_metadata": map[string]interface{}{},
+		"status":       stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
+		"work_date":    currentDate,
+		"workspace":    "bma",
+		"namespace":    "bma." + *areaDist.NameSpace,
+	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+	}
+
+	jsonStr := string(jsonBytes)
+	fmt.Println(jsonStr)
+	res, err := callAPI(os.Getenv("METTTER_SERVER")+"/mettriq/v1/work_order/update", "POST", data)
+	if err != nil {
+		return err
+	}
+
+	log.Print(res)
 
 	return nil
 }

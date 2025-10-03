@@ -419,6 +419,12 @@ const docTemplate = `{
                         "description": "category",
                         "name": "category",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "createBy",
+                        "name": "createBy",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -579,6 +585,61 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/caseId/{caseId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Cases By CaseId",
+                "operationId": "CaseData By CaseId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Case not found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -2554,45 +2615,6 @@ const docTemplate = `{
                         "name": "unitId",
                         "in": "path",
                         "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dispatch/{caseId}/close": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dispatch"
-                ],
-                "summary": "Dispatch unit follow SOP",
-                "operationId": "close case",
-                "parameters": [
-                    {
-                        "description": "Update unit event",
-                        "name": "Body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateStageRequest"
-                        }
                     }
                 ],
                 "responses": {
@@ -7193,6 +7215,9 @@ const docTemplate = `{
                 "caseDuration": {
                     "type": "integer"
                 },
+                "caseId": {
+                    "type": "string"
+                },
                 "caseLat": {
                     "type": "string"
                 },
@@ -8222,6 +8247,9 @@ const docTemplate = `{
         "model.Notification": {
             "type": "object",
             "properties": {
+                "additionalJson": {
+                    "type": "object"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -8277,6 +8305,9 @@ const docTemplate = `{
         "model.NotificationCreateRequest": {
             "type": "object",
             "properties": {
+                "additionalJson": {
+                    "type": "object"
+                },
                 "createdBy": {
                     "type": "string"
                 },
@@ -8563,6 +8594,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nodeId": {
+                    "type": "string"
+                },
+                "resDetail": {
+                    "type": "string"
+                },
+                "resId": {
                     "type": "string"
                 },
                 "status": {

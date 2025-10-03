@@ -127,7 +127,8 @@ func MinimalCreateCase(c *gin.Context) {
 	recipients := []model.Recipient{
 		{Type: "provId", Value: req.IotInfo.ProvID},
 	}
-	genNotiCustom(c, conn, orgId, "System", "MEETRIQ", "", "Create", data, "เปิด Case สำเร็จ : "+caseId, recipients, "", "User")
+	event := "CASE-CREATE"
+	genNotiCustom(c, conn, orgId, "System", "MEETRIQ", "", "Create", data, "เปิด Case สำเร็จ : "+caseId, recipients, "", "User", &event)
 
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",

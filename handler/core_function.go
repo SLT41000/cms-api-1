@@ -26,6 +26,7 @@ func callAPI(url string, method string, data map[string]interface{}) (string, er
 
 	// Create HTTP request
 	log.Print(url)
+	log.Print(reqBody)
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -101,6 +102,19 @@ func GetPriorityMap() map[string]int {
 		"HIGH":     getEnvAsInt("HIGH", 3),
 		"MEDIUM":   getEnvAsInt("MEDIUM", 6),
 		"LOW":      getEnvAsInt("LOW", 9),
+	}
+}
+
+func GetPriorityName_TXT(value int) string {
+	switch {
+	case value <= getEnvAsInt("CRITICAL", 1):
+		return "CRITICAL"
+	case value <= getEnvAsInt("HIGH", 3):
+		return "HIGH"
+	case value <= getEnvAsInt("MEDIUM", 6):
+		return "MEDIUM"
+	default:
+		return "LOW"
 	}
 }
 

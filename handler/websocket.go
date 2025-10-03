@@ -8,6 +8,7 @@ import (
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -98,7 +99,7 @@ func getUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username
 
 	// 1) ลองอ่านจาก user_connections ก่อน (เก็บ grpId เป็น array อยู่แล้ว)
 	connectionQuery := `
-        SELECT "empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists"
+        SELECT "empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists", COALESCE("ip", '') as ip
         FROM user_connections
         WHERE "orgId" = $1 AND "username" = $2
         LIMIT 1;
@@ -106,7 +107,7 @@ func getUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username
 	err := dbConn.QueryRow(ctx, connectionQuery, orgId, username).Scan(
 		&userProfile.ID, &userProfile.Username, &userProfile.OrgID,
 		&userProfile.DeptID, &userProfile.CommID, &userProfile.StnID,
-		&roleID, &GrpID, &userProfile.DistIdLists, // scan array -> []string
+		&roleID, &GrpID, &userProfile.DistIdLists, &userProfile.Ip, // scan array -> []string
 	)
 	if err == nil {
 		userProfile.RoleID = roleID
@@ -183,8 +184,8 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 
 	// หมายเหตุ: คอลัมน์ "grpId" และ "distIdLists" ใน user_connections ควรเป็น text[]/varchar[]
 	query := `
-    INSERT INTO user_connections ("empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists", "connectedAt")
-    VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), $8, $9, $10)
+    INSERT INTO user_connections ("empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists", "connectedAt","ip")
+    VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), $8, $9, $10,NULLIF($11, ''))
     ON CONFLICT ("empId") DO UPDATE SET
         "username"    = EXCLUDED."username",
         "orgId"       = EXCLUDED."orgId",
@@ -194,7 +195,8 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
         "roleId"      = EXCLUDED."roleId",
         "grpId"       = EXCLUDED."grpId",
         "distIdLists" = EXCLUDED."distIdLists",
-        "connectedAt" = EXCLUDED."connectedAt";
+        "connectedAt" = EXCLUDED."connectedAt",
+		"ip" = EXCLUDED."ip";
     `
 
 	// ส่ง []string ตรง ๆ (pgx v5 encode เป็น array ให้ ถ้าคอลัมน์เป็น text[]/varchar[])
@@ -211,11 +213,15 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 	} else {
 		distListsParam = userInfo.DistIdLists
 	}
-
+	clientAddr := userInfo.Conn.RemoteAddr().String()
+	clientIP, _, err_ip := net.SplitHostPort(clientAddr)
+	if err_ip != nil {
+		clientIP = clientAddr
+	}
 	_, err := dbConn.Exec(ctx, query,
 		userInfo.ID, userInfo.Username, userInfo.OrgID,
 		userInfo.DeptID, userInfo.CommID, userInfo.StnID,
-		userInfo.RoleID, grpIDParam, distListsParam, time.Now(),
+		userInfo.RoleID, grpIDParam, distListsParam, time.Now(), clientIP,
 	)
 	if err != nil {
 		log.Printf("ERROR: Failed to upsert user connection to DB for EmpID %s: %v", userInfo.ID, err)
@@ -261,7 +267,6 @@ func WebSocketHandler(c *gin.Context) {
 		return
 	}
 	defer wsConn.Close()
-
 	// อ่าน registration message แรกจาก client
 	_, msg, err := wsConn.ReadMessage()
 	if err != nil {
@@ -270,21 +275,31 @@ func WebSocketHandler(c *gin.Context) {
 	}
 
 	var regMsg model.RegistrationMessage
+
 	if err := json.Unmarshal(msg, &regMsg); err != nil {
 		log.Println("Invalid registration message format:", err)
 		_ = wsConn.WriteJSON(gin.H{"error": "invalid registration format"})
 		return
 	}
 
+	subscribeFailureResponse := model.SubscribeResponse{
+		EVENT:    "SUBSCRIBE-FAILURE",
+		Msg:      "user subscribe Failure",
+		OrgId:    regMsg.OrgID,
+		Username: regMsg.Username,
+	}
+
 	// (แนะนำ) validate ค่าว่างเบื้องต้น
 	if strings.TrimSpace(regMsg.OrgID) == "" || strings.TrimSpace(regMsg.Username) == "" {
 		_ = wsConn.WriteJSON(gin.H{"error": "orgId and username are required"})
+		wsConn.WriteJSON(subscribeFailureResponse)
 		return
 	}
 
 	dbConn, ctx, cancel := config.ConnectDB()
 	if dbConn == nil {
 		_ = wsConn.WriteJSON(gin.H{"error": "could not connect to the database"})
+		wsConn.WriteJSON(subscribeFailureResponse)
 		return
 	}
 
@@ -296,6 +311,7 @@ func WebSocketHandler(c *gin.Context) {
 	if err != nil {
 		log.Printf("User registration failed for '%s': %v", regMsg.Username, err)
 		_ = wsConn.WriteJSON(gin.H{"error": "user not found or invalid credentials"})
+		wsConn.WriteJSON(subscribeFailureResponse)
 		return
 	}
 	connInfo.Conn = wsConn
@@ -304,9 +320,39 @@ func WebSocketHandler(c *gin.Context) {
 	userConnections[connInfo.ID] = connInfo
 	connMutex.Unlock()
 
-	go upsertUserConnectionToDB(connInfo)
+	go func() {
+		if err := upsertUserConnectionToDB(connInfo); err != nil {
+			response := model.SubscribeResponse{
+				EVENT:    "SUBSCRIBE-FAILURE",
+				Msg:      err.Error(),
+				OrgId:    regMsg.OrgID,
+				Username: regMsg.Username,
+			}
+
+			connInfo.Conn.WriteJSON(response)
+
+		} else {
+			response := model.SubscribeResponse{
+				EVENT:    "SUBSCRIBE-SUCCESS",
+				Msg:      "user subscribe success",
+				OrgId:    regMsg.OrgID,
+				Username: regMsg.Username,
+			}
+
+			connInfo.Conn.WriteJSON(response)
+
+		}
+	}()
 
 	defer func() {
+		response := model.SubscribeResponse{
+			EVENT:    "SUBSCRIBE-KICK",
+			Msg:      "user was subscribe fron other client",
+			OrgId:    regMsg.OrgID,
+			Username: regMsg.Username,
+		}
+
+		connInfo.Conn.WriteJSON(response)
 		connMutex.Lock()
 		delete(userConnections, connInfo.ID)
 		connMutex.Unlock()

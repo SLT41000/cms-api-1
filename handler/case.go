@@ -283,6 +283,109 @@ func ListCase(c *gin.Context) {
 	logger.Info(logStr)
 }
 
+// @summary List CasesResult
+// @tags Cases
+// @security ApiKeyAuth
+// @id CaseResult
+// @accept json
+// @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/caseResult [get]
+func CaseResult(c *gin.Context) {
+	logger := config.GetLog()
+	conn, ctx, cancel := config.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	orgId := GetVariableFromToken(c, "orgId")
+	startStr := c.DefaultQuery("start", "0")
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	lengthStr := c.DefaultQuery("length", "1000")
+	length, err := strconv.Atoi(lengthStr)
+	if err != nil {
+		length = 1000
+	}
+
+	baseQuery := `SELECT id, "orgId", "resId", "en", "th", "active", "createdAt", 
+       "updatedAt", "createdBy", "updatedBy"
+	FROM public.case_results WHERE "orgId" = $1 
+	ORDER BY id LIMIT $2 OFFSET $3`
+
+	params := []interface{}{orgId, length, start}
+
+	rows, err := conn.Query(ctx, baseQuery, params...)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var CaseResults []model.CaseResult
+	found := false
+	for rows.Next() {
+		var cusCase model.CaseResult
+		err := rows.Scan(
+			&cusCase.ID,
+			&cusCase.OrgID,
+			&cusCase.ResID,
+			&cusCase.En,
+			&cusCase.Th,
+			&cusCase.Active,
+			&cusCase.CreatedAt,
+			&cusCase.UpdatedAt,
+			&cusCase.CreatedBy,
+			&cusCase.UpdatedBy,
+		)
+
+		if err != nil {
+			logger.Warn("Query failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			})
+			return
+		}
+
+		CaseResults = append(CaseResults, cusCase)
+		found = true
+	}
+
+	if !found {
+		c.JSON(http.StatusOK, model.Response{
+			Status: "0",
+			Msg:    "Success",
+			Desc:   "No records found",
+			Data:   []model.CaseResult{},
+		})
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   CaseResults,
+	}
+	c.JSON(http.StatusOK, response)
+
+	paramQuery := c.Request.URL.RawQuery
+	logStr := Process("caseResults", paramQuery, response.Status, paramQuery, response)
+	logger.Info(logStr)
+}
+
 // @summary Cases By Id
 // @tags Cases
 // @security ApiKeyAuth
@@ -503,6 +606,7 @@ func InsertCase(c *gin.Context) {
 		return
 	}
 	username := GetVariableFromToken(c, "username")
+	uuid := uuid.New()
 
 	now := time.Now()
 	var caseId string
@@ -514,35 +618,51 @@ func InsertCase(c *gin.Context) {
 		} else {
 			caseId = caseId_
 		}
-
+		//newUUID := uuid.String() // แปลงเป็น string
+		//req.ReferCaseID = &newUUID
 	} else {
 		caseId = *req.CaseId
 	}
+
 	var id int
 	orgId := GetVariableFromToken(c, "orgId")
+
+	sType, err := GetCaseSubTypeByCode(ctx, conn, orgId.(string), req.CaseSTypeID)
+	if err != nil {
+		log.Printf("sType Error: %v", err)
+	}
+	caseSLA := "0"
+	if sType == nil {
+		log.Printf("failed for CaseSTypeID: %s", req.CaseSTypeID)
+	} else {
+		caseSLA = sType.CaseSLA
+	}
+
+	log.Print("====sType=")
+	log.Print(caseSLA)
 	query := `
 	INSERT INTO public."tix_cases"(
 	"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions",source, "deviceId",
 	"phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr",
 	"caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
 	"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive,
-	userarrive, userclose, "resId", "resDetail", "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy")
+	userarrive, userclose, "resId", "resDetail", "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla" , "integration_ref_number")
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
 		$21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43
+		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43, $44, $45
 	) RETURNING id ;
 	`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
-	err := conn.QueryRow(ctx, query,
+	err = conn.QueryRow(ctx, query,
 		orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority, req.WfID, req.WfVersions,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
 		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-		req.ResDetail, req.ScheduleFlag, req.ScheduleDate, now, now, username, username).Scan(&id)
+		req.ResDetail, req.ScheduleFlag, req.ScheduleDate, now, now, username, username, caseSLA, uuid).Scan(&id)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
@@ -554,6 +674,8 @@ func InsertCase(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
+	req.CaseId = &caseId
+	CreateBusKafka_WO(c, conn, req, sType, uuid.String())
 
 	fmt.Printf("=======CurrentStage========")
 	fmt.Printf("%s", req.NodeID)
@@ -615,13 +737,8 @@ func InsertCase(c *gin.Context) {
 		{Type: "provId", Value: req.ProvID},
 	}
 
-	additionalJsonMap := map[string]interface{}{
-		"event": "Create",
-	}
-	additionalJSON, err := json.Marshal(additionalJsonMap)
-	additionalData := json.RawMessage(additionalJSON)
-	log.Printf("covent additionalData Error :", err)
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", &additionalData)
+	event := "CASE-CREATE"
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", &event)
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -733,13 +850,8 @@ func UpdateCase(c *gin.Context) {
 		caseId = *req.CaseId
 	}
 
-	additionalJsonMap := map[string]interface{}{
-		"event": "Update",
-	}
-	additionalJSON, err := json.Marshal(additionalJsonMap)
-	additionalData := json.RawMessage(additionalJSON)
-	log.Printf("covent additionalData Error :", err)
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User", &additionalData)
+	event := "CASE-UPDATE"
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User", &event)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{

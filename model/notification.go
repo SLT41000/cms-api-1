@@ -18,6 +18,7 @@ type UserConnectionInfo struct {
 	Username    string          `json:"username"`
 	GrpID       []string        `json:"grpId"`
 	DistIdLists []string        `json:"distIdLists"`
+	Ip          string          `json:"ip"`
 }
 type RegistrationMessage struct {
 	OrgID    string `json:"orgId"`    // องค์กร
@@ -32,6 +33,7 @@ type RegistrationMessage struct {
 
 // Notification คือข้อมูลการแจ้งเตือนหลัก
 type Notification struct {
+	Event       *string     `json:"EVENT"`
 	ID          int         `json:"id"`
 	OrgID       string      `json:"orgId"`
 	SenderType  string      `json:"senderType"`  // "SYSTEM" or "USER"
@@ -46,6 +48,14 @@ type Notification struct {
 	Data        []Data      `json:"data"`
 	Recipients  []Recipient `json:"recipients"` // ใช้ตอนสร้างเท่านั้น
 	Additional  interface{} `json:"additionalJson,omitempty" swaggertype:"object"`
+}
+
+// ใช้สำหรับการตอบกลับสถานะ connection
+type SubscribeResponse struct {
+	EVENT    string `json:"EVENT"`
+	Msg      string `json:"msg"`
+	OrgId    string `json:"orgId"`
+	Username string `json:"username"`
 }
 
 // Recipient คือเป้าหมายผู้รับ
@@ -72,5 +82,6 @@ type NotificationCreateRequest struct {
 	ExpiredAt   time.Time   `json:"expiredAt"`
 	Data        []Data      `json:"data"`
 	Recipients  []Recipient `json:"recipients"`
+	Event       string      `json:"EVENT"`
 	Additional  interface{} `json:"additionalJson,omitempty" swaggertype:"object"`
 }
