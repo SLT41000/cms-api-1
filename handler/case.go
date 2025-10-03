@@ -6,6 +6,7 @@ import (
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -627,7 +628,7 @@ func InsertCase(c *gin.Context) {
 	var id int
 	orgId := GetVariableFromToken(c, "orgId")
 
-	sType, err := GetCaseSubTypeByCode(ctx, conn, orgId.(string), req.CaseSTypeID)
+	sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), req.CaseSTypeID)
 	if err != nil {
 		log.Printf("sType Error: %v", err)
 	}
@@ -716,7 +717,7 @@ func InsertCase(c *gin.Context) {
 	}
 
 	//Noti Custom
-	statuses, err := GetCaseStatusList(c, conn, orgId.(string))
+	statuses, err := utils.GetCaseStatusList(c, conn, orgId.(string))
 	if err != nil {
 
 	}
@@ -738,7 +739,7 @@ func InsertCase(c *gin.Context) {
 	}
 
 	event := "CASE-CREATE"
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", &event)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", event)
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -851,7 +852,7 @@ func UpdateCase(c *gin.Context) {
 	}
 
 	event := "CASE-UPDATE"
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User", &event)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", "Update", data, "ได้ทำการแก้ไข Case : "+caseId, recipients, "/case/"+caseId, "User", event)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{

@@ -179,3 +179,22 @@ type FormAnswerRequest struct {
 	FormColSpan   int                      `json:"formColSpan"`
 	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
 }
+
+type NodeData struct {
+	ID   string `json:"id"`
+	Data struct {
+		Label  string `json:"label"`
+		Config struct {
+			Pic    []string `json:"pic"`
+			SLA    string   `json:"sla"` // SLA in minutes as string
+			Group  []string `json:"group"`
+			Action string   `json:"action"`
+			FormID string   `json:"formId"`
+		} `json:"config"`
+	} `json:"data"`
+	Type     string `json:"type"`
+	Position struct {
+		X int `json:"x"`
+		Y int `json:"y"`
+	} `json:"position"`
+}

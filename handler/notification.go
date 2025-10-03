@@ -147,7 +147,7 @@ func UpdateNotification(c *gin.Context) {
 		updatedNoti.CreatedBy = createdBy.String
 	}
 	if expiredAt.Valid {
-		updatedNoti.ExpiredAt = expiredAt.Time
+		updatedNoti.ExpiredAt = &expiredAt.Time
 	}
 
 	json.Unmarshal(recipientsStr, &updatedNoti.Recipients)
@@ -401,7 +401,7 @@ func GetNotificationsForUser(c *gin.Context) {
 			n.RedirectUrl = redirectUrl.String
 		}
 		if expiredAt.Valid {
-			n.ExpiredAt = expiredAt.Time
+			n.ExpiredAt = &expiredAt.Time
 		}
 
 		_ = json.Unmarshal(recipientsStr, &n.Recipients)

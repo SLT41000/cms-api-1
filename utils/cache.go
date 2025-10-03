@@ -1,11 +1,13 @@
-package handler
+package utils
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"mainPackage/model"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -205,4 +207,31 @@ func GetCaseSubTypeByCode(ctx context.Context, conn *pgx.Conn, orgId string, sTy
 	}
 
 	return &subType, nil
+}
+
+func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.CaseStatus, error) {
+	query := `
+		SELECT  "statusId", th, en, color, active 
+		FROM public.case_status 
+	`
+	log.Print("===GetCaseStatusList=")
+	log.Print(query)
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var statuses []model.CaseStatus
+	for rows.Next() {
+		var s model.CaseStatus
+		if err := rows.Scan(
+			&s.StatusID, &s.Th, &s.En, &s.Color, &s.Active,
+		); err != nil {
+			return nil, err
+		}
+		statuses = append(statuses, s)
+	}
+
+	return statuses, nil
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -48,7 +49,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	IntegrationRefNumber := workOrder.WorkOrderRefNumber
 	DeviceType := workOrder.DeviceMetadata.DeviceType
 	WorlkOrderType := workOrder.WorkOrderType
-	sType, err := GetSubTypeByID(ctx, conn, orgId, DeviceType, WorlkOrderType)
+	sType, err := utils.GetSubTypeByID(ctx, conn, orgId, DeviceType, WorlkOrderType)
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
@@ -98,7 +99,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	}
 
 	//======== Waiting Mapping Master data
-	area, err := GetAreaByNamespace(ctx, conn, orgId, workOrder.Namespace)
+	area, err := utils.GetAreaByNamespace(ctx, conn, orgId, workOrder.Namespace)
 	if err != nil {
 		log.Fatalf("lookup failed: %v", err)
 	}
@@ -149,7 +150,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	// TODO: upsert device info
 
 	// TODO: send notification
-	statuses, err := GetCaseStatusList(&gin.Context{}, conn, orgId)
+	statuses, err := utils.GetCaseStatusList(&gin.Context{}, conn, orgId)
 	if err != nil {
 
 	}
@@ -169,7 +170,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	recipients := []model.Recipient{
 		{Type: "provId", Value: *provId},
 	}
-	err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", *statusName.Th, data_, msg_alert, recipients, "", "User", nil)
+	err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", *statusName.Th, data_, msg_alert, recipients, "", "User", "")
 
 	//err_ = genNotiCustom(ctx, conn, orgId, "System", Provider, "", "Create", dataNoti, msg+" : "+caseId, recipients, "", "User")
 	if err_ != nil {
@@ -426,7 +427,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 	// }
 	log.Print("=====sType===", sType.TH)
 	log.Print("=====DistID===", req.DistID)
-	areaDist, err := GetAreaById(ctx, conn, orgId.(string), req.DistID)
+	areaDist, err := utils.GetAreaById(ctx, conn, orgId.(string), req.DistID)
 	if err != nil {
 		log.Printf("areaDist Error: %v", err)
 	}
@@ -495,7 +496,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		log.Printf("Error getting case: %v", err)
 	}
 
-	areaDist, err := GetAreaById(ctx, conn, orgId.(string), caseData.DistID)
+	areaDist, err := utils.GetAreaById(ctx, conn, orgId.(string), caseData.DistID)
 	if err != nil {
 		log.Printf("areaDist Error: %v", err)
 	}

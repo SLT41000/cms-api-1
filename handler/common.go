@@ -13,6 +13,7 @@ import (
 	"log"
 	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"os"
 	"reflect"
 	"strconv"
@@ -247,7 +248,7 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 	defer tx.Rollback(ctx)
 
 	var createdNotifications []model.Notification
-
+	now := time.Now()
 	for _, input := range inputs {
 		noti := model.Notification{
 			OrgID:       input.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
@@ -257,13 +258,13 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 			Message:     input.Message,
 			EventType:   input.EventType,
 			RedirectUrl: input.RedirectUrl,
-			Data:        input.Data,
-			CreatedAt:   time.Now(), // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
+			Data:        *input.Data,
+			CreatedAt:   &now, // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
 			CreatedBy:   input.CreatedBy,
 			ExpiredAt:   input.ExpiredAt,
-			Recipients:  input.Recipients,
+			Recipients:  *input.Recipients,
 			Additional:  input.Additional,
-			Event:       &input.Event,
+			Event:       input.Event,
 		}
 
 		recipientsJSON, err := json.Marshal(noti.Recipients)
@@ -275,19 +276,20 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 			return nil, fmt.Errorf("failed to process custom data: %w", err)
 		}
 
-		err = tx.QueryRow(ctx, `
+		if noti.EventType != "hidden" {
+			err = tx.QueryRow(ctx, `
 			INSERT INTO notifications 
 			("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
 		`, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
-			noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
+				noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
 
-		if err != nil {
-			return nil, fmt.Errorf("database insert failed: %w", err)
+			if err != nil {
+				return nil, fmt.Errorf("database insert failed: %w", err)
+			}
+
+			log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
 		}
-
-		log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
-
 		// Broadcast async
 		notiCopy := noti
 		go BroadcastNotification(notiCopy)
@@ -315,11 +317,11 @@ func genNotiCustom(
 	recipients []model.Recipient,
 	redirectUrl string,
 	senderType string,
-	event *string,
+	event string,
 	additional ...*json.RawMessage,
 ) error {
 
-	user, err := GetUserByUsername(c, conn, orgId, senderName)
+	user, err := utils.GetUserByUsername(c, conn, orgId, senderName)
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
@@ -331,6 +333,7 @@ func genNotiCustom(
 	}
 
 	// เตรียม request ชุดเดียว
+	now := time.Now().Add(24 * time.Hour)
 	req := model.NotificationCreateRequest{
 		OrgID:       orgId,
 		SenderType:  senderType,
@@ -339,11 +342,11 @@ func genNotiCustom(
 		Message:     message,
 		EventType:   eventType,
 		RedirectUrl: redirectUrl,
-		Data:        data,
-		Recipients:  recipients,
+		Data:        &data,
+		Recipients:  &recipients,
 		CreatedBy:   createdBy,
-		ExpiredAt:   time.Now().Add(24 * time.Hour), // default TTL 24 ชม.
-		Event:       *event,
+		ExpiredAt:   &now, // default TTL 24 ชม.
+		Event:       &event,
 	}
 	if len(additional) > 0 && additional[0] != nil {
 		req.Additional = *additional[0]
@@ -507,7 +510,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 				log.Print(Result_)
 				log.Println("Case status updated successfully")
 			}
-			GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 			//-->New Function for close
 			// UpdateBusKafka_WO(ctx, conn, req)
 			return Result, err
@@ -555,7 +558,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		} else {
 			log.Println("Case status updated successfully")
 		}
-		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 
@@ -580,7 +583,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			log.Println("Case status updated successfully")
 		}
 
-		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 		UpdateBusKafka_WO(ctx, conn, req)
 
 		return Result, err
@@ -594,7 +597,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			return Result, err
 		}
 
-		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 
@@ -607,7 +610,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			return Result, err
 		}
 
-		GenerateNotiAndComment(ctx, conn, req, orgId.(string))
+		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 		UpdateBusKafka_WO(ctx, conn, req)
 		return Result, err
 	}
@@ -928,7 +931,7 @@ func UpdateCaseCurrentStage(
 		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.3-" + stageType, Desc: err.Error()}, err
 	}
 
-	//GenerateNotiAndComment(ctx, conn, req, node.OrgID)
+	//GenerateNotiAndComment(ctx, conn, req, node.OrgID, "0")
 
 	return model.Response{Status: "0", Msg: "Success", Desc: "UpdateCaseCurrentStage-" + stageType}, nil
 }
@@ -1131,8 +1134,9 @@ func ConvertProps(props []model.GetUnisProp, data []string) []model.GetUnisProp 
 func GenerateNotiAndComment(ctx *gin.Context,
 	conn *pgx.Conn,
 	req model.UpdateStageRequest,
-	orgId string) error {
-	statuses, err := GetCaseStatusList(ctx, conn, orgId)
+	orgId string,
+	delay string) error {
+	statuses, err := utils.GetCaseStatusList(ctx, conn, orgId)
 	if err != nil {
 		return err
 	}
@@ -1152,7 +1156,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 
 	data := []model.Data{
-		{Key: "delay", Value: "0"}, //0=white, 1=yellow , 2=red
+		{Key: "delay", Value: delay}, //0=white, 1=yellow , 2=red
 	}
 	recipients := []model.Recipient{
 		{Type: "provId", Value: provID},
@@ -1165,7 +1169,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 
 	msg_alert := msg + " :: " + req.CaseId
-	var event = "CASE-STATUS-CHANGE"
+	var event = "CASE-STATUS-UPDATE"
 	additionalJsonMap := map[string]interface{}{
 		"event":  event,
 		"caseId": req.CaseId,
@@ -1173,10 +1177,10 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
-		log.Printf("covent additionalData Error :", err)
+		log.Print("covent additionalData Error :", err)
 	}
 	additionalData := json.RawMessage(additionalJSON)
-	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "", "User", &event, &additionalData)
+	genNotiCustom(ctx, conn, orgId, username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+req.CaseId, "User", event, &additionalData)
 
 	evt := model.CaseHistoryEvent{
 		OrgID:     orgId,
@@ -1188,6 +1192,7 @@ func GenerateNotiAndComment(ctx *gin.Context,
 		CreatedBy: username.(string),
 	}
 
+	log.Print("====InsertCaseHistoryEvent===")
 	err = InsertCaseHistoryEvent(ctx, conn, evt)
 	if err != nil {
 		log.Fatalf("Insert failed: %v", err)

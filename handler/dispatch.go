@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 
 	"log"
@@ -986,7 +987,7 @@ func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId s
 
 func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {
 	// 1. Get master status list
-	statuses, err := GetCaseStatusList(ctx, conn, orgID)
+	statuses, err := utils.GetCaseStatusList(ctx, conn, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -1032,33 +1033,6 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 	respondersNew := CalSLA(responders)
 	//log.Print(respondersNew)
 	return respondersNew, nil
-}
-
-func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.CaseStatus, error) {
-	query := `
-		SELECT  "statusId", th, en, color, active 
-		FROM public.case_status 
-	`
-	log.Print("===GetCaseStatusList=")
-	log.Print(query)
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var statuses []model.CaseStatus
-	for rows.Next() {
-		var s model.CaseStatus
-		if err := rows.Scan(
-			&s.StatusID, &s.Th, &s.En, &s.Color, &s.Active,
-		); err != nil {
-			return nil, err
-		}
-		statuses = append(statuses, s)
-	}
-
-	return statuses, nil
 }
 
 func CalSLA(timelines []model.CaseResponderCustom) []model.CaseResponderCustom {

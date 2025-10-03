@@ -386,63 +386,93 @@ func BroadcastNotification(noti model.Notification) {
 			continue
 		}
 
-		isTrueBroadcast := noti.Recipients == nil || len(noti.Recipients) == 0
+		var isTrueBroadcast bool
+		if noti.Recipients != nil {
+			isTrueBroadcast = len(noti.Recipients) == 0
 
-		if isTrueBroadcast {
-			log.Printf("  🚀 True broadcast! Sending to EmpID: %s (OrgID: %s)", connInfo.ID, connInfo.OrgID)
-			if err := connInfo.Conn.WriteJSON(noti); err != nil {
-				log.Printf("    ❌ Failed to send to EmpID %s: %v", connInfo.ID, err)
-			}
-			sentTo[connInfo.ID] = true
-			continue
-		}
-
-		for _, recipient := range noti.Recipients {
-			shouldReceive := false
-
-			// รองรับการส่ง value หลายค่าในหนึ่ง rule ด้วย comma
-			values := strings.Split(recipient.Value, ",")
-			for _, value := range values {
-				value = strings.TrimSpace(value)
-
-				switch strings.ToLower(recipient.Type) {
-				case "orgid":
-					shouldReceive = connInfo.OrgID == value
-				case "empid":
-					shouldReceive = connInfo.ID == value
-				case "roleid":
-					shouldReceive = connInfo.RoleID == value
-				case "deptid":
-					shouldReceive = connInfo.DeptID == value
-				case "stnid":
-					shouldReceive = connInfo.StnID == value
-				case "commid":
-					shouldReceive = connInfo.CommID == value
-				case "username":
-					shouldReceive = connInfo.Username == value
-				case "grpid":
-					// เช็คสมาชิกใน array
-					shouldReceive = contains(connInfo.GrpID, value)
-				case "provid":
-					shouldReceive = checkUserInProvince(connInfo.DistIdLists, value)
-				case "distid":
-					shouldReceive = checkUserInDistrict(connInfo.DistIdLists, value)
-				}
-
-				if shouldReceive {
-					break
-				}
-			}
-
-			if shouldReceive {
-				log.Printf("  🚀 Match found! Sending to EmpID: %s (Rule: %s:%s)", connInfo.ID, recipient.Type, recipient.Value)
+			if isTrueBroadcast {
+				log.Printf("  🚀 True broadcast! Sending to EmpID: %s (OrgID: %s)", connInfo.ID, connInfo.OrgID)
 				if err := connInfo.Conn.WriteJSON(noti); err != nil {
 					log.Printf("    ❌ Failed to send to EmpID %s: %v", connInfo.ID, err)
 				}
 				sentTo[connInfo.ID] = true
-				break
+				continue
+			}
+
+			for _, recipient := range noti.Recipients {
+				shouldReceive := false
+
+				// รองรับการส่ง value หลายค่าในหนึ่ง rule ด้วย comma
+				values := strings.Split(recipient.Value, ",")
+				for _, value := range values {
+					value = strings.TrimSpace(value)
+
+					switch strings.ToLower(recipient.Type) {
+					case "orgid":
+						shouldReceive = connInfo.OrgID == value
+					case "empid":
+						shouldReceive = connInfo.ID == value
+					case "roleid":
+						shouldReceive = connInfo.RoleID == value
+					case "deptid":
+						shouldReceive = connInfo.DeptID == value
+					case "stnid":
+						shouldReceive = connInfo.StnID == value
+					case "commid":
+						shouldReceive = connInfo.CommID == value
+					case "username":
+						shouldReceive = connInfo.Username == value
+					case "grpid":
+						// เช็คสมาชิกใน array
+						shouldReceive = contains(connInfo.GrpID, value)
+					case "provid":
+						shouldReceive = checkUserInProvince(connInfo.DistIdLists, value)
+					case "distid":
+						shouldReceive = checkUserInDistrict(connInfo.DistIdLists, value)
+					}
+
+					if shouldReceive {
+						break
+					}
+				}
+
+				if shouldReceive {
+					log.Printf("  🚀 Match found! Sending to EmpID: %s (Rule: %s:%s)", connInfo.ID, recipient.Type, recipient.Value)
+					var socketPayload model.Notification
+					if noti.EventType == "hidden" {
+						socketPayload = model.Notification{ //if you not want to use noti triger in front end use this
+							EventType:  noti.EventType,
+							Additional: noti.Additional,
+							Event:      noti.Event,
+						}
+					} else {
+						now := time.Now()
+						socketPayload = model.Notification{
+							OrgID:       noti.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
+							SenderType:  noti.SenderType,
+							Sender:      noti.Sender,
+							SenderPhoto: noti.SenderPhoto,
+							Message:     noti.Message,
+							EventType:   noti.EventType,
+							RedirectUrl: noti.RedirectUrl,
+							Data:        noti.Data,
+							CreatedAt:   &now, // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
+							CreatedBy:   noti.CreatedBy,
+							ExpiredAt:   noti.ExpiredAt,
+							Additional:  noti.Additional,
+							Event:       noti.Event,
+						}
+					}
+
+					if err := connInfo.Conn.WriteJSON(socketPayload); err != nil {
+						log.Printf("    ❌ Failed to send to EmpID %s: %v", connInfo.ID, err)
+					}
+					sentTo[connInfo.ID] = true
+					break
+				}
+				log.Printf("✅ Broadcasting finished for notification ID: %s", noti.ID)
 			}
 		}
 	}
-	log.Printf("✅ Broadcasting finished for notification ID: %s", noti.ID)
+
 }

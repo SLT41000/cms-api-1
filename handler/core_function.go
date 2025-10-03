@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func callAPI(url string, method string, data map[string]interface{}) (string, error) {
@@ -129,4 +133,66 @@ func getEnvAsInt(key string, defaultVal int) int {
 		return defaultVal
 	}
 	return val
+}
+
+func ConvertStatusList(input string) string {
+	// Split by comma
+	parts := strings.Split(input, ",")
+
+	// Trim spaces and wrap each item with quotes
+	for i := range parts {
+		parts[i] = fmt.Sprintf("'%s'", strings.TrimSpace(parts[i]))
+	}
+
+	// Join back with commas
+	return strings.Join(parts, ", ")
+}
+
+func LoadSLAChangeMap() map[string]string {
+	mapping := make(map[string]string)
+	changeStr := os.Getenv("MONITOR_SLA_CHANGE")
+
+	// Split ด้วย comma
+	pairs := strings.Split(changeStr, ",")
+	for _, p := range pairs {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		// แยกด้วย "->"
+		parts := strings.Split(p, "->")
+		if len(parts) == 2 {
+			from := strings.TrimSpace(parts[0])
+			to := strings.TrimSpace(parts[1])
+			mapping[from] = to
+		}
+	}
+	return mapping
+}
+
+func RecheckSLA(currentStatus string) string {
+	mapping := LoadSLAChangeMap()
+	if next, ok := mapping[currentStatus]; ok {
+		return next
+	}
+	return currentStatus
+}
+
+func UpdateCaseSLAPlus(ctx context.Context, conn *pgx.Conn, orgId, caseId string, overSlaFlag bool, overSlaDate time.Time) error {
+	query := `
+		UPDATE tix_cases
+		SET "overSlaFlag" = $1,
+		    "overSlaDate" = $2,
+		    "overSlaCount" = COALESCE("overSlaCount", 0) + 1,
+		    "updatedAt" = NOW()
+		WHERE "orgId" = $3
+		  AND "caseId" = $4;
+	`
+	//log.Print("====UpdateCaseSLAPlus===", query)
+	_, err := conn.Exec(ctx, query, overSlaFlag, overSlaDate, orgId, caseId)
+	if err != nil {
+		return fmt.Errorf("update case SLA failed: %w", err)
+	}
+
+	return nil
 }

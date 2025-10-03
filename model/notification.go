@@ -34,19 +34,19 @@ type RegistrationMessage struct {
 // Notification คือข้อมูลการแจ้งเตือนหลัก
 type Notification struct {
 	Event       *string     `json:"EVENT"`
-	ID          int         `json:"id"`
-	OrgID       string      `json:"orgId"`
-	SenderType  string      `json:"senderType"`  // "SYSTEM" or "USER"
-	SenderPhoto string      `json:"senderPhoto"` // เพิ่มใหม่
-	Sender      string      `json:"sender"`
-	Message     string      `json:"message"`
+	ID          int         `json:"id,omitempty"`
+	OrgID       string      `json:"orgId,omitempty"`
+	SenderType  string      `json:"senderType,omitempty"`  // "SYSTEM" or "USER"
+	SenderPhoto string      `json:"senderPhoto,omitempty"` // เพิ่มใหม่
+	Sender      string      `json:"sender,omitempty"`
+	Message     string      `json:"message,omitempty"`
 	EventType   string      `json:"eventType"`
-	RedirectUrl string      `json:"redirectUrl"`
-	CreatedAt   time.Time   `json:"createdAt"`
-	CreatedBy   string      `json:"createdBy"` // เพิ่มใหม่
-	ExpiredAt   time.Time   `json:"expiredAt"` // เพิ่มใหม่
-	Data        []Data      `json:"data"`
-	Recipients  []Recipient `json:"recipients"` // ใช้ตอนสร้างเท่านั้น
+	RedirectUrl string      `json:"redirectUrl,omitempty"`
+	CreatedAt   *time.Time  `json:"createdAt,omitempty"`
+	CreatedBy   string      `json:"createdBy,omitempty"` // เพิ่มใหม่
+	ExpiredAt   *time.Time  `json:"expiredAt,omitempty"` // เพิ่มใหม่
+	Data        []Data      `json:"data,omitempty"`
+	Recipients  []Recipient `json:"recipients,omitempty"` // ใช้ตอนสร้างเท่านั้น
 	Additional  interface{} `json:"additionalJson,omitempty" swaggertype:"object"`
 }
 
@@ -71,17 +71,19 @@ type Data struct {
 // NotificationCreateRequest สำหรับ request body ในการสร้าง notification ใหม่
 // ไม่รวม ID และ CreatedAt เพราะจะถูกสร้างโดยระบบ
 type NotificationCreateRequest struct {
-	OrgID       string      `json:"orgId"`
-	SenderType  string      `json:"senderType"` // "SYSTEM" or "USER"
-	SenderPhoto string      `json:"senderPhoto"`
-	Sender      string      `json:"sender"`
-	Message     string      `json:"message"`
-	EventType   string      `json:"eventType"`
-	RedirectUrl string      `json:"redirectUrl"`
-	CreatedBy   string      `json:"createdBy"`
-	ExpiredAt   time.Time   `json:"expiredAt"`
-	Data        []Data      `json:"data"`
-	Recipients  []Recipient `json:"recipients"`
-	Event       string      `json:"EVENT"`
-	Additional  interface{} `json:"additionalJson,omitempty" swaggertype:"object"`
+	Event       *string      `json:"EVENT"`
+	ID          int          `json:"id,omitempty"`
+	OrgID       string       `json:"orgId,omitempty"`
+	SenderType  string       `json:"senderType,omitempty"`  // "SYSTEM" or "USER"
+	SenderPhoto string       `json:"senderPhoto,omitempty"` // เพิ่มใหม่
+	Sender      string       `json:"sender,omitempty"`
+	Message     string       `json:"message,omitempty"`
+	EventType   string       `json:"eventType"`
+	RedirectUrl string       `json:"redirectUrl,omitempty"`
+	CreatedAt   *time.Time   `json:"createdAt,omitempty"`
+	CreatedBy   string       `json:"createdBy,omitempty"` // เพิ่มใหม่
+	ExpiredAt   *time.Time   `json:"expiredAt,omitempty"` // เพิ่มใหม่
+	Data        *[]Data      `json:"data,omitempty"`
+	Recipients  *[]Recipient `json:"recipients,omitempty"` // ใช้ตอนสร้างเท่านั้น
+	Additional  interface{}  `json:"additionalJson,omitempty" swaggertype:"object"`
 }

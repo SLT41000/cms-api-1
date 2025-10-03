@@ -241,6 +241,30 @@ func InsertCaseHistory(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
+
+	// query to get proid
+	query = `
+	SELECT "provId" 
+	FROM public."tix_cases" 
+	WHERE "caseId" = $1
+	`
+
+	var proid string
+	err = conn.QueryRow(ctx, query, req.CaseID).Scan(&proid)
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		logger.Warn("add history failed", zap.Error(err))
+		return
+	}
+	recipients := []model.Recipient{
+		{Type: "provId", Value: proid},
+	}
+
 	additionalJsonMap := req
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
@@ -248,7 +272,7 @@ func InsertCaseHistory(c *gin.Context) {
 	}
 	additionalData := json.RawMessage(additionalJSON)
 	event := "CASE-HISTORY"
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", nil, "/case/"+req.CaseID, "User", &event, &additionalData)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", recipients, "/case/"+req.CaseID, "User", event, &additionalData)
 
 	// Continue logic...
 	c.JSON(http.StatusOK, model.Response{
