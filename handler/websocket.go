@@ -448,6 +448,7 @@ func BroadcastNotification(noti model.Notification) {
 					} else {
 						now := time.Now()
 						socketPayload = model.Notification{
+							ID:          noti.ID,
 							OrgID:       noti.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
 							SenderType:  noti.SenderType,
 							Sender:      noti.Sender,

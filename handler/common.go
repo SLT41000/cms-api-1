@@ -508,14 +508,14 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 				log.Printf("Update status failed: %v", err)
 			} else {
 				log.Print(Result_)
-				log.Println("Case status updated successfully")
+				log.Println("Case status updated successfully-1")
 			}
 			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 			//-->New Function for close
 			// UpdateBusKafka_WO(ctx, conn, req)
 			return Result, err
 		} else {
-			log.Println(" Status worng number :", err)
+			log.Println("Status worng number-1 :", err)
 			return model.Response{Status: "-1", Msg: "Failure.3", Desc: "Status worng number!"}, err
 		}
 
@@ -532,8 +532,8 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			return result, err
 		}
 	} else {
-		log.Println(" Status worng number :", err)
-		return model.Response{Status: "-1", Msg: "Failure.3", Desc: "Status worng number!"}, err
+		log.Println("Status worng number-2 :", err)
+		return model.Response{Status: "-2", Msg: "Failure.3", Desc: "Status worng number!"}, err
 	}
 
 	//return model.Response{}, err
@@ -556,7 +556,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			log.Printf("Update status failed: %v", err)
 		} else {
-			log.Println("Case status updated successfully")
+			log.Println("Case status updated successfully-2")
 		}
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
 		UpdateBusKafka_WO(ctx, conn, req)
@@ -580,7 +580,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			log.Printf("Update status failed: %v", err)
 		} else {
-			log.Println("Case status updated successfully")
+			log.Println("Case status updated successfully-3")
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
@@ -992,17 +992,21 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 	now := time.Now()
 
 	if req.ResID != "" {
+		log.Print("===DispatchUpdateCaseStatus--A===")
 		query := `
     UPDATE public."tix_cases"
     SET "statusId" = $1,
         "updatedAt" = $2,
         "updatedBy" = $3,
 		"resId" = $4,
-		"resDetail" = $5
+		"resDetail" = $5,
+		"overSlaFlag" = $7,
+		"overSlaDate" = $8,
+		"overSlaCount" = 0
     WHERE "caseId" = $6;
     `
-
-		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.ResID, req.ResDetail, req.CaseId)
+		log.Print("====XXXXXXXX===")
+		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.ResID, req.ResDetail, req.CaseId, false, nil)
 		if err != nil {
 			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
 		}
@@ -1012,15 +1016,19 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 		}
 
 	} else {
+		log.Print("===DispatchUpdateCaseStatus--B===")
 		query := `
     UPDATE public."tix_cases"
     SET "statusId" = $1,
         "updatedAt" = $2,
-        "updatedBy" = $3
+        "updatedBy" = $3,
+		"overSlaFlag" = $5,
+		"overSlaDate" = $6,
+		"overSlaCount" = 0
     WHERE "caseId" = $4;
     `
 
-		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.CaseId)
+		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.CaseId, false, nil)
 		if err != nil {
 			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
 		}

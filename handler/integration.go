@@ -366,7 +366,10 @@ SET
 	"updatedAt" = $6,
 	"updatedBy" = $7,
 	"integration_ref_number" = $8, 
-	"deviceMetaData" = $9
+	"deviceMetaData" = $9,
+	"overSlaFlag" = $12,
+	"overSlaDate" = $13,
+	"overSlaCount" = 0
 WHERE 
 	"orgId" = $10 AND 
 	"caseId" = $11;
@@ -384,6 +387,8 @@ WHERE
 		string(deviceJSON),                      // $9  deviceMetaData
 		orgId,                                   // $10 orgId
 		caseId,                                  // $11 caseId
+		false,
+		nil,
 	)
 
 	if err != nil {
