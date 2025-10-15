@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"os"
@@ -148,7 +147,7 @@ func unmarshalToSliceOfMaps(data []byte) ([]map[string]interface{}, error) {
 }
 
 func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context, req model.CustomCaseCurrentStage) error {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
@@ -237,7 +236,7 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 		return nil, fmt.Errorf("notification array cannot be empty")
 	}
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	defer cancel()
 	defer conn.Close(ctx)
 
@@ -377,7 +376,7 @@ func genNotiCustom(
 // UpdateCurrentStage replaces fn_dispatch_unit_stage
 func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest) (model.Response, error) {
 	var result model.Response
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	username := GetVariableFromToken(ctx, "username")
 	orgId := GetVariableFromToken(ctx, "orgId")
 	log.Print("====9===")
@@ -510,7 +509,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 				log.Print(Result_)
 				log.Println("Case status updated successfully-1")
 			}
-			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
+			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0", &req.ResDetail)
 			//-->New Function for close
 			// UpdateBusKafka_WO(ctx, conn, req)
 			return Result, err
@@ -1143,7 +1142,9 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	conn *pgx.Conn,
 	req model.UpdateStageRequest,
 	orgId string,
-	delay string) error {
+	delay string,
+	additionalMessage ...*string,
+) error {
 	statuses, err := utils.GetCaseStatusList(ctx, conn, orgId)
 	if err != nil {
 		return err
@@ -1154,13 +1155,18 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	}
 	statusName := statusMap[req.Status]
 
+	if statusName.Th == nil {
+		return fmt.Errorf("status %s has nil Th field", req.Status)
+	}
+
 	log.Print("====statusName===")
 	log.Print(statusName)
-	provID, err := GetProvIDFromCase(ctx, conn, req.CaseId)
+	provID, wfId, versions, err := GetInfoFromCase(ctx, conn, orgId, req.CaseId)
 	if err != nil {
 		log.Printf("error getting provId: %v", err)
 	} else {
 		log.Printf("provId = %s", provID)
+		log.Print(provID, wfId, versions)
 	}
 
 	data := []model.Data{
@@ -1173,15 +1179,24 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	username := GetVariableFromToken(ctx, "username")
 	msg := *statusName.Th
 	if username != req.UnitUser {
-		msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
+		if req.Status == os.Getenv("REQUESTCLOSE") {
+			if len(additionalMessage) > 0 {
+				msg = msg + " : " + *additionalMessage[0]
+			}
+		} else if req.Status != os.Getenv("ASSIGNED") {
+			msg = *statusName.Th + "( แทน " + req.UnitUser + ")"
+		} else {
+			msg = *statusName.Th + "(" + req.UnitUser + ")"
+		}
 	}
 
 	msg_alert := msg + " :: " + req.CaseId
 	var event = "CASE-STATUS-UPDATE"
 	additionalJsonMap := map[string]interface{}{
-		"event":  event,
-		"caseId": req.CaseId,
-		"status": req.Status,
+		"event":    event,
+		"caseId":   req.CaseId,
+		"status":   req.Status,
+		"ms_alert": msg_alert,
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
@@ -1209,24 +1224,25 @@ func GenerateNotiAndComment(ctx *gin.Context,
 	return nil
 }
 
-func GetProvIDFromCase(ctx context.Context, conn *pgx.Conn, caseID string) (string, error) {
-	var provID string
+func GetInfoFromCase(ctx context.Context, conn *pgx.Conn, orgId string, caseID string) (string, string, string, error) {
+	var provID, wfId, versions string
 
 	query := `
-        SELECT "provId"
+        SELECT "provId", "wfId", "versions"
         FROM public.tix_cases
-        WHERE "caseId" = $1
+        WHERE "orgId" = $1
+		AND "caseId" = $2
         LIMIT 1
     `
-	err := conn.QueryRow(ctx, query, caseID).Scan(&provID)
+	err := conn.QueryRow(ctx, query, orgId, caseID).Scan(&provID, &wfId, &versions)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return "", fmt.Errorf("no provId found for caseId: %s", caseID)
+			return "", "", "", fmt.Errorf("no provId found for caseId: %s", caseID)
 		}
-		return "", err
+		return "", "", "", err
 	}
 
-	return provID, nil
+	return provID, wfId, versions, nil
 }
 
 func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseHistoryEvent) error {

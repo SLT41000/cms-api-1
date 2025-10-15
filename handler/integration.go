@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"os"
@@ -195,7 +194,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 }
 
 func IntegrateCaseCurrentStageInsert(username string, orgId string, conn *pgx.Conn, ctx context.Context, req model.CustomCaseCurrentStage) error {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
 	now := time.Now()
 
@@ -524,6 +523,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		"work_date":    currentDate,
 		"workspace":    "bma",
 		"namespace":    "bma." + *areaDist.NameSpace,
+		"source":       os.Getenv("SYSTEM_OWNER"),
 	}
 
 	jsonBytes, err := json.Marshal(data)

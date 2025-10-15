@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"mainPackage/config"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
+	"os"
+	"time"
 
 	"log"
 
@@ -26,8 +27,8 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/dispatch/{caseId}/SOP [get]
 func GetSOP(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -135,11 +136,11 @@ func GetSOP(c *gin.Context) {
 	cusCase.ReferCaseLists = referCaseLists
 
 	//Get Units
-	unitLists, err := GetUnits(ctx, conn, orgId.(string), caseId, cusCase.StatusID)
+	unitLists, count, err := GetUnits(ctx, conn, orgId.(string), caseId, "", "")
 	if err != nil {
 		panic(err)
 	}
-	log.Print(unitLists)
+	log.Print(unitLists, count)
 	cusCase.UnitLists = unitLists
 
 	//Get Cuurent dynamic form
@@ -157,6 +158,14 @@ func GetSOP(c *gin.Context) {
 	}
 	cusCase.SlaTimelines = slaTimelines
 
+	//Get Attachment
+	attachments, err := GetCaseAttachments(ctx, conn, orgId.(string), caseId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	cusCase.Attachments = attachments
+
 	// Final JSON
 	response := model.Response{
 		Status: "0",
@@ -172,8 +181,8 @@ func GetSOP(c *gin.Context) {
 }
 
 func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId string) ([]model.WorkflowNode, *model.CurrentStage, *model.WorkflowNode, *model.WorkflowNode, error) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return nil, nil, nil, nil, nil
 	}
@@ -302,7 +311,9 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId stri
 	log.Print(nextNode)
 	log.Println("===== END =====")
 
-	return allNodes, &current, &nextNode, &dispatchNode, nil
+	allNodes_ := AddPreviousSLA(allNodes)
+
+	return allNodes_, &current, &nextNode, &dispatchNode, nil
 }
 
 // @summary Get Unit
@@ -315,8 +326,8 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId stri
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/dispatch/{caseId}/units [get]
 func GetUnit(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -333,120 +344,6 @@ func GetUnit(c *gin.Context) {
 
 	orgId := GetVariableFromToken(c, "orgId")
 	caseId := c.Param("caseId")
-
-	//		query := `
-	//	  WITH case_info AS (
-	//	  SELECT
-	//	    c."caseSTypeId",
-	//	    c."countryId",
-	//	    c."provId",
-	//	    c."distId",
-	//	    s."unitPropLists",
-	//	    s."userSkillList"
-	//	  FROM "tix_cases" c
-	//	  JOIN "case_sub_types" s ON c."caseSTypeId" = s."sTypeId"
-	//	  WHERE c."caseId" = $1
-	//	    AND s."active" = TRUE
-	//
-	// ),
-	// unit_with_props AS (
-	//
-	//	SELECT
-	//	  "unitId",
-	//	  array_agg("propId") AS props
-	//	FROM "mdm_unit_with_properties"
-	//	WHERE "active" = TRUE
-	//	GROUP BY "unitId"
-	//
-	// ),
-	// units_matched AS (
-	//
-	//	SELECT u."unitId", u."unitName", p.props
-	//	FROM "mdm_units" u
-	//	JOIN unit_with_props p ON u."unitId" = p."unitId"
-	//	CROSS JOIN case_info c
-	//	WHERE u."active" = TRUE
-	//	  AND (
-	//	    SELECT COUNT(DISTINCT prop_uuid)
-	//	    FROM (
-	//	      SELECT (jsonb_array_elements_text(c."unitPropLists"::jsonb))::uuid AS prop_uuid
-	//	    ) AS required_props
-	//	    WHERE prop_uuid = ANY(p.props)
-	//	  ) = (SELECT jsonb_array_length(c."unitPropLists"::jsonb))
-	//
-	// ),
-	// users_on_units AS (
-	//
-	//	SELECT u."unitId", mdm."username"
-	//	FROM units_matched u
-	//	JOIN "mdm_units" mdm ON mdm."unitId" = u."unitId" AND mdm."active" = TRUE
-	//	JOIN "um_users" um ON um."username" = mdm."username" AND um."active" = TRUE
-	//
-	// ),
-	// users_with_skill AS (
-	//
-	//	SELECT DISTINCT "userName"
-	//	FROM "um_user_with_skills"
-	//	WHERE "skillId" IN (
-	//	  SELECT (jsonb_array_elements_text(ci."userSkillList"::jsonb))::uuid
-	//	  FROM case_info ci
-	//	)
-	//	AND "active" = TRUE
-	//
-	// ),
-	// users_in_area AS (
-	//
-	//	SELECT "username"
-	//	FROM "um_user_with_area_response" ua
-	//	CROSS JOIN case_info c
-	//	WHERE ua."orgId" = $2
-	//	  AND EXISTS (
-	//	    SELECT 1
-	//	    FROM jsonb_array_elements_text(ua."distIdLists") AS distId
-	//	    WHERE distId.value = c."distId"
-	//	  )
-	//
-	// )
-	// SELECT mu."orgId",
-	//
-	//	mu."unitId",
-	//	mu."unitName",
-	//	mu."unitSourceId",
-	//	mu."unitTypeId",
-	//	mu."priority",
-	//	mu."compId",
-	//	mu."deptId",
-	//	mu."commId",
-	//	mu."stnId",
-	//	mu."plateNo",
-	//	mu."provinceCode",
-	//	mu."active",
-	//	mu."username",
-	//	mu."isLogin",
-	//	mu."isFreeze",
-	//	mu."isOutArea",
-	//	mu."locLat",
-	//	mu."locLon",
-	//	mu."locAlt",
-	//	mu."locBearing",
-	//	mu."locSpeed",
-	//	mu."locProvider",
-	//	mu."locGpsTime",
-	//	mu."locSatellites",
-	//	mu."locAccuracy",
-	//	mu."locLastUpdateTime",
-	//	mu."breakDuration",
-	//	mu."healthChk",
-	//	mu."healthChkTime",
-	//	mu."sttId",
-	//	mu."createdBy",
-	//	mu."updatedBy"
-	//
-	// FROM users_on_units u
-	// JOIN users_with_skill us ON u."username" = us."userName"
-	// JOIN users_in_area ua ON u."username" = ua."username"
-	// JOIN "mdm_units" mu ON mu."unitId" = u."unitId";
-	// `
 
 	//--Get Skill All
 	Skills, err_ := GetUserSkills(ctx, conn, orgId.(string))
@@ -627,9 +524,9 @@ CROSS JOIN case_info ci;
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/dispatch/event [post]
 func UpdateCurrentStage(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -671,18 +568,14 @@ func UpdateCurrentStage(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/dispatch/{caseId}/SOP/unit/{unitId} [get]
 func GetUnitSOP(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
 
 	defer cancel()
 	defer conn.Close(ctx)
-
-	if conn == nil {
-		return
-	}
 
 	fmt.Println("=xcxxxx==xx=x=x=x=x=x")
 	log.Println("===")
@@ -831,36 +724,68 @@ func GetReferCaseList(ctx context.Context, conn *pgx.Conn, orgID string, caseID 
 }
 
 // GetUnits returns a list of units (unitId, username)
-func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, statusId string) ([]model.UnitDispatch, error) {
+func GetUnits(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, statusId string, unitID string) ([]model.UnitDispatch, int, error) {
 	var unitLists []model.UnitDispatch
-	st := []string{"S007", "S016", "S017", "S018"}
+	//st := []string{"S007", "S016", "S017", "S018"}
 
 	// If statusId is in the skip list, return empty slice
-	if contains(st, statusId) {
-		//return unitLists, nil
-	}
+	// if contains(st, statusId) {
+	// 	//return unitLists, nil
+	// }
 
 	query := `
-		SELECT "unitId", "username"
-		FROM public.tix_case_current_stage
-		WHERE "orgId" = $1 AND "caseId" = $2 AND "stageType" = 'unit'
+		SELECT 
+    cs."unitId",
+    cs."username",
+    u."firstName",
+    u."lastName"
+FROM public.tix_case_current_stage AS cs
+JOIN public.um_users AS u
+    ON cs."username" = u."username"
+    AND cs."orgId" = u."orgId"
+WHERE 
+    cs."orgId" = $1
+    AND cs."caseId" = $2
+    AND cs."stageType" = 'unit';
 	`
 
-	rows, err := conn.Query(ctx, query, orgID, caseID)
+	args := []interface{}{orgID, caseID}
+	argIndex := 3
+
+	// ถ้ามี statusId ให้เพิ่ม filter จาก JSONB
+	if statusId != "" {
+		query += fmt.Sprintf(` AND data->'data'->'config'->>'action' = $%d`, argIndex)
+		args = append(args, statusId)
+		argIndex++
+	}
+
+	// ถ้ามี unitID ให้เพิ่ม filter ด้วย
+	if unitID != "" {
+		query += fmt.Sprintf(` AND "unitId" = $%d`, argIndex)
+		args = append(args, unitID)
+		argIndex++
+	}
+	log.Print(query)
+	log.Print(args)
+	rows, err := conn.Query(ctx, query, args...)
+
+	//rows, err := conn.Query(ctx, query, orgID, caseID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var u model.UnitDispatch
-		if err := rows.Scan(&u.UnitID, &u.Username); err != nil {
-			return nil, err
+		if err := rows.Scan(&u.UnitID, &u.Username, &u.FirstName, &u.LastName); err != nil {
+			return nil, 0, err
 		}
 		unitLists = append(unitLists, u)
 	}
 
-	return unitLists, nil
+	count := len(unitLists)
+
+	return unitLists, count, nil
 }
 
 func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string) (map[string]interface{}, error) {
@@ -919,72 +844,6 @@ func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId s
 	return response, nil
 }
 
-// @summary Dispatch unit follow SOP
-// @tags Dispatch
-// @security ApiKeyAuth
-// @id close case
-// @accept json
-// @produce json
-// @param Body body model.UpdateStageRequest true "Update unit event"
-// @response 200 {object} model.Response "OK - Request successful"
-// //  @Router /api/v1/dispatch/{caseId}/close [post]
-// func CloseCase(c *gin.Context) {
-// 	logger := config.GetLog()
-
-// 	conn, ctx, cancel := config.ConnectDB()
-// 	if conn == nil {
-// 		return
-// 	}
-// 	defer cancel()
-// 	defer conn.Close(ctx)
-
-// 	var req model.CloseCaseRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		c.JSON(http.StatusBadRequest, model.Response{
-// 			Status: "-1",
-// 			Msg:    "Failure",
-// 			Desc:   err.Error(),
-// 		})
-// 		logger.Warn("Insert failed", zap.Error(err))
-// 		return
-// 	}
-// 	log.Print(req)
-
-// 	username := GetVariableFromToken(c, "username")
-// 	orgId := GetVariableFromToken(c, "orgId")
-
-// 	updateReq := model.UpdateStageRequest{
-// 		CaseId:   req.CaseID,
-// 		Status:   req.StatusID,
-// 		UnitId:   "", // mapping ResID → UnitId
-// 		UnitUser: "", // mapping ResDetail → UnitUser
-// 		NodeId:   "", // no NodeId in CloseCaseRequest, leave blank
-// 	}
-
-// 	results, err := DispatchUpdateCaseStatus(c, conn, updateReq, username.(string))
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	// allNodes, nodeConn, allNodesId, dispatchNode, err := GetAllNodes(ctx, conn, orgId.(string), caseStages.WfID, caseStages.Versions, logger)
-// 	// if err != nil {
-// 	// 	return model.Response{Status: "-1", Msg: "Failure.2", Desc: err.Error()}, err
-// 	// }
-
-// 	CaseNextNode, UnitNextNode, caseCount, unitCount := GetNextNode(allNodesId, nodeConn, caseStages, unitStages, logger)
-
-// 	fmt.Println("Case Next Node:", CaseNextNode)
-// 	fmt.Println("Unit Next Node:", UnitNextNode)
-// 	fmt.Println("caseCount:", caseCount)
-// 	fmt.Println("unitCount:", unitCount)
-// 	Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
-// 	if err != nil {
-// 		return Result, err
-// 	}
-// 	c.JSON(http.StatusOK, results)
-// }
-
 func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {
 	// 1. Get master status list
 	statuses, err := utils.GetCaseStatusList(ctx, conn, orgID)
@@ -1035,19 +894,441 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 	return respondersNew, nil
 }
 
-func CalSLA(timelines []model.CaseResponderCustom) []model.CaseResponderCustom {
-	if len(timelines) == 0 {
-		return timelines
+// @summary Cancel unit assigned to a case
+// @Description Cancel the current unit assignment for a case. This operation can only be performed if the current stage status is **S003 (ASSIGNED)**.
+// If the case has only one assigned unit, the case status will be reset to **S001 (NEW)**.
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id CancelUnit
+// @Accept json
+// @Produce json
+// @param Body body model.CancelUnitRequest true "Update unit event"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/cancel/unit [post]
+func DispatchCancelUnit(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
 	}
 
-	for i := range timelines {
-		if i == 0 {
-			timelines[i].Duration = 0
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.CancelUnitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+	caseId := req.CaseId
+	new_ := os.Getenv("NEW")
+	assign_ := os.Getenv("ASSIGNED")
+	cancel_ := os.Getenv("CANCEL")
+
+	// ✅ Console log all parameters
+	logger.Info("DispatchCancelUnit parameters",
+		zap.String("orgId", fmt.Sprintf("%v", orgId)),
+		zap.String("username", fmt.Sprintf("%v", username)),
+		zap.String("caseId", caseId),
+		zap.Any("request_body", req),
+		zap.String("NEW", new_),
+		zap.String("ASSIGNED", assign_),
+		zap.String("CANCEL", cancel_),
+	)
+	//[1] => Check Unit Status S003
+	unitLists, count, err := GetUnits(ctx, conn, orgId.(string), caseId, assign_, req.UnitId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Get unitLists Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	logger.Debug("unitLists-1",
+		zap.Int("count", count),
+		zap.Any("units", unitLists),
+	)
+	if count == 0 {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Invalid Unit " + req.UnitId + " on CaseId " + req.CaseId,
+			Desc:   "Unit not found or not in assigned state (S003)",
+		})
+		return
+	}
+
+	//[2] Insert responder
+	log.Print("--> 1. Insert responder")
+	_, err = conn.Exec(ctx, `
+		    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+		    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+		`, orgId, req.CaseId, req.UnitId, req.UnitUser, cancel_, username)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Insert Responder Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	//[3] => Delete Unit
+	deletedCount, err := DeleteUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Delete Unit Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	if deletedCount > 0 {
+		log.Printf("Successfully deleted %d unit(s)", deletedCount)
+	} else {
+		log.Printf("No units deleted (maybe not found or status skipped)")
+	}
+
+	//[4] => Check Unit Count && Update Case status S001
+	unitLists, count, err = GetUnits(ctx, conn, orgId.(string), caseId, "", "")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-2",
+			Msg:    "Get unitLists Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	logger.Debug("unitLists-2",
+		zap.Int("count", count),
+		zap.Any("units", unitLists),
+	)
+	if count == 0 {
+		//Change Case Status S001
+		err := UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, new_, username.(string))
+		if err != nil {
+			logger.Error("UpdateCancelCase failed", zap.Error(err))
 		} else {
-			diff := timelines[i].CreatedAt.Sub(timelines[i-1].CreatedAt)
-			timelines[i].Duration = int64(diff.Seconds())
+			logger.Info("Case status updated successfully",
+				zap.String("caseId", caseId),
+				zap.String("newStatus", new_),
+			)
+			//Change Current Case Status =  S001
+			err := UpdateStageByAction(ctx, conn, orgId.(string), caseId, username.(string))
+			if err != nil {
+				c.JSON(http.StatusBadRequest, model.Response{
+					Status: "-1",
+					Msg:    "Update stage failed",
+					Desc:   err.Error(),
+				})
+				return
+			}
+
 		}
 	}
 
-	return timelines
+	//[5] => Alert & Event S013
+	req_ := model.UpdateStageRequest{
+		CaseId:   caseId,
+		Status:   cancel_,
+		UnitUser: req.UnitUser, // หรือ set ค่า default
+	}
+	log.Print(req)
+	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
+
+	// req_.UnitUser = ""
+	// UpdateBusKafka_WO(c, conn, req_)
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Unit cancelled successfully",
+	})
+}
+
+func DeleteUnit(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID, unitID string) (int64, error) {
+
+	query := `
+		DELETE FROM public.tix_case_current_stage
+		WHERE "orgId" = $1 
+		  AND "caseId" = $2 
+		  AND "stageType" = 'unit'
+	`
+	args := []interface{}{orgID, caseID}
+	argIndex := 3
+
+	// ถ้ามี unitID ให้เพิ่ม filter
+	if unitID != "" {
+		query += fmt.Sprintf(` AND "unitId" = $%d`, argIndex)
+		args = append(args, unitID)
+	}
+
+	// Execute delete query
+	cmdTag, err := conn.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("DeleteUnit failed: %w", err)
+	}
+
+	// cmdTag.RowsAffected() คืนค่าจำนวนแถวที่ถูกลบ
+	deletedCount := cmdTag.RowsAffected()
+	log.Printf("Deleted %d unit(s) from case %s", deletedCount, caseID)
+
+	return deletedCount, nil
+}
+
+func UpdateCancelCaseForUnit(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, resId string, resDetail string, newStatus string, updatedBy string) error {
+
+	if resDetail == "" {
+		query := `
+		UPDATE public.tix_cases
+		SET "statusId" = $3,  
+			"updatedAt" = NOW(),
+			"updatedBy" = $4
+		WHERE "orgId" = $1 AND "caseId" = $2
+	`
+
+		cmdTag, err := conn.Exec(ctx, query, orgID, caseID, newStatus, updatedBy)
+		if err != nil {
+			return fmt.Errorf("failed to update case status: %w", err)
+		}
+
+		if cmdTag.RowsAffected() == 0 {
+			return fmt.Errorf("no case found with caseId=%s", caseID)
+		}
+	} else {
+		query := `
+		UPDATE public.tix_cases
+		SET "statusId" = $3,
+			"resId" = $4,
+			"resDetail" = $5,
+			"updatedAt" = NOW(),
+			"updatedBy" = $6
+		WHERE "orgId" = $1 AND "caseId" = $2
+	`
+
+		cmdTag, err := conn.Exec(ctx, query, orgID, caseID, newStatus, resId, resDetail, updatedBy)
+		if err != nil {
+			return fmt.Errorf("failed to update case status: %w", err)
+		}
+
+		if cmdTag.RowsAffected() == 0 {
+			return fmt.Errorf("no case found with caseId=%s", caseID)
+		}
+	}
+
+	return nil
+}
+
+// UpdateStageByAction combines GetNodeByAction + UpdateCurrentStage
+func UpdateStageByAction(ctx context.Context, conn *pgx.Conn, orgId, caseId, username string) error {
+
+	provID, wfId, versions, err := GetInfoFromCase(ctx, conn, orgId, caseId)
+	if err != nil {
+		log.Printf("error getting provId: %v", err)
+	} else {
+		log.Printf("provId = %s", provID)
+		log.Print(provID, wfId, versions)
+	}
+
+	// 1️⃣ Get Node by action (e.g., S001)
+	node, err := GetNodeByAction(ctx, conn, orgId, wfId, versions, "S001")
+	if err != nil {
+		return fmt.Errorf("failed to get node by action: %v", err)
+	}
+
+	log.Print("====>> GetNodeByAction")
+	log.Print(node)
+	// 2️⃣ Update current stage with node data
+	err = UpdateStage(ctx, conn, orgId, caseId, node.NodeId, node.Data, username)
+	if err != nil {
+		return fmt.Errorf("failed to update current stage: %v", err)
+	}
+
+	return nil
+}
+
+// GetNodeByAction retrieves one node where data->'data'->'config'->>'action' = given action
+func GetNodeByAction(ctx context.Context, conn *pgx.Conn, orgId, wfId string, version string, action string) (*model.WorkflowNode, error) {
+	query := `
+		SELECT "nodeId", "type", "section", "data"
+		FROM wf_nodes
+		WHERE "orgId" = $1
+		  AND "wfId" = $2
+		  AND "versions" = $3
+		  AND "data"->'data'->'config'->>'action' = $4
+		  AND "section" = 'nodes'
+		LIMIT 1;
+	`
+
+	log.Print("--GetNodeByAction--")
+	log.Print(query)
+	row := conn.QueryRow(ctx, query, orgId, wfId, version, action)
+
+	var node model.WorkflowNode
+	var dataRaw []byte
+
+	err := row.Scan(&node.NodeId, &node.Type, &node.Section, &dataRaw)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil // no result found
+		}
+		return nil, fmt.Errorf("GetNodeByAction query failed: %v", err)
+	}
+
+	if err := json.Unmarshal(dataRaw, &node.Data); err != nil {
+		return nil, fmt.Errorf("error unmarshalling node data: %v", err)
+	}
+
+	return &node, nil
+}
+
+func UpdateStage(ctx context.Context, conn *pgx.Conn, orgId, caseId, nodeId string, newData interface{}, username string) error {
+	jsonData, err := json.Marshal(newData)
+	if err != nil {
+		return fmt.Errorf("marshal error: %v", err)
+	}
+
+	// ดึง formId จาก newData
+	var parsed struct {
+		Data struct {
+			Config struct {
+				FormID string `json:"formId"`
+			} `json:"config"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(jsonData, &parsed); err != nil {
+		return fmt.Errorf("unmarshal error: %v", err)
+	}
+
+	formId := parsed.Data.Config.FormID
+	if formId == "" {
+		formId = "unknown" // fallback
+	}
+
+	log.Print("====>> UpdateStage")
+	log.Printf("nodeId=%s formId=%s", nodeId, formId)
+
+	log.Print("====>> UpdateStage")
+	log.Print(string(jsonData))
+
+	query := `
+		UPDATE public.tix_case_current_stage
+		SET 
+		    "nodeId" = $3,
+			"type" = $4,
+			"data" = $5,
+			"formId" = $6,
+			"updatedAt" = $7,
+			"updatedBy" = $8
+		WHERE "orgId" = $1 AND "caseId" = $2 AND "stageType" = 'case'
+	`
+
+	_, err = conn.Exec(ctx, query, orgId, caseId, nodeId, "process", jsonData, formId, time.Now(), username)
+	if err != nil {
+		log.Print("==UpdateStage Error -=-")
+		log.Print(err)
+		return fmt.Errorf("update current stage failed: %v", err)
+	}
+	return nil
+}
+
+// @summary Cancel Case and all units
+// @Cancel Case and All Unit
+// @tags Dispatch
+// @security ApiKeyAuth
+// @id CancelCase
+// @Accept json
+// @Produce json
+// @param Body body model.CancelCaseRequest true "Update unit event"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/dispatch/cancel/case [post]
+func DispatchCancelCase(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.CancelCaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+	caseId := req.CaseId
+	new_ := os.Getenv("NEW")
+	//assign_ := os.Getenv("ASSIGNED")
+	cancel_ := os.Getenv("CANCEL_CASE")
+
+	//[1] Insert responder
+	// log.Print("--> 1. Insert Case responder ")
+	// _, err := conn.Exec(ctx, `
+	// 	    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+	// 	    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+	// 	`, orgId, req.CaseId, "case", username, cancel_, username)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, model.Response{
+	// 		Status: "-1",
+	// 		Msg:    "Insert Responder Fail ",
+	// 		Desc:   err.Error(),
+	// 	})
+	// 	return
+	// }
+
+	//[2] => Delete all Unit
+	deletedCount, err := DeleteUnit(ctx, conn, orgId.(string), caseId, "", "")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Delete Unit Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	if deletedCount > 0 {
+		log.Printf("Successfully deleted %d unit(s)", deletedCount)
+	} else {
+		log.Printf("No units deleted (maybe not found or status skipped)")
+	}
+
+	err = UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, cancel_, username.(string))
+	if err != nil {
+		logger.Error("UpdateCancelCaseForUnit failed", zap.Error(err))
+	} else {
+		logger.Info("Case status updated successfully",
+			zap.String("caseId", caseId),
+			zap.String("newStatus", new_),
+		)
+	}
+
+	//[3] => Alert & Event S013
+	req_ := model.UpdateStageRequest{
+		CaseId:   caseId,
+		Status:   cancel_,
+		UnitUser: username.(string), // หรือ set ค่า default
+	}
+	log.Print(req)
+	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
+
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Case cancelled successfully",
+	})
 }

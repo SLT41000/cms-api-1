@@ -1,5 +1,27 @@
 basePath: /
 definitions:
+  model.CancelCaseRequest:
+    properties:
+      caseId:
+        type: string
+      resDetail:
+        type: string
+      resId:
+        type: string
+    type: object
+  model.CancelUnitRequest:
+    properties:
+      caseId:
+        type: string
+      resDetail:
+        type: string
+      resId:
+        type: string
+      unitId:
+        type: string
+      unitUser:
+        type: string
+    type: object
   model.CaseHistoryInsert:
     properties:
       caseId:
@@ -29,6 +51,10 @@ definitions:
     properties:
       arrivedDate:
         type: string
+      attachments:
+        items:
+          $ref: '#/definitions/model.TixCaseAttachmentInput'
+        type: array
       caseDetail:
         type: string
       caseDuration:
@@ -443,6 +469,24 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  model.DeleteFileRequest:
+    properties:
+      attId:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      caseId:
+        example: CASE-000123
+        type: string
+      filename:
+        example: 123e4567-e89b-12d3-a456-426614174000.jpg
+        type: string
+      path:
+        example: profile
+        type: string
+    required:
+    - filename
+    - path
     type: object
   model.DepartmentInsert:
     properties:
@@ -894,6 +938,8 @@ definitions:
     type: object
   model.Notification:
     properties:
+      EVENT:
+        type: string
       additionalJson:
         type: object
       createdAt:
@@ -934,9 +980,14 @@ definitions:
     type: object
   model.NotificationCreateRequest:
     properties:
+      EVENT:
+        type: string
       additionalJson:
         type: object
+      createdAt:
+        type: string
       createdBy:
+        description: เพิ่มใหม่
         type: string
       data:
         items:
@@ -945,12 +996,16 @@ definitions:
       eventType:
         type: string
       expiredAt:
+        description: เพิ่มใหม่
         type: string
+      id:
+        type: integer
       message:
         type: string
       orgId:
         type: string
       recipients:
+        description: ใช้ตอนสร้างเท่านั้น
         items:
           $ref: '#/definitions/model.Recipient'
         type: array
@@ -959,6 +1014,7 @@ definitions:
       sender:
         type: string
       senderPhoto:
+        description: เพิ่มใหม่
         type: string
       senderType:
         description: '"SYSTEM" or "USER"'
@@ -1119,6 +1175,17 @@ definitions:
         type: string
       th:
         description: Thai name
+        type: string
+    type: object
+  model.TixCaseAttachmentInput:
+    properties:
+      attId:
+        type: string
+      attName:
+        type: string
+      attUrl:
+        type: string
+      type:
         type: string
     type: object
   model.UpdateStageRequest:
@@ -1661,37 +1728,55 @@ paths:
         in: query
         name: end_date
         type: string
-      - description: caseType
+      - description: caseType (can be comma-separated, e.g. 1,2,3)
         in: query
         name: caseType
         type: string
-      - description: caseSType
+      - description: caseSType (can be comma-separated)
         in: query
         name: caseSType
+        type: string
+      - description: statusId (can be comma-separated)
+        in: query
+        name: statusId
         type: string
       - description: detail
         in: query
         name: detail
         type: string
-      - description: countryId
+      - description: caseId
+        in: query
+        name: caseId
+        type: string
+      - description: countryId (can be comma-separated)
         in: query
         name: countryId
         type: string
-      - description: provId
+      - description: provId (can be comma-separated)
         in: query
         name: provId
         type: string
-      - description: distId
+      - description: distId (can be comma-separated)
         in: query
         name: distId
         type: string
-      - description: category
+      - description: category (alias for statusId)
         in: query
         name: category
         type: string
       - description: createBy
         in: query
         name: createBy
+        type: string
+      - default: '"createdAt"'
+        description: orderBy field name
+        in: query
+        name: orderBy
+        type: string
+      - default: '"DESC"'
+        description: direction ASC or DESC
+        in: query
+        name: direction
         type: string
       produces:
       - application/json
@@ -2088,6 +2173,34 @@ paths:
       summary: Cases By CaseId
       tags:
       - Cases
+  /api/v1/caseResult:
+    get:
+      consumes:
+      - application/json
+      operationId: CaseResult
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List CasesResult
+      tags:
+      - Cases
   /api/v1/casesubtypes:
     get:
       consumes:
@@ -2349,7 +2462,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2393,7 +2506,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update data
         in: body
         name: Body
@@ -2811,6 +2924,30 @@ paths:
       summary: Create Customer with Social
       tags:
       - Customer
+  /api/v1/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a file from MinIO and optionally from Database
+      parameters:
+      - description: Delete file
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.DeleteFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete file
+      tags:
+      - Files
   /api/v1/department_command_stations:
     get:
       consumes:
@@ -2866,7 +3003,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2910,7 +3047,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update data
         in: body
         name: Body
@@ -3076,6 +3213,56 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Unit
+      tags:
+      - Dispatch
+  /api/v1/dispatch/cancel/case:
+    post:
+      consumes:
+      - application/json
+      operationId: CancelCase
+      parameters:
+      - description: Update unit event
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CancelCaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Cancel Case and all units
+      tags:
+      - Dispatch
+  /api/v1/dispatch/cancel/unit:
+    post:
+      consumes:
+      - application/json
+      description: Cancel the current unit assignment for a case. This operation can
+        only be performed if the current stage status is **S003 (ASSIGNED)**.
+      operationId: CancelUnit
+      parameters:
+      - description: Update unit event
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CancelUnitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Cancel unit assigned to a case
       tags:
       - Dispatch
   /api/v1/dispatch/event:
@@ -4887,7 +5074,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -4931,7 +5118,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update data
         in: body
         name: Body
@@ -4974,6 +5161,38 @@ paths:
       summary: Create Stations
       tags:
       - Organization
+  /api/v1/upload/{path}:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file to MinIO under specified path (e.g. /upload/profile)
+      parameters:
+      - description: path
+        in: path
+        name: path
+        required: true
+        type: string
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Case ID to link file (optional)
+        in: formData
+        name: caseId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload file
+      tags:
+      - Files
   /api/v1/user_groups/all:
     get:
       consumes:

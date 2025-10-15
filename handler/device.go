@@ -3,8 +3,8 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 
@@ -24,9 +24,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/devices [get]
 func GetDeviceIoT(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -109,10 +109,10 @@ func GetDeviceIoT(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/devices/{id} [get]
 func GetDeviceIoTById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	deviceId := c.Param("id") // path param like /device-iot/:id
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

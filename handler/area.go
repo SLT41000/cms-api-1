@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,9 +19,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/area/country_province_districts [get]
 func GetCountryProvinceDistricts(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

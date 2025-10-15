@@ -2,18 +2,17 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"mainPackage/model"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/gin-gonic/gin"
 )
 
 func callAPI(url string, method string, data map[string]interface{}) (string, error) {
@@ -178,21 +177,111 @@ func RecheckSLA(currentStatus string) string {
 	return currentStatus
 }
 
-func UpdateCaseSLAPlus(ctx context.Context, conn *pgx.Conn, orgId, caseId string, overSlaFlag bool, overSlaDate time.Time) error {
-	query := `
-		UPDATE tix_cases
-		SET "overSlaFlag" = $1,
-		    "overSlaDate" = $2,
-		    "overSlaCount" = COALESCE("overSlaCount", 0) + 1,
-		    "updatedAt" = NOW()
-		WHERE "orgId" = $3
-		  AND "caseId" = $4;
-	`
-	//log.Print("====UpdateCaseSLAPlus===", query)
-	_, err := conn.Exec(ctx, query, overSlaFlag, overSlaDate, orgId, caseId)
-	if err != nil {
-		return fmt.Errorf("update case SLA failed: %w", err)
+func CalSLA(timelines []model.CaseResponderCustom) []model.CaseResponderCustom {
+	if len(timelines) == 0 {
+		return timelines
 	}
 
-	return nil
+	for i := range timelines {
+		if i == 0 {
+			timelines[i].Duration = 0
+		} else {
+			diff := timelines[i].CreatedAt.Sub(timelines[i-1].CreatedAt)
+			timelines[i].Duration = int64(diff.Seconds())
+		}
+	}
+
+	return timelines
+}
+
+// GetQueryParams flattens query parameters from Gin context into map[string]string
+func GetQueryParams(c *gin.Context) map[string]string {
+	flat := make(map[string]string)
+
+	// Query params
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			flat[key] = values[0]
+		}
+	}
+
+	// Path params (like /stations/:id)
+	for _, param := range c.Params {
+		flat[param.Key] = param.Value
+	}
+
+	return flat
+}
+
+func AddPreviousSLA(workflow []model.WorkflowNode) []model.WorkflowNode {
+	// Step 1: separate nodes and connections
+	nodeMap := make(map[string]*model.WorkflowNode)
+	var connections []map[string]interface{}
+
+	for i := range workflow {
+		n := &workflow[i]
+		if n.Section == "nodes" && n.NodeId != "" {
+			nodeMap[n.NodeId] = n
+		} else if n.Section == "connections" {
+			// connections is stored as array in n.Data
+			if arr, ok := n.Data.([]interface{}); ok {
+				for _, c := range arr {
+					if conn, ok := c.(map[string]interface{}); ok {
+						connections = append(connections, conn)
+					}
+				}
+			}
+		}
+	}
+
+	// Step 2: iterate through each connection (source -> target)
+	for _, conn := range connections {
+		sourceId, _ := conn["source"].(string)
+		targetId, _ := conn["target"].(string)
+
+		sourceNode, srcOk := nodeMap[sourceId]
+		targetNode, tgtOk := nodeMap[targetId]
+		if !srcOk || !tgtOk {
+			continue
+		}
+
+		// Extract source and target configs
+		srcCfg := extractConfig(sourceNode.Data)
+		tgtCfg := extractConfig(targetNode.Data)
+
+		// Get source SLA and set target's sla_
+		if slaVal, ok := srcCfg["sla"]; ok {
+			tgtCfg["sla_"] = slaVal
+		} else {
+			// if no SLA in previous node, default sla_ = "0"
+			tgtCfg["sla_"] = "0"
+		}
+
+		// Save config back into target node
+		targetNode.Data = setConfig(targetNode.Data, tgtCfg)
+	}
+
+	return workflow
+}
+
+func extractConfig(data interface{}) map[string]interface{} {
+	if d1, ok := data.(map[string]interface{}); ok {
+		if d2, ok := d1["data"].(map[string]interface{}); ok {
+			if cfg, ok := d2["config"].(map[string]interface{}); ok {
+				return cfg
+			}
+		}
+	}
+	return map[string]interface{}{}
+}
+
+func setConfig(data interface{}, newCfg map[string]interface{}) interface{} {
+	if d1, ok := data.(map[string]interface{}); ok {
+		if d2, ok := d1["data"].(map[string]interface{}); ok {
+			d2["config"] = newCfg
+			d1["data"] = d2
+			return d1
+		}
+	}
+	return data
 }

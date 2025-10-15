@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,9 +25,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/commands [get]
 func GetCommand(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -108,9 +108,9 @@ func GetCommand(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/commands/{id} [get]
 func GetCommandById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -169,8 +169,8 @@ func GetCommandById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/commands/add [post]
 func InsertCommand(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -230,13 +230,13 @@ func InsertCommand(c *gin.Context) {
 // @accept json
 // @produce json
 // @tags Organization
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @param Body body model.CommandUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/commands/{id} [patch]
 func UpdateCommand(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -262,7 +262,7 @@ func UpdateCommand(c *gin.Context) {
 	query := `UPDATE public."sec_commands"
 	SET "deptId"=$2, "orgId"=$3, en=$4, th=$5, active=$6,
 	 "updatedAt"=$7, "updatedBy"=$8
-	WHERE id = $1 AND "orgId"=$9`
+	WHERE "commId" = $1 AND "orgId"=$9`
 	_, err := conn.Exec(ctx, query,
 		id, req.DeptID, orgId, req.En, req.Th, req.Active,
 		now, username, orgId,
@@ -298,13 +298,13 @@ func UpdateCommand(c *gin.Context) {
 // @accept json
 // @tags Organization
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/commands/{id} [delete]
 func DeleteCommand(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -313,7 +313,7 @@ func DeleteCommand(c *gin.Context) {
 	defer cancel()
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
-	query := `DELETE FROM public."sec_commands" WHERE id = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."sec_commands" WHERE "commId" = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {

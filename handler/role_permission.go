@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,9 +24,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission [get]
 func GetRolePermission(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -106,9 +106,9 @@ func GetRolePermission(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission/{id} [get]
 func GetRolePermissionbyId(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -168,9 +168,9 @@ func GetRolePermissionbyId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission/roleId/{roleId} [get]
 func GetRolePermissionbyroleId(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("roleId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -243,8 +243,8 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission/add [post]
 func InsertRolePermission(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -318,8 +318,8 @@ func InsertRolePermission(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission/{roleId} [patch]
 func UpdateRolePermission(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -416,8 +416,8 @@ func UpdateRolePermission(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/role_permission/multi [patch]
 func UpdateMultiRolePermission(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -511,8 +511,8 @@ func UpdateMultiRolePermission(c *gin.Context) {
 // @Router /api/v1/role_permission/{id} [delete]
 func DeleteRolePermission(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

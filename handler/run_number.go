@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"os"
 	"time"
@@ -19,7 +19,7 @@ import (
 
 func GenerateCaseID(ctx context.Context, conn *pgx.Conn, prefix string) (string, error) {
 	today := time.Now().Format("060102") // YYMMDD
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	var lastNumber int
 	err := conn.QueryRow(ctx, `
         INSERT INTO case_id_sequences (prefix, date_code, last_number)
@@ -51,7 +51,7 @@ func GenerateCaseID(ctx context.Context, conn *pgx.Conn, prefix string) (string,
 // @Router /api/v1/generate_caseid [get]
 func GenerateCaseIDHandler(c *gin.Context) {
 	log.Print(GenerateSecureAPIKey(16))
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
 	// ✅ ตรวจสอบ API Key
 	apiKey := c.GetHeader("X-API-KEY")
@@ -66,7 +66,7 @@ func GenerateCaseIDHandler(c *gin.Context) {
 		return
 	}
 	log.Print("=======GEN====")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

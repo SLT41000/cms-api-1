@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -66,19 +66,23 @@ func genCaseID() string {
 // @Param length query int false "length" default(10)
 // @Param start_date query string false "start_date"
 // @Param end_date query string false "end_date"
-// @Param caseType query string false "caseType"
-// @Param caseSType query string false "caseSType"
+// @Param caseType query string false "caseType (can be comma-separated, e.g. 1,2,3)"
+// @Param caseSType query string false "caseSType (can be comma-separated)"
+// @Param statusId query string false "statusId (can be comma-separated)"
 // @Param detail query string false "detail"
-// @Param countryId query string false "countryId"
-// @Param provId query string false "provId"
-// @Param distId query string false "distId"
-// @Param category query string false "category"
+// @Param caseId query string false "caseId"
+// @Param countryId query string false "countryId (can be comma-separated)"
+// @Param provId query string false "provId (can be comma-separated)"
+// @Param distId query string false "distId (can be comma-separated)"
+// @Param category query string false "category (alias for statusId)"
 // @Param createBy query string false "createBy"
+// @Param orderBy query string false "orderBy field name" default("createdAt")
+// @Param direction query string false "direction ASC or DESC" default("DESC")
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
 func ListCase(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -86,94 +90,106 @@ func ListCase(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	orgId := GetVariableFromToken(c, "orgId")
-	startStr := c.DefaultQuery("start", "0")
-	start, err := strconv.Atoi(startStr)
-	if err != nil {
-		start = 0
-	}
-	lengthStr := c.DefaultQuery("length", "1000")
-	length, err := strconv.Atoi(lengthStr)
-	if err != nil {
-		length = 1000
-	}
+	start, _ := strconv.Atoi(c.DefaultQuery("start", "0"))
+	length, _ := strconv.Atoi(c.DefaultQuery("length", "1000"))
 
+	caseId := c.Query("caseId")
 	caseType := c.Query("caseType")
 	caseSType := c.Query("caseSType")
+	statusId := c.Query("statusId")
 	detail := c.Query("detail")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
-	category := c.Query("category")
 	countryId := c.Query("countryId")
 	provId := c.Query("provId")
 	distId := c.Query("distId")
 	createBy := c.Query("createBy")
+	orderBy := c.DefaultQuery("orderBy", "createdAt")
+	direction := strings.ToUpper(c.DefaultQuery("direction", "DESC"))
 
-	// Dynamic query builder
-	baseQuery := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", 
-       priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", 
-       "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", 
-       "countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate", 
-       "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, 
-       usercommand, userreceive, userarrive, userclose, "resId", "resDetail",  
-       "scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy", "caseSla"
-	FROM public.tix_cases WHERE "orgId" = $1 `
+	// ✅ Validate direction
+	if direction != "ASC" && direction != "DESC" {
+		direction = "DESC"
+	}
+
+	// ✅ Whitelist allowed orderBy columns
+	allowedOrderFields := map[string]bool{
+		"createdAt":   true,
+		"priority":    true,
+		"caseId":      true,
+		"updatedAt":   true,
+		"caseTypeId":  true,
+		"caseSTypeId": true,
+		"statusId":    true,
+	}
+	if !allowedOrderFields[orderBy] {
+		orderBy = "createdAt"
+	}
+
+	// Dynamic SQL builder
+	baseQuery := `
+	SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId",
+		priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail",
+		"extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+		"countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate",
+		"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate,
+		usercommand, userreceive, userarrive, userclose, "resId", "resDetail",
+		"scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy", "caseSla"
+	FROM public.tix_cases
+	WHERE "orgId" = $1
+	`
 
 	params := []interface{}{orgId}
-	paramIndex := 2 // start at $2 because $1 is already used for orgId
+	paramIndex := 2
 
-	// Add conditions dynamically
-	if caseType != "" {
-		baseQuery += fmt.Sprintf(" AND \"caseTypeId\" = $%d", paramIndex)
-		params = append(params, caseType)
+	// Helper for multi-value (IN) filters
+	addMultiValueFilter := func(field, values string) {
+		if values == "" {
+			return
+		}
+		valueList := strings.Split(values, ",")
+		var placeholders []string
+		for _, v := range valueList {
+			v = strings.TrimSpace(v)
+			if v == "" {
+				continue
+			}
+			placeholders = append(placeholders, fmt.Sprintf("$%d", paramIndex))
+			params = append(params, v)
+			paramIndex++
+		}
+		if len(placeholders) > 0 {
+			baseQuery += fmt.Sprintf(" AND \"%s\" IN (%s)", field, strings.Join(placeholders, ","))
+		}
+	}
+
+	// Apply filters
+	if caseId != "" {
+		baseQuery += fmt.Sprintf(" AND \"caseId\" ILIKE $%d", paramIndex)
+		params = append(params, "%"+caseId+"%")
 		paramIndex++
 	}
 
-	if caseSType != "" {
-		baseQuery += fmt.Sprintf(" AND \"caseSTypeId\" = $%d", paramIndex)
-		params = append(params, caseSType)
-		paramIndex++
-	}
+	addMultiValueFilter("caseTypeId", caseType)
+	addMultiValueFilter("caseSTypeId", caseSType)
+	addMultiValueFilter("statusId", statusId)
+	addMultiValueFilter("countryId", countryId)
+	addMultiValueFilter("provId", provId)
+	addMultiValueFilter("distId", distId)
 
 	if detail != "" {
 		baseQuery += fmt.Sprintf(" AND \"caseDetail\" ILIKE $%d", paramIndex)
 		params = append(params, "%"+detail+"%")
 		paramIndex++
 	}
-
 	if startDate != "" {
 		baseQuery += fmt.Sprintf(" AND \"createdAt\" >= $%d", paramIndex)
 		params = append(params, startDate)
 		paramIndex++
 	}
-
 	if endDate != "" {
 		baseQuery += fmt.Sprintf(" AND \"createdAt\" <= $%d", paramIndex)
 		params = append(params, endDate)
-		paramIndex++
-	}
-
-	if category != "" {
-		baseQuery += fmt.Sprintf(" AND \"statusId\" = $%d", paramIndex)
-		params = append(params, category)
-		paramIndex++
-	}
-
-	// New filters
-	if countryId != "" {
-		baseQuery += fmt.Sprintf(" AND \"countryId\" = $%d", paramIndex)
-		params = append(params, countryId)
-		paramIndex++
-	}
-
-	if provId != "" {
-		baseQuery += fmt.Sprintf(" AND \"provId\" = $%d", paramIndex)
-		params = append(params, provId)
-		paramIndex++
-	}
-
-	if distId != "" {
-		baseQuery += fmt.Sprintf(" AND \"distId\" = $%d", paramIndex)
-		params = append(params, distId)
 		paramIndex++
 	}
 
@@ -183,100 +199,54 @@ func ListCase(c *gin.Context) {
 		paramIndex++
 	}
 
-	// Add pagination
-	baseQuery += fmt.Sprintf(" ORDER BY priority ASC, \"createdAt\" DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+	// ✅ Add sorting + pagination
+	baseQuery += fmt.Sprintf(" ORDER BY \"%s\" %s LIMIT $%d OFFSET $%d", orderBy, direction, paramIndex, paramIndex+1)
 	params = append(params, length, start)
 
+	// Execute query
 	rows, err := conn.Query(ctx, baseQuery, params...)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
+			Status: "-1", Msg: "Failure", Desc: err.Error(),
 		})
 		return
 	}
 	defer rows.Close()
 
 	var caseLists []model.Case
-	found := false
 	for rows.Next() {
 		var cusCase model.Case
-		err := rows.Scan(
-			&cusCase.ID,
-			&cusCase.OrgID,
-			&cusCase.CaseID,
-			&cusCase.CaseVersion,
-			&cusCase.ReferCaseID,
-			&cusCase.CaseTypeID,
-			&cusCase.CaseSTypeID,
-			&cusCase.Priority,
-			&cusCase.WfID,
-			&cusCase.Source,
-			&cusCase.DeviceID,
-			&cusCase.PhoneNo,
-			&cusCase.PhoneNoHide,
-			&cusCase.CaseDetail,
-			&cusCase.ExtReceive,
-			&cusCase.StatusID,
-			&cusCase.CaseLat,
-			&cusCase.CaseLon,
-			&cusCase.CaseLocAddr,
-			&cusCase.CaseLocAddrDecs,
-			&cusCase.CountryID,
-			&cusCase.ProvID,
-			&cusCase.DistID,
-			&cusCase.CaseDuration,
-			&cusCase.CreatedAt, // "createdAt"
-			&cusCase.StartedDate,
-			&cusCase.CommandedDate,
-			&cusCase.ReceivedDate,
-			&cusCase.ArrivedDate,
-			&cusCase.ClosedDate,
-			&cusCase.UserCreate,
-			&cusCase.UserCommand,
-			&cusCase.UserReceive,
-			&cusCase.UserArrive,
-			&cusCase.UserClose,
-			&cusCase.ResID,
-			&cusCase.ResDetail,
-			&cusCase.ScheduleFlag,
-			&cusCase.ScheduleDate,
-			&cusCase.UpdatedAt, // "updatedAt"
-			&cusCase.CreatedBy, // "createdBy"
-			&cusCase.UpdatedBy, // "updatedBy"
-			&cusCase.CaseSLA,
-		)
-
-		if err != nil {
-			logger.Warn("Query failed", zap.Error(err))
+		if err := rows.Scan(
+			&cusCase.ID, &cusCase.OrgID, &cusCase.CaseID, &cusCase.CaseVersion,
+			&cusCase.ReferCaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
+			&cusCase.Priority, &cusCase.WfID, &cusCase.Source, &cusCase.DeviceID,
+			&cusCase.PhoneNo, &cusCase.PhoneNoHide, &cusCase.CaseDetail,
+			&cusCase.ExtReceive, &cusCase.StatusID, &cusCase.CaseLat, &cusCase.CaseLon,
+			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CountryID, &cusCase.ProvID,
+			&cusCase.DistID, &cusCase.CaseDuration, &cusCase.CreatedAt, &cusCase.StartedDate,
+			&cusCase.CommandedDate, &cusCase.ReceivedDate, &cusCase.ArrivedDate,
+			&cusCase.ClosedDate, &cusCase.UserCreate, &cusCase.UserCommand,
+			&cusCase.UserReceive, &cusCase.UserArrive, &cusCase.UserClose, &cusCase.ResID,
+			&cusCase.ResDetail, &cusCase.ScheduleFlag, &cusCase.ScheduleDate,
+			&cusCase.UpdatedAt, &cusCase.CreatedBy, &cusCase.UpdatedBy, &cusCase.CaseSLA,
+		); err != nil {
 			c.JSON(http.StatusInternalServerError, model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   err.Error(),
+				Status: "-1", Msg: "Failed", Desc: err.Error(),
 			})
 			return
 		}
-
 		caseLists = append(caseLists, cusCase)
-		found = true
 	}
 
-	if !found {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   "Not found",
+	if len(caseLists) == 0 {
+		c.JSON(http.StatusOK, model.Response{
+			Status: "0", Msg: "Success", Desc: "No data found", Data: []any{},
 		})
 		return
 	}
 
-	response := model.Response{
-		Status: "0",
-		Msg:    "Success",
-		Data:   caseLists,
-	}
+	response := model.Response{Status: "0", Msg: "Success", Data: caseLists}
 	c.JSON(http.StatusOK, response)
 
 	paramQuery := c.Request.URL.RawQuery
@@ -295,8 +265,8 @@ func ListCase(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/caseResult [get]
 func CaseResult(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -397,8 +367,8 @@ func CaseResult(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case/{id} [get]
 func CaseById(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -494,8 +464,8 @@ func CaseById(c *gin.Context) {
 // @response 500 {object} model.Response "Internal Server Error"
 // @Router /api/v1/caseId/{caseId} [get]
 func CaseByCaseId(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -587,8 +557,8 @@ func CaseByCaseId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case/add [post]
 func InsertCase(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -716,6 +686,16 @@ func InsertCase(c *gin.Context) {
 		}
 	}
 
+	//Insert Attachment
+	if err := InsertCaseAttachments(ctx, conn, orgId.(string), caseId, username.(string), req.Attachments, logger); err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failed to insert attachments",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
 	//Noti Custom
 	statuses, err := utils.GetCaseStatusList(c, conn, orgId.(string))
 	if err != nil {
@@ -777,8 +757,8 @@ func InsertCase(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case/{id} [patch]
 func UpdateCase(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -873,8 +853,8 @@ func UpdateCase(c *gin.Context) {
 // @Router /api/v1/case/{id} [delete]
 func DeleteCase(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -914,8 +894,8 @@ func DeleteCase(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casetypes_with_subtype [get]
 func ListCaseTypeWithSubtype(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -987,8 +967,8 @@ func ListCaseTypeWithSubtype(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casetypes [get]
 func ListCaseType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1060,8 +1040,8 @@ func ListCaseType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casetypes/add [post]
 func InsertCaseType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1126,8 +1106,8 @@ func InsertCaseType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casetypes/{id} [patch]
 func UpdateCaseType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1194,8 +1174,8 @@ func UpdateCaseType(c *gin.Context) {
 // @Router /api/v1/casetypes/{id} [delete]
 func DeleteCaseType(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1237,8 +1217,8 @@ func DeleteCaseType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casesubtypes [get]
 func ListCaseSubType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1256,7 +1236,7 @@ func ListCaseSubType(c *gin.Context) {
 	}
 	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, "typeId", "sTypeId", "sTypeCode", "orgId", en, th, "wfId", "caseSla", priority, "userSkillList", "unitPropLists",
-	 active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_sub_types WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	 active, "createdAt", "updatedAt", "createdBy", "updatedBy" FROM public.case_sub_types WHERE "orgId"=$1 ORDER BY "sTypeCode" ASC  LIMIT $2 OFFSET $3`
 	logger.Debug(`Query`, zap.String("query", query))
 
 	rows, err := conn.Query(ctx, query, orgId, length, start)
@@ -1311,8 +1291,8 @@ func ListCaseSubType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casesubtypes/add [post]
 func InsertCaseSubType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1378,8 +1358,8 @@ func InsertCaseSubType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/casesubtypes/{id} [patch]
 func UpdateCaseSubType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1447,8 +1427,8 @@ func UpdateCaseSubType(c *gin.Context) {
 // @Router /api/v1/casesubtypes/{id} [delete]
 func DeleteCaseSubType(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

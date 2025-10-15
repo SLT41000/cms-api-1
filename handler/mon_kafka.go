@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"os"
 	"strconv"
 	"time"
@@ -85,7 +85,7 @@ func handleMessage_WO_Create(message []byte) {
 		return
 	}
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		log.Printf("DB connection is nil")
 		return
@@ -171,7 +171,7 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 		return
 	}
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		log.Printf("DB connection is nil")
 		return

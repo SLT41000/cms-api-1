@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -26,10 +26,10 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms [get]
 func GetForm(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Query("id")
 	version := c.Query("version")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -102,8 +102,8 @@ func GetForm(c *gin.Context) {
 // @response 200 {object} model.ResponseDataFormList
 // @Router /api/v1/forms/getAllForms [get]
 func GetAllForm(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -217,8 +217,8 @@ func GetAllForm(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms [post]
 func FormInsert(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -330,8 +330,8 @@ func FormInsert(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms/{uuid} [patch]
 func FormUpdate(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -435,8 +435,8 @@ func FormUpdate(c *gin.Context) {
 // @Router /api/v1/forms/publish [patch]
 func FormPublish(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -495,8 +495,8 @@ func FormPublish(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms/lock [patch]
 func FormLock(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -556,8 +556,8 @@ func FormLock(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms/active [patch]
 func FormActive(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -627,10 +627,10 @@ func DeleteForm(c *gin.Context) {}
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows/{id} [get]
 func GetWorkFlow(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -731,9 +731,9 @@ func GetWorkFlow(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows [get]
 func GetWorkFlowList(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -810,9 +810,9 @@ func GetWorkFlowList(c *gin.Context) {
 }
 
 func GetWorkFlowListOld(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -950,9 +950,9 @@ func GetWorkFlowListOld(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows [post]
 func WorkFlowInsert(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1077,9 +1077,9 @@ func WorkFlowInsert(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows/{uuid} [patch]
 func WorkFlowUpdate(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1221,8 +1221,8 @@ func WorkFlowUpdate(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/workflows/{uuid} [delete]
 func WorkflowDelete(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1275,8 +1275,8 @@ func WorkflowDelete(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms/casesubtype [post]
 func GetFormByCaseSubType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"time"
 
@@ -23,8 +23,8 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/minimal/case/create [post]
 func MinimalCreateCase(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -139,7 +139,7 @@ func MinimalCreateCase(c *gin.Context) {
 }
 
 func MinCaseCurrentStageInsert(username string, orgId string, conn *pgx.Conn, ctx context.Context, c *gin.Context, req model.CustomCaseCurrentStage) error {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
 	now := time.Now()
 

@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,9 +24,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/properties [get]
 func GetMmdProperty(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -107,9 +107,9 @@ func GetMmdProperty(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/properties/{id} [get]
 func GetMmdPropertyById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -153,8 +153,8 @@ func GetMmdPropertyById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/properties/add [post]
 func InsertMmdProperty(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -218,8 +218,8 @@ func InsertMmdProperty(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/properties/{id} [patch]
 func UpdateMmdProperty(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -286,8 +286,8 @@ func UpdateMmdProperty(c *gin.Context) {
 // @Router /api/v1/mdm/properties/{id} [delete]
 func DeleteMmdProperty(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -327,9 +327,9 @@ func DeleteMmdProperty(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/sources [get]
 func GetMmdUnitSources(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -410,9 +410,9 @@ func GetMmdUnitSources(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/sources/{id} [get]
 func GetMmdUnitSourcesById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -456,8 +456,8 @@ func GetMmdUnitSourcesById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/sources/add [post]
 func InsertMmdUnitSources(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -521,8 +521,8 @@ func InsertMmdUnitSources(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/sources/{id} [patch]
 func UpdateMmdUnitSources(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -589,8 +589,8 @@ func UpdateMmdUnitSources(c *gin.Context) {
 // @Router /api/v1/mdm/sources/{id} [delete]
 func DeleteMmdUnitSources(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -630,9 +630,9 @@ func DeleteMmdUnitSources(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/types [get]
 func GetMmdUnitType(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -713,9 +713,9 @@ func GetMmdUnitType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/types/{id} [get]
 func GetMmdUnitTypeById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -759,8 +759,8 @@ func GetMmdUnitTypeById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/types/add [post]
 func InsertMmdUnitType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -824,8 +824,8 @@ func InsertMmdUnitType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/types/{id} [patch]
 func UpdateMmdUnitType(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -892,8 +892,8 @@ func UpdateMmdUnitType(c *gin.Context) {
 // @Router /api/v1/mdm/types/{id} [delete]
 func DeleteMmdUnitType(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -932,9 +932,9 @@ func DeleteMmdUnitType(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/companies [get]
 func GetMmdCompanies(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1029,9 +1029,9 @@ func GetMmdCompanies(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/companies/{id} [get]
 func GetMmdCompaniesById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1089,8 +1089,8 @@ func GetMmdCompaniesById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/companies/add [post]
 func InsertMmdCompanies(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1155,8 +1155,8 @@ func InsertMmdCompanies(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/companies/{id} [patch]
 func UpdateMmdCompanies(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1222,8 +1222,8 @@ func UpdateMmdCompanies(c *gin.Context) {
 // @Router /api/v1/mdm/companies/{id} [delete]
 func DeleteMmdCompanies(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1262,9 +1262,9 @@ func DeleteMmdCompanies(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/status [get]
 func GetMmdUnitStatus(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1352,9 +1352,9 @@ func GetMmdUnitStatus(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/status/{id} [get]
 func GetMmdUnitStatusById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1405,8 +1405,8 @@ func GetMmdUnitStatusById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/status/add [post]
 func InsertMmdUnitStatus(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1468,8 +1468,8 @@ func InsertMmdUnitStatus(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/status/{id} [patch]
 func UpdateMmdUnitStatus(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1532,8 +1532,8 @@ func UpdateMmdUnitStatus(c *gin.Context) {
 // @Router /api/v1/mdm/status/{id} [delete]
 func DeleteMmdUnitStatus(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1572,9 +1572,9 @@ func DeleteMmdUnitStatus(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/units [get]
 func GetMmdUnit(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1691,9 +1691,9 @@ func GetMmdUnit(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/units/{id} [get]
 func GetMmdUnitById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1773,8 +1773,8 @@ func GetMmdUnitById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/units/add [post]
 func InsertMmdUnit(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1870,8 +1870,8 @@ func InsertMmdUnit(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/units/{id} [patch]
 func UpdateMmdUnit(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1947,8 +1947,8 @@ func UpdateMmdUnit(c *gin.Context) {
 // @Router /api/v1/mdm/units/{id} [delete]
 func DeleteMmdUnit(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1988,9 +1988,9 @@ func DeleteMmdUnit(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/mdm/units/properties/{unitId} [get]
 func GetMmdUnitWithProperty(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

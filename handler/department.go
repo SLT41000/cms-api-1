@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,9 +25,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/departments [get]
 func GetDepartment(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -107,9 +107,9 @@ func GetDepartment(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/departments/{id} [get]
 func GetDepartmentbyId(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -176,8 +176,8 @@ func GetDepartmentbyId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/departments/add [post]
 func InsertDepartment(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -237,13 +237,13 @@ func InsertDepartment(c *gin.Context) {
 // @accept json
 // @produce json
 // @tags Organization
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @param Body body model.DepartmentUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/departments/{id} [patch]
 func UpdateDepartment(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -269,7 +269,7 @@ func UpdateDepartment(c *gin.Context) {
 	query := `UPDATE public."sec_departments"
 	SET en=$2, th=$3, active=$4,
 	 "updatedAt"=$5, "updatedBy"=$6
-	WHERE id = $1 AND "orgId"=$7`
+	WHERE "deptId" = $1 AND "orgId"=$7`
 	_, err := conn.Exec(ctx, query,
 		id, req.En, req.Th, req.Active,
 		now, username, orgId,
@@ -305,13 +305,13 @@ func UpdateDepartment(c *gin.Context) {
 // @accept json
 // @tags Organization
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/departments/{id} [delete]
 func DeleteDepartment(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -320,7 +320,7 @@ func DeleteDepartment(c *gin.Context) {
 	defer cancel()
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
-	query := `DELETE FROM public."sec_departments" WHERE id = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."sec_departments" WHERE "deptId" = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {

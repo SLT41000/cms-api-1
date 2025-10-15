@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"os"
@@ -47,7 +46,7 @@ func SlaMonitor(c *gin.Context) error {
 		// Only this host should write if no one else owns the lock or it owns it
 		if val == "" || val == hostname {
 
-			conn, ctx, cancel := config.ConnectDB()
+			conn, ctx, cancel := utils.ConnectDB()
 			if conn == nil {
 				log.Printf("DB connection is nil")
 				return nil
@@ -190,4 +189,23 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 	}
 
 	return results, nil
+}
+
+func UpdateCaseSLAPlus(ctx context.Context, conn *pgx.Conn, orgId, caseId string, overSlaFlag bool, overSlaDate time.Time) error {
+	query := `
+		UPDATE tix_cases
+		SET "overSlaFlag" = $1,
+		    "overSlaDate" = $2,
+		    "overSlaCount" = COALESCE("overSlaCount", 0) + 1,
+		    "updatedAt" = NOW()
+		WHERE "orgId" = $3
+		  AND "caseId" = $4;
+	`
+	//log.Print("====UpdateCaseSLAPlus===", query)
+	_, err := conn.Exec(ctx, query, overSlaFlag, overSlaDate, orgId, caseId)
+	if err != nil {
+		return fmt.Errorf("update case SLA failed: %w", err)
+	}
+
+	return nil
 }

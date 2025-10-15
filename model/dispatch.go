@@ -104,8 +104,10 @@ type GetSkills struct {
 
 // Struct for result
 type UnitDispatch struct {
-	UnitID   string `json:"unitId"`
-	Username string `json:"username"`
+	UnitID    string `json:"unitId"`
+	Username  string `json:"username"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 type GetUnisProp struct {
@@ -142,4 +144,18 @@ type CloseCaseRequest struct {
 	ResID     string `json:"resId"`
 	ResDetail string `json:"resDetail"`
 	UpdatedBy string `json:"updatedBy"`
+}
+
+type CancelUnitRequest struct {
+	CaseId    string `json:"caseId"`
+	ResDetail string `json:"resDetail"`
+	ResId     string `json:"resId"`
+	UnitId    string `json:"unitId"`
+	UnitUser  string `json:"unitUser"`
+}
+
+type CancelCaseRequest struct {
+	CaseId    string `json:"caseId"`
+	ResDetail string `json:"resDetail"`
+	ResId     string `json:"resId"`
 }

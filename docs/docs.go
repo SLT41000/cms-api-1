@@ -380,14 +380,20 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "caseType",
+                        "description": "caseType (can be comma-separated, e.g. 1,2,3)",
                         "name": "caseType",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "caseSType",
+                        "description": "caseSType (can be comma-separated)",
                         "name": "caseSType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "statusId (can be comma-separated)",
+                        "name": "statusId",
                         "in": "query"
                     },
                     {
@@ -398,25 +404,31 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "countryId",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "countryId (can be comma-separated)",
                         "name": "countryId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "provId",
+                        "description": "provId (can be comma-separated)",
                         "name": "provId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "distId",
+                        "description": "distId (can be comma-separated)",
                         "name": "distId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category",
+                        "description": "category (alias for statusId)",
                         "name": "category",
                         "in": "query"
                     },
@@ -424,6 +436,20 @@ const docTemplate = `{
                         "type": "string",
                         "description": "createBy",
                         "name": "createBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"createdAt\"",
+                        "description": "orderBy field name",
+                        "name": "orderBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"DESC\"",
+                        "description": "direction ASC or DESC",
+                        "name": "direction",
                         "in": "query"
                     }
                 ],
@@ -640,6 +666,50 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/caseResult": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List CasesResult",
+                "operationId": "CaseResult",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -1541,7 +1611,7 @@ const docTemplate = `{
                 "operationId": "Delete Commands",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1576,7 +1646,7 @@ const docTemplate = `{
                 "operationId": "Update Commands",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -2199,6 +2269,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a file from MinIO and optionally from Database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Delete file",
+                "parameters": [
+                    {
+                        "description": "Delete file",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.DeleteFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/department_command_stations": {
             "get": {
                 "security": [
@@ -2365,7 +2474,7 @@ const docTemplate = `{
                 "operationId": "Delete Department",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -2400,7 +2509,7 @@ const docTemplate = `{
                 "operationId": "Update Department",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -2495,6 +2604,85 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dispatch/cancel/case": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Cancel Case and all units",
+                "operationId": "CancelCase",
+                "parameters": [
+                    {
+                        "description": "Update unit event",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CancelCaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dispatch/cancel/unit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Cancel the current unit assignment for a case. This operation can only be performed if the current stage status is **S003 (ASSIGNED)**.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dispatch"
+                ],
+                "summary": "Cancel unit assigned to a case",
+                "operationId": "CancelUnit",
+                "parameters": [
+                    {
+                        "description": "Update unit event",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CancelUnitRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -5571,7 +5759,7 @@ const docTemplate = `{
                 "operationId": "Delete Stations",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -5606,7 +5794,7 @@ const docTemplate = `{
                 "operationId": "Update Stations",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -5620,6 +5808,56 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.StationUpdate"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/upload/{path}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Upload a file to MinIO under specified path (e.g. /upload/profile)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Upload file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Case ID to link file (optional)",
+                        "name": "caseId",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -6899,6 +7137,40 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "model.CancelCaseRequest": {
+            "type": "object",
+            "properties": {
+                "caseId": {
+                    "type": "string"
+                },
+                "resDetail": {
+                    "type": "string"
+                },
+                "resId": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CancelUnitRequest": {
+            "type": "object",
+            "properties": {
+                "caseId": {
+                    "type": "string"
+                },
+                "resDetail": {
+                    "type": "string"
+                },
+                "resId": {
+                    "type": "string"
+                },
+                "unitId": {
+                    "type": "string"
+                },
+                "unitUser": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CaseHistoryInsert": {
             "type": "object",
             "properties": {
@@ -6942,6 +7214,12 @@ const docTemplate = `{
             "properties": {
                 "arrivedDate": {
                     "type": "string"
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TixCaseAttachmentInput"
+                    }
                 },
                 "caseDetail": {
                     "type": "string"
@@ -7562,6 +7840,31 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "model.DeleteFileRequest": {
+            "type": "object",
+            "required": [
+                "filename",
+                "path"
+            ],
+            "properties": {
+                "attId": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "caseId": {
+                    "type": "string",
+                    "example": "CASE-000123"
+                },
+                "filename": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000.jpg"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "profile"
                 }
             }
         },
@@ -8247,6 +8550,9 @@ const docTemplate = `{
         "model.Notification": {
             "type": "object",
             "properties": {
+                "EVENT": {
+                    "type": "string"
+                },
                 "additionalJson": {
                     "type": "object"
                 },
@@ -8305,10 +8611,17 @@ const docTemplate = `{
         "model.NotificationCreateRequest": {
             "type": "object",
             "properties": {
+                "EVENT": {
+                    "type": "string"
+                },
                 "additionalJson": {
                     "type": "object"
                 },
+                "createdAt": {
+                    "type": "string"
+                },
                 "createdBy": {
+                    "description": "เพิ่มใหม่",
                     "type": "string"
                 },
                 "data": {
@@ -8321,7 +8634,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "expiredAt": {
+                    "description": "เพิ่มใหม่",
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "message": {
                     "type": "string"
@@ -8330,6 +8647,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "recipients": {
+                    "description": "ใช้ตอนสร้างเท่านั้น",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Recipient"
@@ -8342,6 +8660,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "senderPhoto": {
+                    "description": "เพิ่มใหม่",
                     "type": "string"
                 },
                 "senderType": {
@@ -8583,6 +8902,23 @@ const docTemplate = `{
                 },
                 "th": {
                     "description": "Thai name",
+                    "type": "string"
+                }
+            }
+        },
+        "model.TixCaseAttachmentInput": {
+            "type": "object",
+            "properties": {
+                "attId": {
+                    "type": "string"
+                },
+                "attName": {
+                    "type": "string"
+                },
+                "attUrl": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

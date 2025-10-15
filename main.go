@@ -18,9 +18,9 @@ package main
 
 import (
 	"log"
-	"mainPackage/config"
 	_ "mainPackage/docs"
 	"mainPackage/handler"
+	"mainPackage/utils"
 	"os"
 	"time"
 
@@ -37,7 +37,7 @@ import (
 
 func init() {
 	// Load .env file
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	err := godotenv.Load()
 	if err != nil {
 		logger.Fatal("Error loading .env file")
@@ -49,18 +49,19 @@ func main() {
 		Limit:  50,
 	}
 	go handler.StartAutoDeleteScheduler()
-	config.InitRedis()
+	utils.InitRedis()
+	utils.InitMinio()
 	go func() {
 		if err := handler.StartKafkaWorker_Create(); err != nil {
 			log.Printf("Kafka worker error: %v", err)
 		}
 	}()
 
-	go func() {
-		if err := handler.StartKafkaWorker_Update(); err != nil {
-			log.Printf("Kafka worker error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.StartKafkaWorker_Update(); err != nil {
+	// 		log.Printf("Kafka worker error: %v", err)
+	// 	}
+	// }()
 
 	go func() {
 		if err := handler.SlaMonitor(&gin.Context{}); err != nil {
@@ -265,8 +266,9 @@ func main() {
 		v1.GET("/dispatch/:caseId/SOP", handler.GetSOP)
 		v1.GET("/dispatch/:caseId/units", handler.GetUnit)
 		v1.POST("/dispatch/event", handler.UpdateCurrentStage)
-
 		v1.GET("/dispatch/:caseId/SOP/unit/:unitId", handler.GetUnitSOP)
+		v1.POST("/dispatch/cancel/unit", handler.DispatchCancelUnit)
+		v1.POST("/dispatch/cancel/case", handler.DispatchCancelCase)
 
 		v1.GET("/audit_log", handler.GetAuditlog)
 		v1.GET("/audit_log/:username", handler.GetAuditlogByUsername)
@@ -279,6 +281,9 @@ func main() {
 
 		v1.GET("/devices", handler.GetDeviceIoT)
 		v1.GET("/devices/:id", handler.GetDeviceIoTById)
+
+		v1.POST("/upload/:path", handler.UploadFile)
+		v1.DELETE("/delete/", handler.DeleteFile)
 
 	}
 
@@ -307,7 +312,7 @@ func main() {
 		notifications.PUT("/:id", handler.UpdateNotification)
 		notifications.DELETE("/:id", handler.DeleteNotification)
 	}
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	SERV_ADDR := os.Getenv("SERV_ADDR")
 	SERV_PORT := os.Getenv("SERV_PORT")
 	URL := "http://" + SERV_ADDR + ":" + SERV_PORT

@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,9 +25,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_status [get]
 func GetCaseStatus(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func GetCaseStatus(c *gin.Context) {
 
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, "statusId", th, en, color, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.case_status LIMIT $1 OFFSET $2`
+	FROM public.case_status WHERE active = TRUE ORDER BY "statusId" ASC LIMIT $1 OFFSET $2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("query", []any{length, start}))
@@ -109,9 +109,9 @@ func GetCaseStatus(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_status/{id} [get]
 func GetCaseStatusById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -170,8 +170,8 @@ func GetCaseStatusById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_status/add [post]
 func InsertCaseStatus(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -241,8 +241,8 @@ func InsertCaseStatus(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_status/{id} [patch]
 func UpdateCaseStatus(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -309,8 +309,8 @@ func UpdateCaseStatus(c *gin.Context) {
 // @Router /api/v1/case_status/{id} [delete]
 func DeleteCaseStatus(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

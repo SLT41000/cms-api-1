@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,9 +25,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_history [get]
 func GetCaseHistory(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -117,9 +117,9 @@ func GetCaseHistory(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_history/{caseId} [get]
 func GetCaseHistoryByCaseId(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -198,8 +198,8 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_history/add [post]
 func InsertCaseHistory(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -242,12 +242,26 @@ func InsertCaseHistory(c *gin.Context) {
 		return
 	}
 
-	provID, err := GetProvIDFromCase(ctx, conn, req.CaseID)
+	provID, wfId, versions, err := GetInfoFromCase(ctx, conn, orgId.(string), req.CaseID)
+	if err != nil {
+		log.Print("GetInfoFromCase Error :", err.Error())
+	}
+	log.Print(provID, wfId, versions)
+
 	recipients := []model.Recipient{
 		{Type: "provId", Value: provID},
 	}
 
-	additionalJsonMap := req
+	msg := map[string]interface{}{
+		"caseId":    req.CaseID,
+		"fullMsg":   req.FullMsg,
+		"jsonData":  req.JSONData,
+		"orgId":     orgId.(string),
+		"username":  req.Username,
+		"createdAt": now,
+		"type":      req.Type,
+	}
+	additionalJsonMap := msg
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
 		log.Printf("covent additionalData Error :", err)
@@ -276,8 +290,8 @@ func InsertCaseHistory(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case_history/{id} [patch]
 func UpdateCaseHistory(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -340,8 +354,8 @@ func UpdateCaseHistory(c *gin.Context) {
 // @Router /api/v1/case_history/{id} [delete]
 func DeleteCaseHistory(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

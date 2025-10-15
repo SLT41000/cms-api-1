@@ -2,8 +2,8 @@ package handler
 
 import (
 	"crypto/subtle"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,9 +24,9 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users [get]
 func GetUmUserList(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -150,10 +150,10 @@ func GetUmUserList(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/username/{username} [get]
 func GetUmUserByUsername(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	username := c.Param("username")
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -227,9 +227,9 @@ func GetUmUserByUsername(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/{id} [get]
 func GetUmUserById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -344,8 +344,8 @@ func GetUmUserById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/add [post]
 func UserAdd(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -441,8 +441,8 @@ func UserAdd(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/{id} [patch]
 func UserUpdate(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -516,8 +516,8 @@ func UserUpdate(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/username/{username} [patch]
 func UserUpdateByUsername(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -590,8 +590,8 @@ func UserUpdateByUsername(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/{id} [delete]
 func UserDelete(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -632,9 +632,9 @@ func UserDelete(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills [get]
 func GetUserWithSkills(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -724,10 +724,10 @@ func GetUserWithSkills(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills/{id} [get]
 func GetUserWithSkillsById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -792,10 +792,10 @@ func GetUserWithSkillsById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills/skillId/{skillId} [get]
 func GetUserWithSkillsBySkillId(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	skillId := c.Param("skillId")
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -874,8 +874,8 @@ func GetUserWithSkillsBySkillId(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills/add [post]
 func InsertUserWithSkills(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -939,8 +939,8 @@ func InsertUserWithSkills(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_skills/{id} [patch]
 func UpdateUserWithSkills(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1010,8 +1010,8 @@ func UpdateUserWithSkills(c *gin.Context) {
 // @Router /api/v1/users_with_skills/{id} [delete]
 func DeleteUserWithSkills(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1053,9 +1053,9 @@ func DeleteUserWithSkills(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_contacts [get]
 func GetUserWithContacts(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1148,9 +1148,9 @@ func GetUserWithContacts(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_contacts/{id} [get]
 func GetUserWithContactsById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1218,8 +1218,8 @@ func GetUserWithContactsById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_contacts/add [post]
 func InsertUserWithContacts(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1283,8 +1283,8 @@ func InsertUserWithContacts(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_contacts/{id} [patch]
 func UpdateUserWithContacts(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1348,8 +1348,8 @@ func UpdateUserWithContacts(c *gin.Context) {
 // @Router /api/v1/users_with_contacts/{id} [delete]
 func DeleteUserWithContacts(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1392,9 +1392,9 @@ func DeleteUserWithContacts(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_socials [get]
 func GetUserWithSocials(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1487,9 +1487,9 @@ func GetUserWithSocials(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_socials/{id} [get]
 func GetUserWithSocialsById(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	id := c.Param("id")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1555,8 +1555,8 @@ func GetUserWithSocialsById(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_socials/add [post]
 func InsertUserWithSocials(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1620,8 +1620,8 @@ func InsertUserWithSocials(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users_with_socials/{id} [patch]
 func UpdateUserWithSocials(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1688,8 +1688,8 @@ func UpdateUserWithSocials(c *gin.Context) {
 // @Router /api/v1/users_with_socials/{id} [delete]
 func DeleteUserWithSocials(c *gin.Context) {
 
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1729,8 +1729,8 @@ func DeleteUserWithSocials(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/reset_password [post]
 func ResetUserPassword(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1810,8 +1810,8 @@ func ResetUserPassword(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/users/change_password/{id} [patch]
 func ChangeUserPassword(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -1916,9 +1916,9 @@ func ChangeUserPassword(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/user_groups/all [get]
 func GetUmGroupList(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}

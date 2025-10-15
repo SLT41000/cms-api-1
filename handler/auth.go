@@ -3,8 +3,8 @@ package handler
 import (
 	"crypto/subtle"
 	"fmt"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net/http"
 	"os"
 	"strconv"
@@ -102,7 +102,7 @@ func verifyRefreshToken(tokenString string) (*jwt.Token, error) {
 }
 
 func ProtectedHandler(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	authHeader := c.GetHeader("Authorization")
 	logger.Debug("Authorization header", zap.String("Authorization", authHeader))
 
@@ -172,11 +172,11 @@ func ProtectedHandler(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [get]
 func UserLogin(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	username := c.Query("username")
 	password := c.Query("password")
 	organization := c.Query("organization")
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -270,8 +270,8 @@ func UserLogin(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [post]
 func UserLoginPost(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -413,8 +413,8 @@ func UserLoginPost(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/add [post]
 func UserAddAuth(c *gin.Context) {
-	logger := config.GetLog()
-	conn, ctx, cancel := config.ConnectDB()
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
@@ -501,7 +501,7 @@ func UserAddAuth(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/refresh [post]
 func RefreshToken(c *gin.Context) {
-	logger := config.GetLog()
+	logger := utils.GetLog()
 	var req model.RefreshInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{

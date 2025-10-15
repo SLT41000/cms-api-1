@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"net"
 	"net/http"
 	"strings"
@@ -39,7 +39,7 @@ func checkUserInProvince(userDistIdLists []string, provId string) bool {
 		return false
 	}
 
-	dbConn, ctx, cancel := config.ConnectDB()
+	dbConn, ctx, cancel := utils.ConnectDB()
 	if dbConn == nil {
 		return false
 	}
@@ -174,7 +174,7 @@ func getUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username
 // ---------- Upsert Connection ----------
 
 func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
-	dbConn, ctx, cancel := config.ConnectDB()
+	dbConn, ctx, cancel := utils.ConnectDB()
 	if dbConn == nil {
 		log.Println("ERROR: Failed to get DB connection for upsert.")
 		return errors.New("could not connect to database")
@@ -234,7 +234,7 @@ func upsertUserConnectionToDB(userInfo *model.UserConnectionInfo) error {
 // ---------- Remove Connection ----------
 
 func removeUserConnectionFromDB(userID string) {
-	dbConn, ctx, cancel := config.ConnectDB()
+	dbConn, ctx, cancel := utils.ConnectDB()
 	if dbConn == nil {
 		log.Printf("ERROR: Failed to get DB connection to remove user %s", userID)
 		return
@@ -296,7 +296,7 @@ func WebSocketHandler(c *gin.Context) {
 		return
 	}
 
-	dbConn, ctx, cancel := config.ConnectDB()
+	dbConn, ctx, cancel := utils.ConnectDB()
 	if dbConn == nil {
 		_ = wsConn.WriteJSON(gin.H{"error": "could not connect to the database"})
 		wsConn.WriteJSON(subscribeFailureResponse)

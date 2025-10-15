@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mainPackage/config"
 	"mainPackage/model"
+	"mainPackage/utils"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -98,7 +98,7 @@ func UpdateNotification(c *gin.Context) {
 		return
 	}
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	defer cancel()
 	defer conn.Close(ctx)
 
@@ -175,7 +175,7 @@ func DeleteNotification(c *gin.Context) {
 		return
 	}
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	defer cancel()
 	defer conn.Close(ctx)
 
@@ -210,7 +210,7 @@ func GetNotificationsForUser(c *gin.Context) {
 	username := c.Param("username")
 	log.Printf("Fetching notifications for username: %s in org: %s", username, orgId)
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not connect to the database"})
 		return
@@ -423,7 +423,7 @@ func GetNotificationsForUser(c *gin.Context) {
 func DeleteExpiredNotifications() {
 	log.Println("Scheduler: Running job to delete expired notifications...")
 
-	conn, ctx, cancel := config.ConnectDB()
+	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		log.Println("Scheduler Error: could not connect to the database")
 		return
