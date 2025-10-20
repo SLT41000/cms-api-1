@@ -22,6 +22,7 @@ import (
 	"mainPackage/handler"
 	"mainPackage/utils"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -36,29 +37,45 @@ import (
 )
 
 func init() {
+
 	// Load .env file
 	logger := utils.GetLog()
 	err := godotenv.Load()
 	if err != nil {
 		logger.Fatal("Error loading .env file")
 	}
+	//os.Setenv("TZ", os.Getenv("TIME_ZONE"))
+	//time.Local, _ = time.LoadLocation(os.Getenv("TIME_ZONE"))
 }
 func main() {
-	rate := limiter.Rate{
-		Period: 1 * time.Minute,
-		Limit:  50,
+	rateTimeStr := os.Getenv("RATE_TIME")   // e.g., "1" (minutes)
+	rateLimitStr := os.Getenv("RATE_LIMIT") // e.g., "50"
+	rateTimeMin, err := strconv.Atoi(rateTimeStr)
+	if err != nil {
+		rateTimeMin = 1 // fallback
 	}
+
+	rateLimitInt, err := strconv.Atoi(rateLimitStr)
+	if err != nil {
+		rateLimitInt = 50 // fallback
+	}
+
+	rate := limiter.Rate{
+		Period: time.Duration(rateTimeMin) * time.Minute,
+		Limit:  int64(rateLimitInt),
+	}
+
 	go handler.StartAutoDeleteScheduler()
 	utils.InitRedis()
 	utils.InitMinio()
-	go func() {
-		if err := handler.StartKafkaWorker_Create(); err != nil {
-			log.Printf("Kafka worker error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.esb_work_order_create(); err != nil {
+	// 		log.Printf("Kafka worker error: %v", err)
+	// 	}
+	// }()
 
 	// go func() {
-	// 	if err := handler.StartKafkaWorker_Update(); err != nil {
+	// 	if err := handler.esb_work_order_update(); err != nil {
 	// 		log.Printf("Kafka worker error: %v", err)
 	// 	}
 	// }()

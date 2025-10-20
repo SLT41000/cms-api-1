@@ -150,3 +150,66 @@ func GetAuditLogsAllow() map[string]struct{} {
 
 	return allowMap
 }
+
+func WriteConsole(level string, function string, msg string, args ...interface{}) {
+	// Global enable/disable
+	if strings.ToLower(os.Getenv("CONSOLE_LOG")) != "true" {
+		return
+	}
+
+	// Normalize level to uppercase for comparison
+	level = strings.ToUpper(level)
+
+	// Parse allowed levels
+	allowedEnv := os.Getenv("CONSOLE_LOG_ALLOW")
+	if allowedEnv != "" {
+		allowedLevels := strings.Split(strings.ToUpper(allowedEnv), ",")
+		isAllowed := false
+		for _, allowed := range allowedLevels {
+			if strings.TrimSpace(allowed) == level {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
+			return // 🚫 Level not allowed
+		}
+	}
+
+	// Format message safely
+	formatted := msg
+	if len(args) > 0 {
+		// If msg has no % directives, just append the args
+		if strings.Contains(msg, "%") {
+			formatted = fmt.Sprintf(msg, args...)
+		} else {
+			formatted = fmt.Sprintf("%s | %v", msg, args)
+		}
+	}
+
+	// Add timestamp
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+
+	// Colorized prefix by log level
+	var prefix, color string
+	switch level {
+	case "INFO":
+		color = "\033[1;34m" // blue
+		prefix = "[INFO]"
+	case "WARN", "WARNING":
+		color = "\033[1;33m" // yellow
+		prefix = "[WARN]"
+	case "ERROR":
+		color = "\033[1;31m" // red
+		prefix = "[ERROR]"
+	case "DEBUG":
+		color = "\033[0;36m" // cyan
+		prefix = "[DEBUG]"
+	default:
+		color = "\033[0;37m" // gray
+		prefix = "[LOG]"
+	}
+
+	// Print colored output
+	fmt.Printf("%s%s %s [%s] %s\033[0m\n", color, prefix, timestamp, function, formatted)
+}

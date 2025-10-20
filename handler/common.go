@@ -328,7 +328,11 @@ func genNotiCustom(
 	if user == nil {
 		log.Printf("User not found")
 	} else {
-		senderPhoto = *user.Photo
+		if user.Photo != nil {
+			senderPhoto = *user.Photo
+		} else {
+			senderPhoto = ""
+		}
 	}
 
 	// เตรียม request ชุดเดียว

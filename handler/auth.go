@@ -199,21 +199,58 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT id,"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood,
-	 gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId",
-	  "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin,
-	   "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	   FROM public.um_users WHERE username = $1 AND active = true`
+	query = `SELECT 
+    u.id,
+    u."orgId",
+    u."displayName",
+    u.title,
+    u."firstName",
+    u."middleName",
+    u."lastName",
+    u."citizenId",
+    u.bod,
+    u.blood,
+    u.gender,
+    u."mobileNo",
+    u.address,
+    u.photo,
+    u.username,
+    u.password,
+    u.email,
+    u."roleId",
+    u."userType",
+    u."empId",
+    u."deptId",
+    u."commId",
+    u."stnId",
+    u.active,
+    u."activationToken",
+    u."lastActivationRequest",
+    u."lostPasswordRequest",
+    u."signupStamp",
+    u.islogin,
+    u."lastLogin",
+    u."createdAt",
+    u."updatedAt",
+    u."createdBy",
+    u."updatedBy",
+    COALESCE(a."distIdLists", '[]'::jsonb) AS "distIdLists"
+FROM public.um_users u
+LEFT JOIN public.um_user_with_area_response a
+    ON a."username" = u.username AND a."orgId" = u."orgId"
+WHERE u.username = $1
+  AND u.active = TRUE;
+`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
-	var UserOpt model.Um_User
+	var UserOpt model.Um_User_Login
 	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
 		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
 		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
 		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
 		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
 		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
-		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy)
+		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
 	if err != nil {
 		logger.Debug(err.Error())
 		c.JSON(http.StatusUnauthorized, model.Response{
@@ -306,11 +343,48 @@ func UserLoginPost(c *gin.Context) {
 		return
 	}
 
-	query = `SELECT id,"orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", bod, blood,
-	 gender, "mobileNo", address, photo, username, password, email, "roleId", "userType", "empId", "deptId", "commId",
-	  "stnId", active, "activationToken", "lastActivationRequest", "lostPasswordRequest", "signupStamp", islogin,
-	   "lastLogin", "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	   FROM public.um_users WHERE username = $1 AND active = true`
+	query = `SELECT 
+    u.id,
+    u."orgId",
+    u."displayName",
+    u.title,
+    u."firstName",
+    u."middleName",
+    u."lastName",
+    u."citizenId",
+    u.bod,
+    u.blood,
+    u.gender,
+    u."mobileNo",
+    u.address,
+    u.photo,
+    u.username,
+    u.password,
+    u.email,
+    u."roleId",
+    u."userType",
+    u."empId",
+    u."deptId",
+    u."commId",
+    u."stnId",
+    u.active,
+    u."activationToken",
+    u."lastActivationRequest",
+    u."lostPasswordRequest",
+    u."signupStamp",
+    u.islogin,
+    u."lastLogin",
+    u."createdAt",
+    u."updatedAt",
+    u."createdBy",
+    u."updatedBy",
+    COALESCE(a."distIdLists", '[]'::jsonb) AS "distIdLists"
+FROM public.um_users u
+LEFT JOIN public.um_user_with_area_response a
+    ON a."username" = u.username AND a."orgId" = u."orgId"
+WHERE u.username = $1
+  AND u.active = TRUE;
+`
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
 	var UserOpt model.Um_User_Login
@@ -320,7 +394,7 @@ func UserLoginPost(c *gin.Context) {
 		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
 		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
 		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
-		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy)
+		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
 	if err != nil {
 		logger.Debug(err.Error())
 		c.JSON(http.StatusUnauthorized, model.Response{

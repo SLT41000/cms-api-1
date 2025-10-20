@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -45,6 +47,46 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
+	// ---------- 🔍 Validate file extension ----------
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(file.Filename), "."))
+
+	imageExts := strings.Split(os.Getenv("IMAGE_EXT_ALLOW"), ",")
+	docExts := strings.Split(os.Getenv("DOC_EXT_ALLOW"), ",")
+
+	group := ""
+	if contains_(imageExts, ext) {
+		group = "image"
+	} else if contains_(docExts, ext) {
+		group = "doc"
+	} else {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    fmt.Sprintf("❌ Unsupported file extension: .%s", ext),
+		})
+		return
+	}
+
+	// ---------- ⚖️ Validate file size ----------
+	sizeKB := file.Size / 1024
+	var maxSizeKB int64
+
+	if group == "image" {
+		val, _ := strconv.ParseInt(os.Getenv("IMAGE_FILE_SIZE"), 10, 64)
+		maxSizeKB = val
+	} else {
+		val, _ := strconv.ParseInt(os.Getenv("DOC_FILE_SIZE"), 10, 64)
+		maxSizeKB = val
+	}
+
+	if sizeKB > maxSizeKB {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    fmt.Sprintf("❌ File too large (%d KB > %d KB allowed for %s)", sizeKB, maxSizeKB, group),
+		})
+		return
+	}
+
+	// ---------- 📂 Open source file ----------
 	src, err := file.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -56,14 +98,13 @@ func UploadFile(c *gin.Context) {
 	}
 	defer src.Close()
 
-	// Generate unique filename
+	// ---------- 🆔 Generate unique filename ----------
 	attId := uuid.New().String()
-	ext := filepath.Ext(file.Filename)
-	uuidFilename := attId + ext
+	uuidFilename := attId + "." + ext
 	objectName := filepath.Join(path, uuidFilename)
 	bucket := os.Getenv("MINIO_BUCKET")
 
-	// Upload to MinIO
+	// ---------- ☁️ Upload to MinIO ----------
 	_, err = utils.MinioClient.PutObject(
 		context.Background(),
 		bucket,
@@ -81,10 +122,10 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Generate public URL
+	// ---------- 🌐 Build public URL ----------
 	url := fmt.Sprintf("https://%s/%s/%s", os.Getenv("MINIO_API"), bucket, objectName)
 
-	// Build attachment struct
+	// ---------- 🧾 Build attachment struct ----------
 	attachment := model.TixCaseAttachment{
 		CaseId:  caseId,
 		Type:    path,
@@ -93,7 +134,7 @@ func UploadFile(c *gin.Context) {
 		AttUrl:  url,
 	}
 
-	// Insert into DB if caseId provided
+	// ---------- 💾 Insert DB if caseId provided ----------
 	if caseId != "" {
 		conn, ctx, cancel := utils.ConnectDB()
 		if conn == nil {
@@ -135,6 +176,16 @@ func UploadFile(c *gin.Context) {
 		Desc:   fmt.Sprintf("path=%s filename=%s", path, uuidFilename),
 		Data:   attachment,
 	})
+}
+
+// Helper function
+func contains_(arr []string, target string) bool {
+	for _, a := range arr {
+		if strings.TrimSpace(strings.ToLower(a)) == target {
+			return true
+		}
+	}
+	return false
 }
 
 // @Summary Delete file

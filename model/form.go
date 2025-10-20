@@ -3,19 +3,77 @@ package model
 import "time"
 
 type Form struct {
-	FormId        *string                  `json:"formId"`
-	FormName      *string                  `json:"formName"`
-	FormColSpan   int                      `json:"formColSpan"`
-	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+	FormId        *string               `json:"formId"`
+	FormName      *string               `json:"formName"`
+	FormColSpan   int                   `json:"formColSpan"`
+	FormFieldJson []IndividualFormField `json:"formFieldJson"`
 }
-type FormByCasesubtypeOpt struct {
-	NextNodeId    *string                  `json:"nextNodeId"`
-	WfVersions    *string                  `json:"versions"`
-	WfId          *string                  `json:"wfId"`
-	FormId        *string                  `json:"formId"`
-	FormName      *string                  `json:"formName"`
-	FormColSpan   int                      `json:"formColSpan"`
-	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+
+type FormRule struct {
+	MaxLength        *int     `json:"maxLength,omitempty"`
+	MinLength        *int     `json:"minLength,omitempty"`
+	Contain          *string  `json:"contain,omitempty"`
+	MaxNumber        *float64 `json:"maxnumber,omitempty"`
+	MinNumber        *float64 `json:"minnumber,omitempty"`
+	ValidEmailFormat *bool    `json:"validEmailFormat,omitempty"`
+	MaxSelections    *int     `json:"maxSelections,omitempty"`
+	MinSelections    *int     `json:"minSelections,omitempty"`
+	MaxFileSize      *int     `json:"maxFileSize,omitempty"`
+	AllowedFileTypes []string `json:"allowedFileTypes,omitempty"`
+	AllowedCountries []string `json:"allowedCountries,omitempty"`
+	HasUppercase     *bool    `json:"hasUppercase,omitempty"`
+	HasLowercase     *bool    `json:"hasLowercase,omitempty"`
+	HasNumber        *bool    `json:"hasNumber,omitempty"`
+	HasSpecialChar   *bool    `json:"hasSpecialChar,omitempty"`
+	NoWhitespace     *bool    `json:"noWhitespace,omitempty"`
+	MinDate          *string  `json:"minDate,omitempty"`
+	MaxDate          *string  `json:"maxDate,omitempty"`
+	MinLocalDate     *string  `json:"minLocalDate,omitempty"`
+	MaxLocalDate     *string  `json:"maxLocalDate,omitempty"`
+	FutureDateOnly   *bool    `json:"futureDateOnly,omitempty"`
+	PastDateOnly     *bool    `json:"pastDateOnly,omitempty"`
+	MinFiles         *int     `json:"minFiles,omitempty"`
+	MaxFiles         *int     `json:"maxFiles,omitempty"`
+}
+
+type IndividualFormField struct {
+	ID                  string        `json:"id"`
+	Label               string        `json:"label"`
+	ShowLabel           *bool         `json:"showLabel,omitempty"`
+	Type                string        `json:"type"`
+	Value               interface{}   `json:"value"`
+	EnableSearch        *bool         `json:"enableSearch,omitempty"`
+	Options             []interface{} `json:"options,omitempty"`
+	Placeholder         *string       `json:"placeholder,omitempty"`
+	Required            bool          `json:"required"`
+	ColSpan             *int          `json:"colSpan,omitempty"`
+	IsChild             *bool         `json:"isChild,omitempty"`
+	GroupColSpan        *int          `json:"GroupColSpan,omitempty"`
+	DynamicFieldColSpan *int          `json:"DynamicFieldColSpan,omitempty"`
+	FormRule            *FormRule     `json:"formRule,omitempty"`
+	UID                 *string       `json:"uid,omitempty"`
+}
+
+type FormFieldOption struct {
+	Value string                            `json:"value"`
+	Form  []IndividualFormFieldWithChildren `json:"form,omitempty"`
+}
+
+type IndividualFormFieldWithChildren struct {
+	ID                  string        `json:"id"`
+	Label               string        `json:"label"`
+	ShowLabel           *bool         `json:"showLabel,omitempty"`
+	Type                string        `json:"type"`
+	Value               interface{}   `json:"value"`
+	EnableSearch        *bool         `json:"enableSearch,omitempty"`
+	Options             []interface{} `json:"options,omitempty"`
+	Placeholder         *string       `json:"placeholder,omitempty"`
+	Required            bool          `json:"required"`
+	ColSpan             *int          `json:"colSpan,omitempty"`
+	IsChild             *bool         `json:"isChild,omitempty"`
+	GroupColSpan        *int          `json:"GroupColSpan,omitempty"`
+	DynamicFieldColSpan *int          `json:"DynamicFieldColSpan,omitempty"`
+	FormRule            *FormRule     `json:"formRule,omitempty"`
 }
 
 type FormsManager struct {
@@ -46,12 +104,12 @@ type FormBuilder struct {
 }
 
 type FormInsert struct {
-	FormName      *string                  `json:"formName"`
-	FormColSpan   int                      `json:"formColSpan"`
-	Active        bool                     `json:"active"`
-	Publish       bool                     `json:"publish"`
-	Locks         bool                     `json:"locks"`
-	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+	FormName      *string               `json:"formName"`
+	FormColSpan   int                   `json:"formColSpan"`
+	Active        bool                  `json:"active"`
+	Publish       bool                  `json:"publish"`
+	Locks         bool                  `json:"locks"`
+	FormFieldJson []IndividualFormField `json:"formFieldJson"`
 }
 
 type FormActive struct {
@@ -171,13 +229,13 @@ type FormAnswer struct {
 }
 
 type FormAnswerRequest struct {
-	NextNodeId    string                   `json:"nextNodeId"`
-	Versions      string                   `json:"versions"`
-	WfId          string                   `json:"wfId"`
-	FormId        string                   `json:"formId"`
-	FormName      string                   `json:"formName"`
-	FormColSpan   int                      `json:"formColSpan"`
-	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+	NextNodeId    string                `json:"nextNodeId"`
+	Versions      string                `json:"versions"`
+	WfId          string                `json:"wfId"`
+	FormId        string                `json:"formId"`
+	FormName      string                `json:"formName"`
+	FormColSpan   int                   `json:"formColSpan"`
+	FormFieldJson []IndividualFormField `json:"formFieldJson"`
 }
 
 type NodeData struct {

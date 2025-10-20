@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"mainPackage/model"
@@ -40,7 +41,7 @@ func GetSOP(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("=xcxxxx==xx=x=x=x=x=x")
+	fmt.Println("=GetSOP==xx=x=x=x=x=x")
 	log.Println("===")
 
 	orgId := GetVariableFromToken(c, "orgId")
@@ -124,7 +125,7 @@ func GetSOP(c *gin.Context) {
 	cusCase.NextStage = nextStage
 	cusCase.DispatchStage = dispatchNode
 	log.Println(cusCase)
-	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
+	log.Println("=GetSOP==allNodes=x=x=x=x=x")
 	log.Println(allNodes)
 	log.Println(currentNode)
 
@@ -145,16 +146,17 @@ func GetSOP(c *gin.Context) {
 
 	//Get Cuurent dynamic form
 	formId := currentNode.FormId // จาก JSON
-	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, *formId)
+	log.Print("====formId==")
+	log.Print(formId)
+	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, formId, false)
 	if err != nil {
-		log.Fatal("query error:", err)
+		log.Fatal("GetFormAnswers error:", err)
 	}
 	cusCase.FormAnswer = answers
-
 	//Get SLA
 	slaTimelines, err := GetSLA(c, conn, orgId.(string), caseId, "case")
 	if err != nil {
-		log.Fatal("query error:", err)
+		log.Fatal("GetSLA error:", err)
 	}
 	cusCase.SlaTimelines = slaTimelines
 
@@ -205,7 +207,7 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId stri
 
 	var current model.CurrentStage
 	var wfId string
-
+	log.Print(currentQuery)
 	err := conn.QueryRow(ctx, currentQuery, orgId, caseId, unitId).
 		Scan(&wfId, &current.CaseId, &current.NodeId, &current.Versions, &current.Type, &current.Section, &current.Data, &current.Pic, &current.Group, &current.FormId)
 	if err != nil {
@@ -311,9 +313,9 @@ func GetWorkflowAndCurrentNode(c *gin.Context, orgId, caseId string, unitId stri
 	log.Print(nextNode)
 	log.Println("===== END =====")
 
-	allNodes_ := AddPreviousSLA(allNodes)
+	//allNodes_ := AddPreviousSLA(allNodes)
 
-	return allNodes_, &current, &nextNode, &dispatchNode, nil
+	return allNodes, &current, &nextNode, &dispatchNode, nil
 }
 
 // @summary Get Unit
@@ -643,7 +645,7 @@ func GetUnitSOP(c *gin.Context) {
 		return
 	}
 	log.Println("=orgId--")
-	log.Println(orgId)
+	log.Println(unitId)
 	allNodes, currentNode, nextStage, dispatchNode, err := GetWorkflowAndCurrentNode(c, orgId.(string), caseId, unitId)
 	if err != nil {
 		response := model.Response{
@@ -686,7 +688,7 @@ func GetUnitSOP(c *gin.Context) {
 
 	// cusCase.DispatchStage = dispatchNode
 	log.Println(dispatchNode)
-	log.Println("=xcxxxx==allNodes=x=x=x=x=x")
+	log.Println("=GetUnitSOP==allNodes=x=x=x=x=x")
 	log.Println(allNodes)
 	log.Println(currentNode)
 	// Final JSON
@@ -788,14 +790,15 @@ WHERE
 	return unitLists, count, nil
 }
 
-func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string) (map[string]interface{}, error) {
+func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string, returnUid bool) (*model.FormAnswerRequest, error) {
 	// Query both form metadata and answers
 	query := `
 		SELECT 
 			fb."formName",
 			fb."formColSpan",
 			fb."versions" as formVersion,
-			fa."eleData"
+			fa."eleData",
+			fa."id" as uid
 		FROM form_builder fb
 		LEFT JOIN form_answers fa
 			ON fb."orgId" = fa."orgId"::uuid
@@ -815,33 +818,37 @@ func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId s
 	var formName string
 	var formColSpan int
 	var formVersion string
-	var formFieldJson []map[string]interface{}
+	var formFieldJson []model.IndividualFormField
 
 	for rows.Next() {
 		var eleDataBytes []byte
-		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes); err != nil {
+		var uid sql.NullString
+
+		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes, &uid); err != nil {
 			return nil, err
 		}
 
 		if len(eleDataBytes) > 0 {
-			var field map[string]interface{}
+			var field model.IndividualFormField
 			if err := json.Unmarshal(eleDataBytes, &field); err != nil {
 				return nil, err
+			}
+			if returnUid && uid.Valid {
+				field.UID = &uid.String
 			}
 			formFieldJson = append(formFieldJson, field)
 		}
 	}
 
-	response := map[string]interface{}{
-		"versions":      formVersion,
-		"wfId":          "", // optionally fill from your workflow
-		"formId":        formId,
-		"formName":      formName,
-		"formColSpan":   formColSpan,
-		"formFieldJson": formFieldJson,
+	response := model.FormAnswerRequest{
+		Versions: formVersion,
+		// WfId:          "", // optionally fill from your workflow
+		FormId:        formId,
+		FormName:      formName,
+		FormColSpan:   formColSpan,
+		FormFieldJson: formFieldJson,
 	}
-
-	return response, nil
+	return &response, nil
 }
 
 func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {

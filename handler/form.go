@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
@@ -55,7 +58,7 @@ func GetForm(c *gin.Context) {
 	}
 	defer rows.Close()
 	var errorMsg string
-	var formFields []map[string]interface{}
+	var formFields []model.IndividualFormField
 	var form model.Form
 	for rows.Next() {
 		var rawJSON []byte
@@ -65,7 +68,7 @@ func GetForm(c *gin.Context) {
 			continue
 		}
 
-		var field map[string]interface{}
+		var field model.IndividualFormField
 		if err := json.Unmarshal(rawJSON, &field); err != nil {
 			logger.Warn("unmarshal field failed", zap.Error(err))
 			continue
@@ -168,13 +171,13 @@ func GetAllForm(c *gin.Context) {
 			continue
 		}
 
-		var field map[string]interface{}
+		var field model.IndividualFormField
 		if err := json.Unmarshal(rawJSON, &field); err != nil {
 			logger.Warn("Unmarshal field failed", zap.Error(err))
 			continue
 		}
 
-		form.FormFieldJson = []map[string]interface{}{field}
+		form.FormFieldJson = []model.IndividualFormField{field}
 		forms = append(forms, form)
 		// logger.Debug("Row data", zap.Any("form", form))
 	}
@@ -1401,8 +1404,8 @@ WHERE t1."wfId" = $1
 		return
 	}
 	defer rows.Close()
-	var formFields []map[string]interface{}
-	var form model.FormByCasesubtypeOpt
+	var formFields []model.IndividualFormField
+	var form model.FormAnswerRequest
 	found := false
 	for rows.Next() {
 		var rawJSON []byte
@@ -1418,7 +1421,7 @@ WHERE t1."wfId" = $1
 			return
 		}
 
-		var field map[string]interface{}
+		var field model.IndividualFormField
 		if err := json.Unmarshal(rawJSON, &field); err != nil {
 			logger.Warn("unmarshal field failed", zap.Error(err))
 			response := model.Response{
@@ -1443,9 +1446,9 @@ WHERE t1."wfId" = $1
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-	form.NextNodeId = &nodeId
-	form.WfVersions = &versions
-	form.WfId = &wfId
+	form.NextNodeId = nodeId
+	form.Versions = versions
+	form.WfId = wfId
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
@@ -1485,6 +1488,61 @@ func InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId 
 			user,
 			user,
 		).Scan(&insertedID)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
+	oldform, err := GetFormAnswers(conn, ctx, orgId, caseId, fa.FormId, true)
+	if err != nil {
+		log.Fatal("query error:", err)
+	}
+	if len(oldform.FormFieldJson) != len(fa.FormFieldJson) {
+		log.Fatal("form not match")
+	}
+	for i, field := range fa.FormFieldJson { // i = int, field = map[string]interface{}
+		eleDataJSON, err := json.Marshal(field)
+		if err != nil {
+			return err
+		}
+		if field.ID != oldform.FormFieldJson[i].ID {
+			return errors.New("form id does't not match")
+		}
+
+		oldEleDataJSON, err := json.Marshal(oldform.FormFieldJson[i])
+		if bytes.Equal(oldEleDataJSON, eleDataJSON) {
+			log.Printf("Skipping field - value unchanged ")
+			continue
+		}
+		if oldform.FormFieldJson[i].UID == nil {
+			log.Printf("⚠️ Skipping field because UID is empty at index %d", i)
+			return errors.New("no form UID")
+		}
+		var uid = *oldform.FormFieldJson[i].UID
+
+		if uid == "" {
+			return errors.New("no form UID")
+		}
+
+		query := `
+		UPDATE form_answers 
+		SET 
+			"eleData" = $1,
+			"updatedAt" = NOW(),
+			"updatedBy" = $2
+		WHERE 
+			"id" = $3 
+			
+	`
+
+		_, err = conn.Exec(ctx, query, eleDataJSON, user, uid)
+		if err != nil {
+			return err
+		}
 
 		if err != nil {
 			return err

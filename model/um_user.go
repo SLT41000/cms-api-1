@@ -42,6 +42,7 @@ type Um_User_Login struct {
 	UpdatedAt             time.Time  `json:"updatedAt"`
 	CreatedBy             string     `json:"createdBy"`
 	UpdatedBy             string     `json:"updatedBy"`
+	DistIdLists           *[]string  `json:"distIdLists,omitempty"` // ✅ optional JSON array of UUIDs
 }
 
 type Um_User struct {

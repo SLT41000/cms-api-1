@@ -579,7 +579,7 @@ func InsertCase(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	uuid := uuid.New()
 
-	now := time.Now()
+	now := getTimeNowUTC()
 	var caseId string
 	if req.CaseId == nil || *req.CaseId == "" || *req.CaseId == "null" {
 		//caseId = genCaseID()
@@ -621,8 +621,8 @@ func InsertCase(c *gin.Context) {
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-		$21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43, $44, $45
+		$21, $22, $23, $24, CURRENT_TIMESTAMP, $25, $26, $27, $28, $29, $30,
+		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43, $44
 	) RETURNING id ;
 	`
 
@@ -631,7 +631,7 @@ func InsertCase(c *gin.Context) {
 		orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority, req.WfID, req.WfVersions,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
-		req.CaseDuration, req.CreatedDate, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+		req.CaseDuration, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
 		req.ResDetail, req.ScheduleFlag, req.ScheduleDate, now, now, username, username, caseSLA, uuid).Scan(&id)
 
@@ -815,6 +815,24 @@ func UpdateCase(c *gin.Context) {
 		})
 		logger.Warn("Update failed", zap.Error(err))
 		return
+	}
+
+	fmt.Printf("=======AnswerForm========")
+	if req.FormData.FormId == "" {
+
+	} else {
+		err = UpdateFormAnswer(conn, ctx, orgId.(string), *req.CaseId, *req.FormData, username.(string))
+		if err != nil {
+			log.Fatal("Update Form error:", err)
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1",
+				Msg:    "Failure",
+				Desc:   err.Error(),
+			})
+			return
+		}
 	}
 
 	//Noti Custom

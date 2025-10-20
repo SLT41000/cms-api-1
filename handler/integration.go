@@ -28,7 +28,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	}
 
 	if caseData != nil {
-		log.Printf("Case Duplicate")
+		log.Printf("Case Duplicate :  %s", string(caseData.CaseID))
 		return nil
 	}
 

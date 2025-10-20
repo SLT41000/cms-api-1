@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StartKafkaWorker_Create() error {
+func esb_work_order_create() error {
 	maxRetryStr := os.Getenv("KAFKA_RETRY")
 	intervalStr := os.Getenv("KAFKA_INTERVAL")
 	maxRetryInt, err_ := strconv.Atoi(maxRetryStr)
@@ -101,7 +101,7 @@ func handleMessage_WO_Create(message []byte) {
 	}
 }
 
-func StartKafkaWorker_Update() error {
+func esb_work_order_update() error {
 	maxRetryStr := os.Getenv("KAFKA_RETRY")
 	intervalStr := os.Getenv("KAFKA_INTERVAL")
 	maxRetryInt, err_ := strconv.Atoi(maxRetryStr)

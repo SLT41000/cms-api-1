@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -284,4 +285,44 @@ func setConfig(data interface{}, newCfg map[string]interface{}) interface{} {
 		}
 	}
 	return data
+}
+
+func getTimeNow() time.Time {
+	timeZone := os.Getenv("TIME_ZONE")
+	if timeZone == "" {
+		timeZone = "Asia/Bangkok"
+	}
+
+	loc, err := time.LoadLocation(timeZone)
+	if err != nil || loc == nil {
+		fmt.Printf("⚠️ Cannot load timezone '%s': %v → use UTC\n", timeZone, err)
+		return time.Now().UTC()
+	}
+
+	now := time.Now().In(loc)
+	fmt.Printf("✅ Timezone: %s → Now: %v\n", timeZone, now)
+	return now
+}
+
+//	func convertTime(dt *time.Time) time.Time {
+//		//loc := time.FixedZone(os.Getenv("TIME_ZONE"), 0) // +7 ชั่วโมง
+//		loc, _ := time.LoadLocation(os.Getenv("TIME_ZONE"))
+//		return dt.In(loc)
+//	}
+func getTimeNowUTC() time.Time {
+	return time.Now().UTC()
+}
+
+func getTimeNowBangkok() time.Time {
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	return time.Now().In(loc)
+}
+
+func displayBangkokTime(t time.Time) string {
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	return t.In(loc).Format("2006-01-02 15:04:05")
+}
+
+func displayTime(t time.Time) string {
+	return t.Format("2006-01-02 15:04:05")
 }

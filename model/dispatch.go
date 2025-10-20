@@ -26,7 +26,7 @@ type CurrentStage struct {
 	Data      interface{} `json:"data"` // jsonb
 	Pic       *string     `json:"pic"`
 	Group     *string     `json:"group"`
-	FormId    *string     `json:"formId"`
+	FormId    string      `json:"formId"`
 	StageType string      `json:"stageType"`
 	UnitID    string      `json:"unitId"`
 	UserOwner *string     `json:"username"`
