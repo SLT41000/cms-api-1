@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -25,7 +26,12 @@ import (
 // @Router /api/v1/role_permission [get]
 func GetRolePermission(c *gin.Context) {
 	logger := utils.GetLog()
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -50,11 +56,19 @@ func GetRolePermission(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermission", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -73,6 +87,13 @@ func GetRolePermission(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Role Permission", "GetRolePermission", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		RolePermissionList = append(RolePermissionList, RolePermission)
@@ -83,6 +104,13 @@ func GetRolePermission(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermission", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -91,6 +119,13 @@ func GetRolePermission(c *gin.Context) {
 			Data:   RolePermissionList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermission", "",
+			"search", 0, now, GetQueryParams(c), response, "GetRolePermisson Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -108,14 +143,16 @@ func GetRolePermission(c *gin.Context) {
 func GetRolePermissionbyId(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-
-	orgId := GetVariableFromToken(c, "orgId")
 
 	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.um_role_with_permissions WHERE id = $1 AND "orgId" = $2`
@@ -139,11 +176,19 @@ func GetRolePermissionbyId(c *gin.Context) {
 
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermissionById", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -153,6 +198,13 @@ func GetRolePermissionbyId(c *gin.Context) {
 		Data:   RolePermission,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role Permission", "GetRolePermissionById", "",
+		"search", 0, now, GetQueryParams(c), response, "GetRolePermissionById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -177,7 +229,10 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	query := `SELECT id, "orgId", "roleId", "permId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.um_role_with_permissions WHERE "orgId"=$1 AND "roleId"=$2`
@@ -187,11 +242,19 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId, id)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermissionById", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -210,6 +273,13 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   err.Error(),
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Role Permission", "GetRolePermissionById", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		RolePermissionList = append(RolePermissionList, RolePermission)
@@ -221,6 +291,13 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not Found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermissionById", "",
+			"search", -1, now, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -229,6 +306,13 @@ func GetRolePermissionbyroleId(c *gin.Context) {
 			Data:   RolePermissionList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "GetRolePermissionById", "",
+			"search", 0, now, GetQueryParams(c), response, "GetRolePermissionById Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -250,17 +334,27 @@ func InsertRolePermission(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	id := c.Param("id")
+	now := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
-	now := time.Now()
+	txtId := uuid.New().String()
 
 	var req model.RolePermissionInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "InsertRolePermission", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -288,22 +382,38 @@ func InsertRolePermission(c *gin.Context) {
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, "", "Role Permission", "InsertRolePermission", "",
+				"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Insert failed", zap.Error(err))
 			return
 		}
 
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Role Permission", "InsertRolePermission", "",
+		"create", 0, now, GetQueryParams(c), response, "InsertRolePermission Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -328,20 +438,30 @@ func UpdateRolePermission(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("roleId")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.RolePermissionUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "UpdateRolePermission", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `DELETE FROM public."um_role_with_permissions" WHERE "roleId" = $1 AND "orgId"=$2`
 
 	logger.Debug(`Query`, zap.String("query", query),
@@ -352,11 +472,19 @@ func UpdateRolePermission(c *gin.Context) {
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "UpdateRolePermission", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
@@ -387,11 +515,19 @@ func UpdateRolePermission(c *gin.Context) {
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, strconv.Itoa(id), "Role Permission", "UpdateRolePermission", "",
+				"update", 0, now, GetQueryParams(c), response, "UpdateRolePermission Success.",
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Insert failed", zap.Error(err))
 			return
 		}
@@ -425,14 +561,28 @@ func UpdateMultiRolePermission(c *gin.Context) {
 	defer conn.Close(ctx)
 	defer cancel()
 
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	var req model.MultiRolePermissionUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "UpdateMultiRolePermission", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -451,11 +601,19 @@ func UpdateMultiRolePermission(c *gin.Context) {
 		_, err := conn.Exec(ctx, query, id, orgId)
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Role Permission", "UpdateMultiRolePermission", "",
+				"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Update failed", zap.Error(err))
 			return
 		}
@@ -481,11 +639,19 @@ func UpdateMultiRolePermission(c *gin.Context) {
 
 			if err != nil {
 				// log.Printf("Insert failed: %v", err)
-				c.JSON(http.StatusInternalServerError, model.Response{
+				response := model.Response{
 					Status: "-1",
 					Msg:    "Failure",
 					Desc:   err.Error(),
-				})
+				}
+				//=======AUDIT_START=====//
+				_ = utils.InsertAuditLogs(
+					c, conn, orgId.(string), username.(string),
+					txtId, id, "Role Permission", "UpdateMultiRolePermission", "",
+					"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+				)
+				//=======AUDIT_END=====//
+				c.JSON(http.StatusInternalServerError, response)
 				logger.Warn("Insert failed", zap.Error(err))
 				return
 			}
@@ -493,11 +659,19 @@ func UpdateMultiRolePermission(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role Permission", "UpdateMultiRolePermission", "",
+		"update", 0, now, GetQueryParams(c), response, "UpdateMultiRolePermission Success",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete RolePermission
@@ -519,23 +693,48 @@ func DeleteRolePermission(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	query := `DELETE FROM public."um_role_with_permissions" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role Permission", "DeleteRolePermission", "",
+			"delete", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role Permission", "DeleteRolePermission", "",
+		"delete", 0, now, GetQueryParams(c), response, "DeleteRolePermission Success.",
+	)
+	//=======AUDIT_END=====//
+
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",

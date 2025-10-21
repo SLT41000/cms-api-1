@@ -145,7 +145,7 @@ func GetSOP(c *gin.Context) {
 	cusCase.UnitLists = unitLists
 
 	//Get Cuurent dynamic form
-	formId := currentNode.FormId // จาก JSON
+	formId := *currentNode.FormId // จาก JSON
 	log.Print("====formId==")
 	log.Print(formId)
 	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, formId, false)
@@ -748,7 +748,7 @@ JOIN public.um_users AS u
 WHERE 
     cs."orgId" = $1
     AND cs."caseId" = $2
-    AND cs."stageType" = 'unit';
+    AND cs."stageType" = 'unit'
 	`
 
 	args := []interface{}{orgID, caseID}
@@ -951,6 +951,7 @@ func DispatchCancelUnit(c *gin.Context) {
 	)
 	//[1] => Check Unit Status S003
 	unitLists, count, err := GetUnits(ctx, conn, orgId.(string), caseId, assign_, req.UnitId)
+	log.Print(unitLists)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",

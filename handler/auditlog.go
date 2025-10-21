@@ -47,7 +47,7 @@ func GetAuditlog(c *gin.Context) {
 		length = 1000
 	}
 	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
-	FROM public.audit_logs LIMIT $1 OFFSET $2`
+	FROM public.audit_logs ORDER BY "createdAt" DESC LIMIT $1 OFFSET $2`
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))

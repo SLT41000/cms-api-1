@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype" // Import pgtype to handle nullable fields
 )
@@ -45,17 +46,45 @@ func RandomString(n int) string {
 // @Router /api/v1/notifications [post]
 func CreateNotifications(c *gin.Context) {
 	var inputs []model.NotificationCreateRequest
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&inputs); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
+		response := gin.H{"error": "invalid request body", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Notification", "CreateNotification", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	createdNotifications, err := CoreNotifications(c.Request.Context(), inputs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response := gin.H{"error": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Notification", "CreateNotification", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-
+	response := createdNotifications
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, nil, orgId.(string), username.(string),
+		txtId, id, "Notification", "CreateNotification", "",
+		"create", -1, now, GetQueryParams(c), response, "CreateNotifications Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusCreated, createdNotifications)
 }
 
@@ -75,26 +104,63 @@ func CreateNotifications(c *gin.Context) {
 // @Router /api/v1/notifications/{id} [put]
 func UpdateNotification(c *gin.Context) {
 	idStr := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification ID format"})
+		response := gin.H{"error": "invalid notification ID format"}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	var input model.Notification
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "detail": err.Error()})
+		response := gin.H{"error": "invalid request body", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	recipientsJSON, err := json.Marshal(input.Recipients)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process recipients", "detail": err.Error()})
+		response := gin.H{"error": "failed to process recipients", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	dataJSON, err := json.Marshal(input.Data)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process custom data", "detail": err.Error()})
+		response := gin.H{"error": "failed to process custom data", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -110,12 +176,28 @@ func UpdateNotification(c *gin.Context) {
     `, input.Message, input.EventType, input.RedirectUrl, recipientsJSON, dataJSON, input.ExpiredAt, id)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database update failed", "detail": err.Error()})
+		response := gin.H{"error": "database update failed", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
 	if tag.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found with the given ID"})
+		response := gin.H{"error": "notification not found with the given ID"}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "notification not found with the given ID.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 
@@ -135,7 +217,15 @@ func UpdateNotification(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated notification", "detail": err.Error()})
+		response := gin.H{"error": "failed to retrieve updated notification", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "UpdateNotification", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -152,7 +242,14 @@ func UpdateNotification(c *gin.Context) {
 
 	json.Unmarshal(recipientsStr, &updatedNoti.Recipients)
 	json.Unmarshal(dataStr, &updatedNoti.Data)
-
+	response := updatedNoti
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, idStr, "Notification", "UpdateNotification", "",
+		"update", 0, now, GetQueryParams(c), response, "UpdateNotification Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, updatedNoti)
 }
 
@@ -169,6 +266,10 @@ func UpdateNotification(c *gin.Context) {
 // @Router /api/v1/notifications/{id} [delete]
 func DeleteNotification(c *gin.Context) {
 	idStr := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification ID format"})
@@ -181,15 +282,38 @@ func DeleteNotification(c *gin.Context) {
 
 	tag, err := conn.Exec(ctx, `DELETE FROM notifications WHERE "id" = $1`, id)
 	if err != nil {
+		response := gin.H{"error": "database delete failed", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "DeleteNotification", "",
+			"delete", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "database delete failed", "detail": err.Error()})
 		return
 	}
 
 	if tag.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "notification not found with the given ID"})
+		response := gin.H{"error": "notification not found with the given ID"}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, idStr, "Notification", "DeleteNotification", "",
+			"delete", -1, now, GetQueryParams(c), response, "notification not found with the given ID.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
-
+	response := gin.H{"message": "notification deleted successfully", "id": id}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, idStr, "Notification", "DeleteNotification", "",
+		"delete", 0, now, GetQueryParams(c), response, "deleteNorification Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, gin.H{"message": "notification deleted successfully", "id": id})
 }
 
@@ -208,11 +332,22 @@ func DeleteNotification(c *gin.Context) {
 func GetNotificationsForUser(c *gin.Context) {
 	orgId := c.Param("orgId")
 	username := c.Param("username")
+	id := c.Param("id")
+	now := time.Now()
+	txtId := uuid.New().String()
 	log.Printf("Fetching notifications for username: %s in org: %s", username, orgId)
 
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not connect to the database"})
+		response := gin.H{"error": "could not connect to the database"}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, username,
+			txtId, id, "Notification", "GetNotificationsForUser", "",
+			"search", -1, now, GetQueryParams(c), response, "could not connect to the database.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer cancel()
@@ -245,13 +380,29 @@ func GetNotificationsForUser(c *gin.Context) {
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
+			response := gin.H{"error": "user not found in the specified organization"}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId, username,
+				txtId, id, "Notification", "GetNotificationsForUser", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found in the specified organization"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
+		response := gin.H{
 			"error":  "failed to fetch user profile",
 			"detail": err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, username,
+			txtId, id, "Notification", "GetNotificationsForUser", "",
+			"search", 0, now, GetQueryParams(c), response, "GetNotificationsForUser Success.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -365,11 +516,19 @@ func GetNotificationsForUser(c *gin.Context) {
 
 	rows, err := conn.Query(ctx, query, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		response := gin.H{
 			"error":  "failed to query notifications",
 			"detail": err.Error(),
 			"query":  query,
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, username,
+			txtId, id, "Notification", "GetNotificationsForUser", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -409,10 +568,25 @@ func GetNotificationsForUser(c *gin.Context) {
 		notifications = append(notifications, n)
 	}
 	if err := rows.Err(); err != nil {
+		response := gin.H{"error": "error iterating notification rows", "detail": err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, username,
+			txtId, id, "Notification", "GetNotificationsForUser", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error iterating notification rows", "detail": err.Error()})
 		return
 	}
-
+	response := notifications
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId, username,
+		txtId, id, "Notification", "GetNotificationsForUser", "",
+		"search", 0, now, GetQueryParams(c), response, "GetNotificationsForUser Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, notifications)
 }
 

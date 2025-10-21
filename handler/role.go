@@ -26,7 +26,11 @@ import (
 // @Router /api/v1/role [get]
 func GetRole(c *gin.Context) {
 	logger := utils.GetLog()
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -51,11 +55,19 @@ func GetRole(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "GetRole", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -74,6 +86,13 @@ func GetRole(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Role", "GetRole", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		RoleList = append(RoleList, Role)
@@ -84,6 +103,13 @@ func GetRole(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "GetRole", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+errorMsg,
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -92,6 +118,13 @@ func GetRole(c *gin.Context) {
 			Data:   RoleList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "GetRole", "",
+			"search", 0, now, GetQueryParams(c), response, "GetRole Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -109,13 +142,16 @@ func GetRole(c *gin.Context) {
 func GetRolebyId(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, "orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.um_roles WHERE id = $1 AND "orgId"=$2`
 
@@ -136,11 +172,19 @@ func GetRolebyId(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "GetRoleById", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -150,6 +194,13 @@ func GetRolebyId(c *gin.Context) {
 		Data:   Role,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role", "GetRoleById", "",
+		"search", 0, now, GetQueryParams(c), response, "GetRoleById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -171,7 +222,6 @@ func InsertRole(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
 
 	var req model.RoleInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -183,39 +233,58 @@ func InsertRole(c *gin.Context) {
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
+
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
-	uuid := uuid.New()
-	var id int
+	roleUUID := uuid.New()
+
+	var id uuid.UUID
 	query := `
-	INSERT INTO public."um_roles"(
-	id,"orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	RETURNING id ;
+		INSERT INTO public."um_roles"(
+			id, "orgId", "roleName", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id;
 	`
 
-	err := conn.QueryRow(ctx, query, uuid,
-		orgId, req.RoleName, req.Active, now,
-		now, username, username).Scan(&id)
+	err := conn.QueryRow(ctx, query,
+		roleUUID, orgId, req.RoleName, req.Active, now, now, username, username,
+	).Scan(&id)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			roleUUID.String(), "", "Role", "InsertRole", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		roleUUID.String(), "", "Role", "InsertRole", "",
+		"create", 0, now, GetQueryParams(c), response, "InsertRole Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -240,6 +309,10 @@ func UpdateRole(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.RoleUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -251,9 +324,7 @@ func UpdateRole(c *gin.Context) {
 		})
 		return
 	}
-	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `UPDATE public."um_roles"
 	SET roleName=$2, active=$3,
 	 "updatedAt"=$4, "updatedBy"=$5
@@ -270,21 +341,37 @@ func UpdateRole(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "UpdateRole", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role", "UpdateRole", "",
+		"update", -1, now, GetQueryParams(c), response, "Update Role Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Role
@@ -306,23 +393,46 @@ func DeleteRole(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."um_roles" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Role", "DeleteRole", "",
+			"delete", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Role", "DeleteRole", "",
+		"delete", -1, now, GetQueryParams(c), response, "DeleteRole Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",

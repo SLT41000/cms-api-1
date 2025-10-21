@@ -18,6 +18,7 @@ import (
 )
 
 func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
+	log.Printf("====IntegrateCreateCaseFromWorkOrder===")
 	now := time.Now()
 	caseId := workOrder.WorkOrderNumber
 	var id int
@@ -105,7 +106,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 	if area == nil {
 		log.Println("area not found")
 	} else {
-		fmt.Printf("Country: %s, Province: %s, District: %s\n", area.CountryID, area.ProvID, area.DistID)
+		fmt.Printf("Country: %v, Province: %v, District: %v\n", area.CountryID, area.ProvID, area.DistID)
 	}
 	countryId := area.CountryID
 	provId := area.ProvID
@@ -398,8 +399,8 @@ WHERE
 	var data = model.UpdateStageRequest{
 		CaseId:    caseId,
 		Status:    statusId,
-		UnitId:    workOrder.UserMetadata.AssignedEmployeeCode,
-		UnitUser:  workOrder.UserMetadata.AssignedEmployeeCode,
+		UnitId:    workOrder.UserMetadata.AssignedEmployeeCode.UserEmployeeCode,
+		UnitUser:  workOrder.UserMetadata.AssignedEmployeeCode.UserEmployeeCode,
 		NodeId:    "",
 		ResID:     "",
 		ResDetail: "",
@@ -415,9 +416,12 @@ WHERE
 	return nil
 }
 
-func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, sType *model.CaseSubType, integration_ref_number string) error {
+func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, sType *model.CaseSubType, integration_ref_number string, source string) error {
 	log.Print("=====CreateBusKafka_WO===")
 
+	if os.Getenv("INTEGRATION_SOURCE") == source {
+		log.Printf("Skip Original Source : %s\n", source)
+	}
 	//username := GetVariableFromToken(ctx, "username")
 	orgId := GetVariableFromToken(ctx, "orgId")
 	log.Print("=====orgId===", orgId)
@@ -466,10 +470,12 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 		},
 		"device_metadata": map[string]interface{}{}, // ตอนนี้ว่าง
 		"sop_metadata":    map[string]interface{}{},
+		"state":           "OPEN",
 		"status":          "NEW",
 		"work_date":       currentDate,
-		"workspace":       "bma",
-		"namespace":       "bma." + *areaDist.NameSpace,
+		"workspace":       os.Getenv("INTEGRATION_WORKSPACE"),
+		"namespace":       os.Getenv("INTEGRATION_WORKSPACE") + "." + *areaDist.NameSpace,
+		"source":          os.Getenv("INTEGRATION_SOURCE"),
 	}
 
 	jsonBytes, err := json.Marshal(data)
@@ -511,19 +517,38 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 
 	stName := mapStatus(req.Status)
 	//---> REF Number
+	//---> user profile
+	// --- User assignment info
+	var uAssign interface{} = "" // default empty string
+	if req.UnitUser != "" {
+		user, err := utils.GetUserByUsername(ctx, conn, orgId.(string), req.UnitUser)
+		if err != nil {
+			log.Printf("Error getting user: %v", err)
+		} else if user != nil {
+			uAssign = map[string]interface{}{
+				"user_employee_code": user.EmpID,
+				"user_firstname":     user.FirstName,
+				"user_lastname":      user.LastName,
+				"user_avatar":        user.Photo,
+				"user_phone":         user.MobileNo,
+			}
+		}
+	}
+
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": caseData.IntegrationRefNumber,
 		"user_metadata": map[string]interface{}{
-			"assigned_employee_code":  req.UnitUser,
+			"assigned_employee_code":  uAssign,
 			"associate_employee_code": []string{},
 		},
 		"sop_metadata": map[string]interface{}{},
 		"status":       stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
+		"state":        "OPEN",
 		"work_date":    currentDate,
-		"workspace":    "bma",
-		"namespace":    "bma." + *areaDist.NameSpace,
-		"source":       os.Getenv("SYSTEM_OWNER"),
+		"workspace":    os.Getenv("INTEGRATION_WORKSPACE"),
+		"namespace":    os.Getenv("INTEGRATION_WORKSPACE") + "." + *areaDist.NameSpace,
+		"source":       os.Getenv("INTEGRATION_SOURCE"),
 	}
 
 	jsonBytes, err := json.Marshal(data)

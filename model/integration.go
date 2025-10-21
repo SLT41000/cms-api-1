@@ -16,6 +16,7 @@ type WorkOrder struct {
 	WorkDate              string        `json:"work_date"`
 	Workspace             string        `json:"workspace"`
 	Namespace             string        `json:"namespace"`
+	Source                string        `json:"source"`
 }
 
 type WorkOrderMeta struct {
@@ -27,8 +28,8 @@ type WorkOrderMeta struct {
 }
 
 type UserMeta struct {
-	AssignedEmployeeCode  string   `json:"assigned_employee_code"`
-	AssociateEmployeeCode []string `json:"associate_employee_code"`
+	AssignedEmployeeCode  AssignedEmployee `json:"assigned_employee_code"`
+	AssociateEmployeeCode []string         `json:"associate_employee_code"`
 }
 
 type DeviceMeta struct {
@@ -76,4 +77,12 @@ type WorkflowBySubType struct {
 	WfSection  string `json:"wfSection" db:"wfSection"`
 	WfData     string `json:"wfData" db:"wfData"`
 	WfNodeId   string `json:"wfNodeId" db:"wfNodeId"`
+}
+
+type AssignedEmployee struct {
+	UserEmployeeCode string `json:"user_employee_code"`
+	UserFirstname    string `json:"user_firstname"`
+	UserLastname     string `json:"user_lastname"`
+	UserAvatar       string `json:"user_avatar"`
+	UserPhone        string `json:"user_phone"`
 }

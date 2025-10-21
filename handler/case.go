@@ -6,7 +6,9 @@ import (
 	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
+	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -91,12 +93,8 @@ func ListCase(c *gin.Context) {
 
 	orgId := GetVariableFromToken(c, "orgId")
 	start, _ := strconv.Atoi(c.DefaultQuery("start", "0"))
-	length, _ := strconv.Atoi(c.DefaultQuery("length", "1000"))
-	id := c.Param("id")
-	start_time := time.Now()
-	username := GetVariableFromToken(c, "username")
+	length, _ := strconv.Atoi(c.DefaultQuery("length", "100"))
 
-	txtId := uuid.New().String()
 	caseId := c.Query("caseId")
 	caseType := c.Query("caseType")
 	caseSType := c.Query("caseSType")
@@ -111,12 +109,10 @@ func ListCase(c *gin.Context) {
 	orderBy := c.DefaultQuery("orderBy", "createdAt")
 	direction := strings.ToUpper(c.DefaultQuery("direction", "DESC"))
 
-	// ✅ Validate direction
 	if direction != "ASC" && direction != "DESC" {
 		direction = "DESC"
 	}
 
-	// ✅ Whitelist allowed orderBy columns
 	allowedOrderFields := map[string]bool{
 		"createdAt":   true,
 		"priority":    true,
@@ -130,23 +126,14 @@ func ListCase(c *gin.Context) {
 		orderBy = "createdAt"
 	}
 
-	// Dynamic SQL builder
+	// ============ Base Query ==============
 	baseQuery := `
-	SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId",
-		priority, "wfId", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail",
-		"extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
-		"countryId", "provId", "distId", "caseDuration", "createdAt", "startedDate",
-		"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate,
-		usercommand, userreceive, userarrive, userclose, "resId", "resDetail",
-		"scheduleFlag", "scheduleDate", "updatedAt", "createdBy", "updatedBy", "caseSla"
 	FROM public.tix_cases
 	WHERE "orgId" = $1
 	`
-
 	params := []interface{}{orgId}
 	paramIndex := 2
 
-	// Helper for multi-value (IN) filters
 	addMultiValueFilter := func(field, values string) {
 		if values == "" {
 			return
@@ -167,13 +154,11 @@ func ListCase(c *gin.Context) {
 		}
 	}
 
-	// Apply filters
 	if caseId != "" {
 		baseQuery += fmt.Sprintf(" AND \"caseId\" ILIKE $%d", paramIndex)
 		params = append(params, "%"+caseId+"%")
 		paramIndex++
 	}
-
 	addMultiValueFilter("caseTypeId", caseType)
 	addMultiValueFilter("caseSTypeId", caseSType)
 	addMultiValueFilter("statusId", statusId)
@@ -196,97 +181,98 @@ func ListCase(c *gin.Context) {
 		params = append(params, endDate)
 		paramIndex++
 	}
-
 	if createBy != "" {
 		baseQuery += fmt.Sprintf(" AND \"createdBy\" = $%d", paramIndex)
 		params = append(params, createBy)
 		paramIndex++
 	}
 
-	// ✅ Add sorting + pagination
-	baseQuery += fmt.Sprintf(" ORDER BY \"%s\" %s LIMIT $%d OFFSET $%d", orderBy, direction, paramIndex, paramIndex+1)
+	// ========================
+	// ✅ Total counts
+	// ========================
+	var totalRecords, totalFiltered int
+
+	if err := conn.QueryRow(ctx,
+		`SELECT COUNT(*) FROM public.tix_cases WHERE "orgId" = $1`, orgId,
+	).Scan(&totalRecords); err != nil {
+		logger.Warn("Count total failed", zap.Error(err))
+		totalRecords = 0
+	}
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	if err := conn.QueryRow(ctx, countQuery, params...).Scan(&totalFiltered); err != nil {
+		logger.Warn("Count filtered failed", zap.Error(err))
+		totalFiltered = 0
+	}
+
+	// ========================
+	// ✅ Pagination & Pages
+	// ========================
+	currentPage := 1
+	if length > 0 {
+		currentPage = (start / length) + 1
+	}
+	totalPage := 1
+	if length > 0 && totalFiltered > 0 {
+		totalPage = int(math.Ceil(float64(totalFiltered) / float64(length)))
+	}
+
+	// ========================
+	// ✅ Main Data Query
+	// ========================
+	query := `
+	SELECT id, "caseId", "referCaseId", "caseTypeId", "caseSTypeId",
+		priority, "caseDetail",
+		"statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+		"createdAt", "startedDate", usercreate,
+		"createdBy", "caseSla"
+	` + baseQuery + fmt.Sprintf(` ORDER BY "%s" %s LIMIT $%d OFFSET $%d`, orderBy, direction, paramIndex, paramIndex+1)
+
 	params = append(params, length, start)
 
-	// Execute query
-	rows, err := conn.Query(ctx, baseQuery, params...)
+	rows, err := conn.Query(ctx, query, params...)
 	if err != nil {
-		response := model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1", Msg: "Failure", Desc: err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Cases", "ListCase", "",
-			"search", -2, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, response)
+		})
 		return
 	}
 	defer rows.Close()
 
-	var caseLists []model.Case
+	var caseLists []model.Case_
 	for rows.Next() {
-		var cusCase model.Case
+		var cusCase model.Case_
 		if err := rows.Scan(
-			&cusCase.ID, &cusCase.OrgID, &cusCase.CaseID, &cusCase.CaseVersion,
+			&cusCase.ID, &cusCase.CaseID,
 			&cusCase.ReferCaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
-			&cusCase.Priority, &cusCase.WfID, &cusCase.Source, &cusCase.DeviceID,
-			&cusCase.PhoneNo, &cusCase.PhoneNoHide, &cusCase.CaseDetail,
-			&cusCase.ExtReceive, &cusCase.StatusID, &cusCase.CaseLat, &cusCase.CaseLon,
-			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CountryID, &cusCase.ProvID,
-			&cusCase.DistID, &cusCase.CaseDuration, &cusCase.CreatedAt, &cusCase.StartedDate,
-			&cusCase.CommandedDate, &cusCase.ReceivedDate, &cusCase.ArrivedDate,
-			&cusCase.ClosedDate, &cusCase.UserCreate, &cusCase.UserCommand,
-			&cusCase.UserReceive, &cusCase.UserArrive, &cusCase.UserClose, &cusCase.ResID,
-			&cusCase.ResDetail, &cusCase.ScheduleFlag, &cusCase.ScheduleDate,
-			&cusCase.UpdatedAt, &cusCase.CreatedBy, &cusCase.UpdatedBy, &cusCase.CaseSLA,
+			&cusCase.Priority, &cusCase.CaseDetail,
+			&cusCase.StatusID, &cusCase.CaseLat, &cusCase.CaseLon,
+			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CreatedAt, &cusCase.StartedDate,
+			&cusCase.UserCreate, &cusCase.CreatedBy, &cusCase.CaseSLA,
 		); err != nil {
-			response := model.Response{
+			c.JSON(http.StatusInternalServerError, model.Response{
 				Status: "-1", Msg: "Failed", Desc: err.Error(),
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, orgId.(string), username.(string),
-				txtId, id, "Cases", "ListCase", "",
-				"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusInternalServerError, response)
+			})
 			return
 		}
 		caseLists = append(caseLists, cusCase)
 	}
 
-	if len(caseLists) == 0 {
-		response := model.Response{
-			Status: "0", Msg: "Success", Desc: "No data found", Data: []any{},
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Cases", "ListCase", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusOK, response)
-		return
+	// ========================
+	// ✅ Response
+	// ========================
+	response := map[string]interface{}{
+		"totalRecords":  totalRecords,
+		"totalFiltered": totalFiltered,
+		"currentPage":   currentPage,
+		"totalPage":     totalPage,
+		"pageSize":      length,
+		"data":          caseLists,
 	}
 
-	response := model.Response{Status: "0", Msg: "Success", Data: caseLists}
-	//=======AUDIT_START=====//
-	_ = utils.InsertAuditLogs(
-		c, conn, orgId.(string), username.(string),
-		txtId, id, "Cases", "ListCase", "",
-		"search", 0, start_time, GetQueryParams(c), response, "GetListCase Success.",
-	)
-	//=======AUDIT_END=====//
-	c.JSON(http.StatusOK, response)
-
-	paramQuery := c.Request.URL.RawQuery
-	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
-	logger.Info(logStr)
+	c.JSON(http.StatusOK, model.Response{
+		Status: "0", Msg: "Success", Data: response,
+	})
 }
 
 // @summary List CasesResult
@@ -770,7 +756,7 @@ func InsertCase(c *gin.Context) {
 		return
 	}
 	req.CaseId = &caseId
-	CreateBusKafka_WO(c, conn, req, sType, uuid.String())
+	CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"))
 
 	fmt.Printf("=======CurrentStage========")
 	fmt.Printf("%s", req.NodeID)

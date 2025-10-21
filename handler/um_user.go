@@ -280,7 +280,9 @@ func GetUmUserById(c *gin.Context) {
 	var skills []map[string]interface{}
 	for rows.Next() {
 		var skillId, en, th string
+
 		if err := rows.Scan(&skillId, &en, &th); err == nil {
+
 			skills = append(skills, map[string]interface{}{
 				"skillId": skillId,
 				"en":      en,
@@ -322,8 +324,8 @@ func GetUmUserById(c *gin.Context) {
 	}
 
 	// Step 4: Combine into response
-	u.Skills = skills
-	u.Areas = areas
+	u.Skills = &skills
+	u.Areas = &areas
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",

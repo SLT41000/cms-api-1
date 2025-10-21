@@ -79,7 +79,7 @@ LIMIT 1;
 func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username string) (*model.User, error) {
 	query := `
 	SELECT  "username", "email", "displayName", 
-	       "roleId", "active", "photo"
+	       "roleId", "active", "photo", "empId", "firstName", "lastName", "photo", "mobileNo"
 	FROM public.um_users
 	WHERE "orgId" = $1 AND "username" = $2
 	LIMIT 1;
@@ -93,6 +93,11 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 		&u.RoleID,
 		&u.Active,
 		&u.Photo,
+		&u.EmpID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Photo,
+		&u.MobileNo,
 	)
 
 	if err == pgx.ErrNoRows {
