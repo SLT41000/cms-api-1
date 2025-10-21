@@ -82,8 +82,24 @@ func InsertAuditLogs(
 ) error {
 	AUDIT_LOGS_ALLOW := GetAuditLogsAllow()
 
-	if _, ok := AUDIT_LOGS_ALLOW[action]; !ok {
+	// Step 1: Check if action is allowed
+	allowedStatuses, ok := AUDIT_LOGS_ALLOW[action]
+	if !ok {
 		return fmt.Errorf("invalid action: %s", action)
+	}
+
+	// Step 2: Check if this status is allowed for that action
+	isAllowed := false
+	for _, s := range allowedStatuses {
+		if s == status {
+			isAllowed = true
+			break
+		}
+	}
+
+	if !isAllowed {
+		log.Printf("Skip audit log — action '%s' with status %d not allowed", action, status)
+		return nil
 	}
 	now := time.Now()
 	duration := now.Sub(timeStart).Seconds()
@@ -136,16 +152,37 @@ func InsertAuditLogs(
 	return nil
 }
 
-// GetAuditLogsAllow reads the AUDIT_LOGS_ALLOW env variable and returns a map for validation
-func GetAuditLogsAllow() map[string]struct{} {
+// GetAuditLogsAllow reads AUDIT_LOGS_ALLOW and returns map[action][]int{allowedStatuses}
+func GetAuditLogsAllow() map[string][]int {
 	allowStr := os.Getenv("AUDIT_LOGS_ALLOW")
-	allowMap := make(map[string]struct{})
+	allowMap := make(map[string][]int)
 
-	for _, action := range strings.Split(allowStr, ",") {
-		action = strings.TrimSpace(action)
-		if action != "" {
-			allowMap[action] = struct{}{}
+	// Example format:
+	// AUDIT_LOGS_ALLOW=create:0,-1,-2;update:0,-1,-2;search:-1,-2
+	for _, entry := range strings.Split(allowStr, ";") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
 		}
+
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		action := strings.TrimSpace(parts[0])
+		statusList := strings.Split(parts[1], ",")
+		var statuses []int
+		for _, s := range statusList {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				continue
+			}
+			if val, err := strconv.Atoi(s); err == nil {
+				statuses = append(statuses, val)
+			}
+		}
+		allowMap[action] = statuses
 	}
 
 	return allowMap

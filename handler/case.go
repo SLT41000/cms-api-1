@@ -261,17 +261,24 @@ func ListCase(c *gin.Context) {
 	// ========================
 	// ✅ Response
 	// ========================
-	response := map[string]interface{}{
-		"totalRecords":  totalRecords,
-		"totalFiltered": totalFiltered,
-		"currentPage":   currentPage,
-		"totalPage":     totalPage,
-		"pageSize":      length,
-		"data":          caseLists,
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   caseLists,
+		Desc:   "",
 	}
 
-	c.JSON(http.StatusOK, model.Response{
-		Status: "0", Msg: "Success", Data: response,
+	// Add pagination info at the top level
+	c.JSON(http.StatusOK, gin.H{
+		"status":        response.Status,
+		"msg":           response.Msg,
+		"data":          response.Data,
+		"desc":          response.Desc,
+		"currentPage":   currentPage,
+		"pageSize":      length,
+		"totalFiltered": totalFiltered,
+		"totalPage":     totalPage,
+		"totalRecords":  totalRecords,
 	})
 }
 
