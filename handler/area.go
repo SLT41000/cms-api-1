@@ -4,8 +4,10 @@ import (
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -28,7 +30,11 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	query := `SELECT t1.id, t1."orgId", t1."countryId", t1."provId", t1."distId",
 	 	t1.en, t1.th, t1.active,
 	  	t2.en, t2.th, t2.active,
@@ -68,6 +74,13 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 				Desc:   errorMsg,
 			}
 			c.JSON(http.StatusInternalServerError, response)
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, "", "Area", "GetCountryProvinceDistricts", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			return
 		}
 		AreaList = append(AreaList, Area)
@@ -79,6 +92,13 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Area", "GetCountryProvinceDistricts", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -87,6 +107,13 @@ func GetCountryProvinceDistricts(c *gin.Context) {
 			Data:   AreaList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Area", "GetCountryProvinceDistricts", "",
+			"search", 0, start_time, GetQueryParams(c), response, "Get successfully",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }

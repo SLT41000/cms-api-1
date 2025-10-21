@@ -42,7 +42,11 @@ func GetMmdProperty(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT  id, "propId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_properties WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
@@ -51,11 +55,19 @@ func GetMmdProperty(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdProperty", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -74,6 +86,13 @@ func GetMmdProperty(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdProperty", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -85,6 +104,13 @@ func GetMmdProperty(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdProperty", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -93,6 +119,13 @@ func GetMmdProperty(c *gin.Context) {
 			Data:   PropertyList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdProperty", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetMmdProperty Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -109,11 +142,15 @@ func GetMmdProperty(c *gin.Context) {
 func GetMmdPropertyById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
-	orgId := GetVariableFromToken(c, "orgId")
+
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT  id, "propId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -125,11 +162,19 @@ func GetMmdPropertyById(c *gin.Context) {
 		&Property.Active, &Property.CreatedAt, &Property.UpdatedAt, &Property.CreatedBy, &Property.UpdatedBy)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdPropertyById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -139,6 +184,13 @@ func GetMmdPropertyById(c *gin.Context) {
 		Data:   Property,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdPropertyById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetMmdPropertyById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -189,16 +241,36 @@ func InsertMmdProperty(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid.String(), "", "mmd", "InsertMmdProperty", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Create successfully",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid.String(), "", "mmd", "InsertMmdProperty", "",
+		"create", 0, now, GetQueryParams(c), response, "InsertMmdProperty Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",
@@ -228,20 +300,30 @@ func UpdateMmdProperty(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdPropertyUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdProperty", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_properties"
 	SET en=$2, th=$3, active=$4,
 	 "updatedAt"=$5, "updatedBy"=$6
@@ -258,21 +340,37 @@ func UpdateMmdProperty(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdProperty", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "UpdateMmdProperty", "",
+		"update", 0, start_time, GetQueryParams(c), response, "UpdateMmdProperty Success",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Properties
@@ -294,26 +392,45 @@ func DeleteMmdProperty(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	query := `DELETE FROM public."mdm_properties" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdProperty", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdProperty", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "DeleteMmdProperty Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Unit Sources
@@ -345,7 +462,11 @@ func GetMmdUnitSources(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT  id, "unitSourceId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_unit_sources WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
@@ -354,11 +475,19 @@ func GetMmdUnitSources(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdProperty", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -377,6 +506,13 @@ func GetMmdUnitSources(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "DeleteMmdProperty", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -388,6 +524,13 @@ func GetMmdUnitSources(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdProperty", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+errorMsg,
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -396,6 +539,13 @@ func GetMmdUnitSources(c *gin.Context) {
 			Data:   PropertyList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdProperty", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitSource Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -416,7 +566,12 @@ func GetMmdUnitSourcesById(c *gin.Context) {
 	if conn == nil {
 		return
 	}
+
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT  id, "unitSourceId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -428,11 +583,19 @@ func GetMmdUnitSourcesById(c *gin.Context) {
 		&Property.Active, &Property.CreatedAt, &Property.UpdatedAt, &Property.CreatedBy, &Property.UpdatedBy)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitSourcesById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -442,6 +605,13 @@ func GetMmdUnitSourcesById(c *gin.Context) {
 		Data:   Property,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdUnitSourcesById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitSourcesById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -492,21 +662,37 @@ func InsertMmdUnitSources(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid.String(), "", "mmd", "InsertMmdUnitSources", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid.String(), "", "mmd", "InsertMmdUnitSources", "",
+		"create", -1, now, GetQueryParams(c), response, "InsertMmdUnitSources Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -531,6 +717,9 @@ func UpdateMmdUnitSources(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdUnitSourceUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -543,8 +732,6 @@ func UpdateMmdUnitSources(c *gin.Context) {
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_unit_sources"
 	SET en=$2, th=$3, active=$4,
 	 "updatedAt"=$5, "updatedBy"=$6
@@ -561,21 +748,35 @@ func UpdateMmdUnitSources(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdUnitSourcee", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "UpdateMmdUnitSourcee", "",
+		"update", -1, now, GetQueryParams(c), response, "UpdateMmdUnitSources Success.",
+	)
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Unit Sources
@@ -597,26 +798,44 @@ func DeleteMmdUnitSources(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."mdm_unit_sources" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdUnitSourcee", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdUnitSourcee", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "delectMmdUnitSources Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Unit Types
@@ -648,7 +867,11 @@ func GetMmdUnitType(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT  id, "unitTypeId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_unit_types WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
@@ -657,11 +880,19 @@ func GetMmdUnitType(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -679,6 +910,13 @@ func GetMmdUnitType(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdUnitType", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -691,6 +929,13 @@ func GetMmdUnitType(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -699,6 +944,13 @@ func GetMmdUnitType(c *gin.Context) {
 			Data:   PropertyList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitType", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitType Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -719,7 +971,10 @@ func GetMmdUnitTypeById(c *gin.Context) {
 	if conn == nil {
 		return
 	}
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT  id, "unitTypeId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -731,11 +986,19 @@ func GetMmdUnitTypeById(c *gin.Context) {
 		&Property.Active, &Property.CreatedAt, &Property.UpdatedAt, &Property.CreatedBy, &Property.UpdatedBy)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitTypeById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -745,6 +1008,13 @@ func GetMmdUnitTypeById(c *gin.Context) {
 		Data:   Property,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdUnitTypeById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitTypeById success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -795,21 +1065,37 @@ func InsertMmdUnitType(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid.String(), "", "mmd", "InsertMmdUnitType", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid.String(), "", "mmd", "InsertMmdUnitType", "",
+		"create", 0, now, GetQueryParams(c), response, "InertMmdUnitType Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -834,20 +1120,30 @@ func UpdateMmdUnitType(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdUnitTypeUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdUnitType", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_unit_sources"
 	SET en=$2, th=$3, active=$4,
 	 "updatedAt"=$5, "updatedBy"=$6
@@ -864,21 +1160,37 @@ func UpdateMmdUnitType(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdUnitType", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "UpdateMmdUnitType", "",
+		"update", -1, start_time, GetQueryParams(c), response, "UpdateMmdUnitType Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Types Sources
@@ -899,26 +1211,44 @@ func DeleteMmdUnitType(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."mdm_unit_types" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdUnitType", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdUnitType", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "DeleteMmdUnitType Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Companies
@@ -953,17 +1283,29 @@ func GetMmdCompanies(c *gin.Context) {
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, name, "legalName", domain, email, "phoneNumber", address, "logoUrl", "websiteUrl", description, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_companies LIMIT $1 OFFSET $2`
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdCompanies", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -995,6 +1337,13 @@ func GetMmdCompanies(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdCompanies", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -1007,6 +1356,13 @@ func GetMmdCompanies(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdCompanies", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -1015,6 +1371,13 @@ func GetMmdCompanies(c *gin.Context) {
 			Data:   orgList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdCompanies", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetMmdCompanies Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -1031,6 +1394,11 @@ func GetMmdCompanies(c *gin.Context) {
 func GetMmdCompaniesById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -1061,11 +1429,19 @@ func GetMmdCompaniesById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdCompaniesById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1075,6 +1451,13 @@ func GetMmdCompaniesById(c *gin.Context) {
 		Data:   org,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdCompaniesById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetMmdCompaniesById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -1113,6 +1496,7 @@ func InsertMmdCompanies(c *gin.Context) {
 	var id int
 	// orgId := GetVariableFromToken(c, "orgId")
 	uuid := uuid.New()
+	orgId := GetVariableFromToken(c, "orgId")
 	query := `
 	INSERT INTO public."mdm_companies"(
 		id, name, "legalName", domain, email, "phoneNumber", address, "logoUrl", "websiteUrl",
@@ -1127,20 +1511,35 @@ func InsertMmdCompanies(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid.String(), strconv.Itoa(id), "mmd", "InsertMmdCompanies", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid.String(), strconv.Itoa(id), "mmd", "InsertMmdCompanies", "",
+		"create", -1, now, GetQueryParams(c), response, "InsertMmdCompanies",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -1164,19 +1563,31 @@ func UpdateMmdCompanies(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdCompaniesUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdCompanies", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
+
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_companies"
 	SET name= $2, "legalName"= $3, domain= $4, email= $5, "phoneNumber"= $6, address= $7, "logoUrl"= $8,
@@ -1194,21 +1605,37 @@ func UpdateMmdCompanies(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdCompanies", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "UpdateMmdCompanies", "",
+		"update", 0, start_time, GetQueryParams(c), response, "UpdateMmdCompanies.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Companies
@@ -1231,24 +1658,43 @@ func DeleteMmdCompanies(c *gin.Context) {
 	defer conn.Close(ctx)
 	// orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."mdm_companies" WHERE id = $1`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdCommanies", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdCommanies", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "DeleteMmdCompanies Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Unit Status
@@ -1283,17 +1729,29 @@ func GetMmdUnitStatus(c *gin.Context) {
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `SELECT id, "sttId", "sttName", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_unit_statuses LIMIT $1 OFFSET $2`
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitStatus", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -1318,6 +1776,13 @@ func GetMmdUnitStatus(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdUnitStatus", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -1330,6 +1795,13 @@ func GetMmdUnitStatus(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitStatus", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -1338,6 +1810,13 @@ func GetMmdUnitStatus(c *gin.Context) {
 			Data:   orgList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitStatus", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitStatus Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -1354,6 +1833,10 @@ func GetMmdUnitStatus(c *gin.Context) {
 func GetMmdUnitStatusById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -1377,11 +1860,19 @@ func GetMmdUnitStatusById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitStatusById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1391,6 +1882,13 @@ func GetMmdUnitStatusById(c *gin.Context) {
 		Data:   org,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdUnitStatusById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetMmdUnitStatusById Success",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -1414,16 +1912,28 @@ func InsertMmdUnitStatus(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	var req model.MmdUnitStatusInsert
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "InsertMmdUnitStatus", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	username := GetVariableFromToken(c, "username")
+
 	now := time.Now()
 	var id int
 	// orgId := GetVariableFromToken(c, "orgId")
@@ -1440,20 +1950,35 @@ func InsertMmdUnitStatus(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "InsertMmdUnitStatus", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "mmd", "InsertMmdUnitStatus", "",
+		"create", -1, start_time, GetQueryParams(c), response, "InsertMmdUnitStatus Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -1477,19 +2002,30 @@ func UpdateMmdUnitStatus(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdUnitStatusUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdUnitStatus", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	now := time.Now()
-	username := GetVariableFromToken(c, "username")
+
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."mdm_unit_statuses"
 	SET sttId= $2, "sttName"= $3, "updatedAt"= $4, "updatedBy"= $5
@@ -1504,21 +2040,37 @@ func UpdateMmdUnitStatus(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "UpdateMmdUnitStatus", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "UpdateMmdUnitStatus", "",
+		"update", 0, now, GetQueryParams(c), response, "UpdateMmdUnitStatus Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Unit Status
@@ -1541,24 +2093,44 @@ func DeleteMmdUnitStatus(c *gin.Context) {
 	defer conn.Close(ctx)
 	// orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	query := `DELETE FROM public."mdm_unit_statuses" WHERE id = $1`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdUnitStatus", "",
+			"delete", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdUnitStatus", "",
+		"delete", 0, now, GetQueryParams(c), response, "DeleteMmdUnitStatus Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Unit
@@ -1590,7 +2162,11 @@ func GetMmdUnit(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT id, "orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId", "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat", "locLon", "locAlt", "locBearing", "locSpeed", "locProvider", "locGpsTime", "locSatellites", "locAccuracy", "locLastUpdateTime", "breakDuration", "healthChk", "healthChkTime", "sttId", "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_units WHERE "orgId"= $3 LIMIT $1 OFFSET $2`
 
@@ -1599,11 +2175,19 @@ func GetMmdUnit(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, length, start, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnit", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -1657,6 +2241,13 @@ func GetMmdUnit(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdUnit", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -1669,6 +2260,13 @@ func GetMmdUnit(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnit", "",
+			"search", -1, now, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -1677,6 +2275,13 @@ func GetMmdUnit(c *gin.Context) {
 			Data:   unitList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnit", "",
+			"search", 0, now, GetQueryParams(c), response, "GetMmdUnit Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -1693,11 +2298,15 @@ func GetMmdUnit(c *gin.Context) {
 func GetMmdUnitById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
-	orgId := GetVariableFromToken(c, "orgId")
+
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, "orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId", "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat", "locLon", "locAlt", "locBearing", "locSpeed", "locProvider", "locGpsTime", "locSatellites", "locAccuracy", "locLastUpdateTime", "breakDuration", "healthChk", "healthChkTime", "sttId", "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -1745,11 +2354,19 @@ func GetMmdUnitById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitById", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1759,6 +2376,13 @@ func GetMmdUnitById(c *gin.Context) {
 		Data:   unit,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "GetMmdUnitById", "",
+		"search", 0, now, GetQueryParams(c), response, "GetMmdUnitById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -1780,21 +2404,30 @@ func InsertMmdUnit(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var unit model.MmdUnitInsert
 	if err := c.ShouldBindJSON(&unit); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "InsertMmdUnit", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	username := GetVariableFromToken(c, "username")
-	now := time.Now()
+
 	var id int
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `INSERT INTO public.mdm_units(
 	"orgId", "unitId", "unitName", "unitSourceId", "unitTypeId", priority, "compId", "deptId", "commId",
 	 "stnId", "plateNo", "provinceCode", active, username, "isLogin", "isFreeze", "isOutArea", "locLat",
@@ -1842,20 +2475,35 @@ func InsertMmdUnit(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "InsertMmdUnit", "",
+			"create", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "mmd", "InsertMmdUnit", "",
+		"create", 0, now, GetQueryParams(c), response, "InsertMmdUnit Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -1879,20 +2527,30 @@ func UpdateMmdUnit(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.MmdUnitUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "UpdateMmdUnit", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `UPDATE public."mdm_units"
 	SET "unitId"=$2, "unitName"=$3, "unitSourceId"=$4, "unitTypeId"=$5, priority=$6, "compId"=$7,
 	 "deptId"=$8, "commId"=$9, "stnId"=$10, "plateNo"=$11, "provinceCode"=$12, active=$13, username=$14,
@@ -1919,21 +2577,37 @@ func UpdateMmdUnit(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "mmd", "UpdateMmdUnit", "",
+			"update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "mmd", "UpdateMmdUnit", "",
+		"update", 0, now, GetQueryParams(c), response, "UpdateMmdUnit Success",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Mmd Unit
@@ -1954,26 +2628,45 @@ func DeleteMmdUnit(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."mdm_units" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "DeleteMmdUnit", "",
+			"delete", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "mmd", "DeleteMmdUnit", "",
+		"delete", 0, now, GetQueryParams(c), response, "DeleteMmdUnit Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Mmd Unit With Property
@@ -2006,8 +2699,12 @@ func GetMmdUnitWithProperty(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
-	unitId := c.Param("unitId")
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+	unitId := c.Param("unitId")
 	query := `SELECT id, "orgId", "unitId", "propId", active, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.mdm_unit_with_properties WHERE "orgId"= $3 AND "unitId"=$4 LIMIT $1 OFFSET $2`
 
@@ -2016,11 +2713,19 @@ func GetMmdUnitWithProperty(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, length, start, orgId, unitId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitWithProPerty", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -2047,6 +2752,13 @@ func GetMmdUnitWithProperty(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "mmd", "GetMmdUnitWithProPerty", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -2059,6 +2771,13 @@ func GetMmdUnitWithProperty(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitWithProPerty", "",
+			"search", -1, now, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -2067,6 +2786,13 @@ func GetMmdUnitWithProperty(c *gin.Context) {
 			Data:   unitList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "mmd", "GetMmdUnitWithProPerty", "",
+			"search", 0, now, GetQueryParams(c), response, "GetMmdUnitWith Property Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }

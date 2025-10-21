@@ -30,7 +30,11 @@ import (
 // @Router /api/v1/forms [get]
 func GetForm(c *gin.Context) {
 	logger := utils.GetLog()
-	id := c.Query("id")
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	version := c.Query("version")
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
@@ -38,7 +42,7 @@ func GetForm(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `SELECT form_builder."formId",form_builder."formName",form_builder."formColSpan",form_elements."eleData" 
 	FROM public.form_builder INNER JOIN public.form_elements ON form_builder."formId"=form_elements."formId" 
 	WHERE form_builder."formId" = $1 AND form_builder."orgId"=$2 AND form_elements."versions"=$3`
@@ -49,11 +53,19 @@ func GetForm(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, id, orgId, version)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetForm", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -84,6 +96,13 @@ func GetForm(c *gin.Context) {
 			Data:   form,
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetForm", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+errorMsg,
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -92,6 +111,13 @@ func GetForm(c *gin.Context) {
 			Data:   form,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetForm", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetForm Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -113,13 +139,26 @@ func GetAllForm(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	if orgId == "" {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Invalid token",
 			Desc:   "orgId not found in token",
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetAllForm", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Invalid Token",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
@@ -136,11 +175,19 @@ func GetAllForm(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetAllForm", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -195,19 +242,35 @@ func GetAllForm(c *gin.Context) {
 	}
 
 	if len(forms) == 0 {
-		c.JSON(http.StatusNotFound, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "No data found",
 			Data:   nil,
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetAllForm", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Data:   result,
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "GetAllForm", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetAllForm Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Create Form
@@ -228,19 +291,30 @@ func FormInsert(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	var req model.FormInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Form", "FormInsert", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	uuid := uuid.New()
 	now := time.Now()
 	var id int
@@ -253,20 +327,36 @@ func FormInsert(c *gin.Context) {
 `
 	err := conn.QueryRow(ctx, checkQuery, orgId, req.FormName).Scan(&exists)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Form", "FormInsert", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 	if exists {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   "form name already exists",
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Form", "FormInsert", "",
+			"create", -1, start_time, GetQueryParams(c), response, "form name already exists.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed form name already exists")
 		return
 	}
@@ -282,11 +372,19 @@ func FormInsert(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Form", "FormInsert", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -305,21 +403,38 @@ func FormInsert(c *gin.Context) {
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, uuid.String(), "Form", "FormInsert", "",
+				"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Insert failed", zap.Error(err))
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, uuid.String(), "Form", "FormInsert", "",
+		"create", 0, start_time, GetQueryParams(c), response, "FormInsert Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Form
@@ -341,19 +456,29 @@ func FormUpdate(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	uuid := c.Param("uuid")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+
 	var req model.FormUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, "", "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 	var id int
 
@@ -369,11 +494,19 @@ func FormUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, "", "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -386,11 +519,19 @@ func FormUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -410,21 +551,37 @@ func FormUpdate(c *gin.Context) {
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+				"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Insert failed", zap.Error(err))
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+		"Update", 0, start_time, GetQueryParams(c), response, "FormUpdate Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Form Publish
@@ -446,18 +603,30 @@ func FormPublish(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	var req model.FormPublish
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormPubilsh", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
 	query := `
@@ -473,19 +642,35 @@ func FormPublish(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormPubilsh", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "FormPubilsh", "",
+		"update", -1, start_time, GetQueryParams(c), response, "Update FormPublish Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Form Lock
@@ -506,18 +691,29 @@ func FormLock(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	var req model.FormLock
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormLock", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
 	query := `
@@ -534,19 +730,35 @@ func FormLock(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormLock", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "FormLock", "",
+		"update", 0, start_time, GetQueryParams(c), response, "Update FormLock Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Form Status
@@ -567,7 +779,24 @@ func FormActive(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	var req model.FormActive
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&req); err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormActive", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
 			Msg:    "Failure",
@@ -577,8 +806,6 @@ func FormActive(c *gin.Context) {
 		return
 	}
 
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
 	query := `
@@ -594,19 +821,35 @@ func FormActive(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormActive", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "FormActive", "",
+		"update", 0, start_time, GetQueryParams(c), response, "Update FormActive Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Form
@@ -632,6 +875,10 @@ func DeleteForm(c *gin.Context) {}
 func GetWorkFlow(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
@@ -639,7 +886,7 @@ func GetWorkFlow(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	orgId := GetVariableFromToken(c, "orgId")
+
 	query := `SELECT "section","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt" 
 	FROM public.wf_definitions Inner join public.wf_nodes
 	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1 AND wf_nodes."orgId"=$2`
@@ -650,11 +897,19 @@ func GetWorkFlow(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlow", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -678,6 +933,13 @@ func GetWorkFlow(c *gin.Context) {
 				Data:   workflow,
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "WorkFlow", "GetWorkFlow", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 		}
 
@@ -711,6 +973,13 @@ func GetWorkFlow(c *gin.Context) {
 			Data:   workflow,
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlow", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+errorMsg,
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -719,6 +988,13 @@ func GetWorkFlow(c *gin.Context) {
 			Data:   workflow,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlow", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetWorkFlow Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -752,7 +1028,11 @@ func GetWorkFlowList(c *gin.Context) {
 	if err != nil || length > 100 {
 		length = 1000
 	}
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT id, "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.wf_definitions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
@@ -762,11 +1042,19 @@ func GetWorkFlowList(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlowList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -784,6 +1072,13 @@ func GetWorkFlowList(c *gin.Context) {
 				Data:   nil,
 				Desc:   err.Error(),
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "WorkFlow", "GetWorkFlowList", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -798,6 +1093,13 @@ func GetWorkFlowList(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlowList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -808,6 +1110,13 @@ func GetWorkFlowList(c *gin.Context) {
 		Data:   Data,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "WorkFlow", "GetWorkFlowList", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetWorkFlowList Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -831,7 +1140,11 @@ func GetWorkFlowListOld(c *gin.Context) {
 	if err != nil || length > 100 {
 		length = 1000
 	}
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `SELECT t1."id",t1."wfId","section","data",title,"desc",t1."versions",t1."createdAt",t1."updatedAt" 
 	FROM public.wf_definitions t1
 	Inner join public.wf_nodes t2
@@ -843,11 +1156,19 @@ func GetWorkFlowListOld(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlowListOld", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -876,6 +1197,13 @@ func GetWorkFlowListOld(c *gin.Context) {
 				Data:   nil,
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "WorkFlow", "GetWorkFlowListOld", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -910,6 +1238,13 @@ func GetWorkFlowListOld(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "GetWorkFlowListOld", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -939,6 +1274,13 @@ func GetWorkFlowListOld(c *gin.Context) {
 		Data:   workflowList,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "WorkFlow", "GetWorkFlowListOld", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetWorkFlowListOld Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -962,18 +1304,29 @@ func WorkFlowInsert(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	var req model.WorkFlowInsert
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "WorkFlowInsert", "",
+			"create", 0, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	username := GetVariableFromToken(c, "username")
 	uuid := uuid.New()
-	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 	query := `INSERT INTO public.wf_definitions(
 	"orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy")
@@ -984,11 +1337,19 @@ func WorkFlowInsert(c *gin.Context) {
 		true, true, true, "draft", now, now, username, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "WorkFlowInsert", "",
+			"create", 0, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1026,11 +1387,19 @@ func WorkFlowInsert(c *gin.Context) {
 
 		if err != nil {
 			// log.Printf("Insert failed: %v", err)
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "WorkFlow", "WorkFlowInsert", "",
+				"create", 0, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			logger.Warn("Insert failed", zap.Error(err))
 			return
 		}
@@ -1051,11 +1420,19 @@ func WorkFlowInsert(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "WorkFlowInsert", "",
+			"create", 0, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -1065,6 +1442,15 @@ func WorkFlowInsert(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Update successfully",
 	}
+
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "WorkFlow", "WorkFlowInsert", "",
+		"create", 0, start_time, GetQueryParams(c), response, "GetWorkFlowInsert Success.",
+	)
+	//=======AUDIT_END=====//
+
 	c.JSON(http.StatusOK, response)
 
 }
@@ -1099,9 +1485,12 @@ func WorkFlowUpdate(c *gin.Context) {
 		return
 	}
 	uuid := c.Param("uuid")
+	id := c.Param("id")
+	start_time := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
+
 	query := `UPDATE public.wf_definitions
 	SET title=$3, "desc"=$4, active=$5, publish=$6, locks=$7, versions=$8, "updatedAt"=$9,"updatedBy"=$10
 		WHERE "wfId"=$1 AND "orgId"=$2;`
@@ -1112,11 +1501,19 @@ func WorkFlowUpdate(c *gin.Context) {
 		true, true, true, "draft", now, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, id, "WorkFlow", "WorkFlowUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1128,11 +1525,19 @@ func WorkFlowUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, id, "WorkFlow", "WorkFlowUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -1196,11 +1601,19 @@ func WorkFlowUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, id, "WorkFlow", "WorkFlowUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -1210,6 +1623,13 @@ func WorkFlowUpdate(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Update successfully",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid, id, "WorkFlow", "WorkFlowUpdate", "",
+		"update", 0, start_time, GetQueryParams(c), response, "WorkFlowUpdate Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -1232,17 +1652,28 @@ func WorkflowDelete(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("uuid")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."wf_definitions" WHERE "wfId" = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "WorkflowDlete", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
@@ -1251,21 +1682,37 @@ func WorkflowDelete(c *gin.Context) {
 	_, err = conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "WorkFlow", "WorkflowDlete", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "WorkFlow", "WorkflowDlete", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "WorkflowDelete Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Form by Casesubtype
@@ -1285,19 +1732,30 @@ func GetFormByCaseSubType(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var req model.FormByCasesubtype
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetFormByCaseSubType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 	var wfId string
-	orgId := GetVariableFromToken(c, "orgId")
 	// username := GetVariableFromToken(c, "username")
 	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1 AND "sTypeId"=$2`
 	logger.Debug(`Query`, zap.String("query", query),
@@ -1307,11 +1765,19 @@ func GetFormByCaseSubType(c *gin.Context) {
 	err := conn.QueryRow(ctx, query, orgId, req.CaseSubType).Scan(&wfId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetFormByCaseSubType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -1335,11 +1801,19 @@ WHERE t1."wfId" = $1
 	rows, err = conn.Query(ctx, query, wfId, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetFormByCaseSubType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -1396,11 +1870,19 @@ WHERE t1."wfId" = $1
 	rows, err = conn.Query(ctx, query, formId, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetFormByCaseSubType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -1417,6 +1899,13 @@ WHERE t1."wfId" = $1
 				Msg:    "Failed",
 				Desc:   err.Error(),
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Form", "GetFormByCaseSubType", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusOK, response)
 			return
 		}
@@ -1429,6 +1918,13 @@ WHERE t1."wfId" = $1
 				Msg:    "Failed",
 				Desc:   err.Error(),
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Form", "GetFormByCaseSubType", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusOK, response)
 			return
 		}
@@ -1443,6 +1939,13 @@ WHERE t1."wfId" = $1
 			Msg:    "Failed",
 			Desc:   "No form data found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "GetFormByCaseSubType", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -1455,6 +1958,13 @@ WHERE t1."wfId" = $1
 		Data:   form,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "GetFormByCaseSubType", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetFormByCaseSubType Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }

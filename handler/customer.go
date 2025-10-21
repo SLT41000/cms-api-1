@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -24,7 +25,7 @@ import (
 // @Router /api/v1/customer [get]
 func CustomerList(c *gin.Context) {
 	logger := utils.GetLog()
-	orgId := GetVariableFromToken(c, "orgId")
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -50,14 +51,29 @@ func CustomerList(c *gin.Context) {
 
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
+	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	rows, err = conn.Query(ctx, query, orgId, length, start)
+
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -99,6 +115,13 @@ func CustomerList(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Customer", "CustomerList", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -111,6 +134,13 @@ func CustomerList(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -119,6 +149,13 @@ func CustomerList(c *gin.Context) {
 			Data:   userList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "GetCustomerList Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -140,6 +177,9 @@ func CustomerById(c *gin.Context) {
 		return
 	}
 	orgId := GetVariableFromToken(c, "orgId")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", dob, blood, gender, "mobileNo", address, photo, email, usertype, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -172,11 +212,19 @@ func CustomerById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Customer", "CustomerById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -186,6 +234,13 @@ func CustomerById(c *gin.Context) {
 		Data:   u,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Customer", "CustomerById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetCustomerById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -208,19 +263,31 @@ func CustomerAdd(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	var req model.CustomerInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 		INSERT INTO public.cust_customers(
@@ -243,21 +310,37 @@ func CustomerAdd(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerAdd", "",
+		"create", 0, start_time, GetQueryParams(c), response, "Add Customer Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Customer
@@ -279,19 +362,29 @@ func CustomerUpdate(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var req model.CustomerUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 	UPDATE public.cust_customers
@@ -311,21 +404,37 @@ func CustomerUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerUpdate", "",
+		"update", 0, start_time, GetQueryParams(c), response, "Custommer Update Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Customer
@@ -346,27 +455,46 @@ func CustomerDelete(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."cust_customers" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerDelete", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Update failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerDelete", "",
+		"delete", -1, start_time, GetQueryParams(c), response, "Delete Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Customer with Social
@@ -382,6 +510,11 @@ func CustomerDelete(c *gin.Context) {
 func CustomerSocialList(c *gin.Context) {
 	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -408,13 +541,22 @@ func CustomerSocialList(c *gin.Context) {
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, orgId, length, start)
+
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -446,6 +588,13 @@ func CustomerSocialList(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Customer", "CustomerSocialList", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -458,6 +607,13 @@ func CustomerSocialList(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -466,6 +622,13 @@ func CustomerSocialList(c *gin.Context) {
 			Data:   userList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialList", "",
+			"search", 0, start_time, GetQueryParams(c), response, "Get CustomerSocialList Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -482,11 +645,16 @@ func CustomerSocialList(c *gin.Context) {
 func CustomerWithSocialById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
-	orgId := GetVariableFromToken(c, "orgId")
+
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, "orgId", "custId", "socialType", "socialId", "socialName", "imgUrl", "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -510,11 +678,20 @@ func CustomerWithSocialById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Station", "CustomerWithSocialById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -524,6 +701,13 @@ func CustomerWithSocialById(c *gin.Context) {
 		Data:   u,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Station", "CustomerWithSocialById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "Get CustomerWithSocialById Success",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -545,20 +729,30 @@ func CustomerSocialAdd(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var req model.CustomerSocialInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 		INSERT INTO public.cust_customer_with_socials(
@@ -577,21 +771,37 @@ func CustomerSocialAdd(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerSocialAdd", "",
+		"create", 0, start_time, GetQueryParams(c), response, "CustommerSociallAdd Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Customer with Social
@@ -613,19 +823,30 @@ func CustomerSocialUpdate(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	var req model.CustomerSocialUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 	UPDATE public.cust_customer_with_socials
@@ -641,21 +862,37 @@ func CustomerSocialUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerSocialUpdate", "",
+		"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Customer with Social
@@ -676,27 +913,46 @@ func CustomerSocialDelete(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."cust_customer_with_socials" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerSocialDelete", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerSocialDelete", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "CustomerSocialDelete Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Customer Contact
@@ -711,7 +967,11 @@ func CustomerSocialDelete(c *gin.Context) {
 // @Router /api/v1/customer_contacts [get]
 func CustomerContactList(c *gin.Context) {
 	logger := utils.GetLog()
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -775,6 +1035,13 @@ func CustomerContactList(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Customer", "CustomerContactList", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -787,6 +1054,13 @@ func CustomerContactList(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "Not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactList", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -795,6 +1069,13 @@ func CustomerContactList(c *gin.Context) {
 			Data:   userList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactList", "",
+			"search", 0, start_time, GetQueryParams(c), response, "CustomerContactList Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -811,11 +1092,16 @@ func CustomerContactList(c *gin.Context) {
 func CustomerContactById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
 	}
-	orgId := GetVariableFromToken(c, "orgId")
+
 	defer cancel()
 	defer conn.Close(ctx)
 	query := `SELECT id, "orgId", "custId", "contactName", "contactPhone", "contactAddr", "createdAt", "updatedAt", "createdBy", "updatedBy"
@@ -838,11 +1124,20 @@ func CustomerContactById(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -852,6 +1147,13 @@ func CustomerContactById(c *gin.Context) {
 		Data:   u,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerContactById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetCustomerContactById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -873,20 +1175,31 @@ func CustomerContactAdd(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.CustomerContactInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 		INSERT INTO public.cust_contacts(
@@ -901,21 +1214,37 @@ func CustomerContactAdd(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactAdd", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerContactAdd", "",
+		"create", 0, start_time, GetQueryParams(c), response, "CustomerContactAdd Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Update Customer Contact
@@ -937,19 +1266,30 @@ func CustomerContactUpdate(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	var req model.CustomerContactUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "GetCustomerContactUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
 	now := time.Now()
 	query := `
 	UPDATE public.cust_customers
@@ -966,21 +1306,37 @@ func CustomerContactUpdate(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "GetCustomerContactUpdate", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "GetCustomerContactUpdate", "",
+		"update", 0, start_time, GetQueryParams(c), response, "CustomerContactUpdate Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Customer Contact
@@ -1001,23 +1357,41 @@ func CustomerContactDelete(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public."cust_contacts" WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Customer", "CustomerContactDelete", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Customer", "CustomerContactDelete", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "CustomerContactDete Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }

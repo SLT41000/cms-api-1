@@ -50,13 +50,26 @@ func GetCommand(c *gin.Context) {
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, orgId, length, start)
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "GetCommand", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -75,6 +88,13 @@ func GetCommand(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Command", "GetCommand", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 		}
 		DepartmentList = append(DepartmentList, Department)
@@ -85,6 +105,13 @@ func GetCommand(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "GetCommand", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+errorMsg,
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -93,6 +120,13 @@ func GetCommand(c *gin.Context) {
 			Data:   DepartmentList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "GetCommand", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetCommand Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -120,16 +154,28 @@ func GetCommandById(c *gin.Context) {
 	query := `SELECT id, "deptId", "orgId", "commId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
 	FROM public.sec_commands WHERE "commId"=$1 AND "orgId"=$2`
 
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err := conn.Query(ctx, query, id, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Command", "GetCommandById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -145,6 +191,13 @@ func GetCommandById(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Command", "GetCommandById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -155,6 +208,13 @@ func GetCommandById(c *gin.Context) {
 		Data:   Department,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Command", "GetCommandById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetCommandById Success",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -177,19 +237,30 @@ func InsertCommand(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
+	start_time := time.Now()
+	txtId := uuid.New().String()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
 
 	var req model.CommandInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Command", "InsertCommand", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
+
 	uuid := uuid.New()
 	now := time.Now()
 	var id int
@@ -206,21 +277,37 @@ func InsertCommand(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Command", "InsertCommand", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Command", "InsertCommand", "",
+		"create", 0, start_time, GetQueryParams(c), response, "InsertCommand Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -245,20 +332,30 @@ func UpdateCommand(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.CommandUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "UpdateCommand", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Update failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."sec_commands"
 	SET "deptId"=$2, "orgId"=$3, en=$4, th=$5, active=$6,
 	 "updatedAt"=$7, "updatedBy"=$8
@@ -275,21 +372,37 @@ func UpdateCommand(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "UpdateCommand", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Command", "UpdateCommand", "",
+		"update", 0, start_time, GetQueryParams(c), response, "UpdateCommand Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Commands
@@ -311,26 +424,47 @@ func DeleteCommand(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 	defer cancel()
+
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	query := `DELETE FROM public."sec_commands" WHERE "commId" = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Command", "DeleteCommand", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
 	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Command", "DeleteCommand", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "DeleteCommand Success",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -44,6 +45,11 @@ func GetCaseHistory(c *gin.Context) {
 		length = 1000
 	}
 	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	query := `SELECT id, "orgId", "caseId", username, type, "fullMsg", "jsonData", "createdAt", "createdBy"
 	FROM public.tix_case_history_events WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
@@ -52,11 +58,19 @@ func GetCaseHistory(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseHistory", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -83,6 +97,13 @@ func GetCaseHistory(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Cases", "GetCaseHistory", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -95,6 +116,13 @@ func GetCaseHistory(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseHistory", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -103,6 +131,13 @@ func GetCaseHistory(c *gin.Context) {
 			Data:   CaseHistoryList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseHistory", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetCaseHistory Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -128,7 +163,10 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 
 	caseId := c.Param("caseId")
 	orgId := GetVariableFromToken(c, "orgId")
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
 	query := `SELECT id, type, "fullMsg","createdAt", "createdBy"
 	FROM public.tix_case_history_events WHERE "orgId"=$1 AND "caseId"=$2`
 
@@ -137,11 +175,19 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId, caseId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseHistoryCaseId", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -159,6 +205,18 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 		)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Cases", "GetCaseHistoryCaseId", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, model.Response{
 				Status: "-1",
 				Msg:    "Failed",
@@ -171,21 +229,36 @@ func GetCaseHistoryByCaseId(c *gin.Context) {
 
 	// ✅ If no rows found, return 200 with "NoData"
 	if len(CaseHistoryList) == 0 {
-		c.JSON(http.StatusOK, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "NoData",
 			Desc:   "",
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseHistoryCaseId", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusOK, response)
 		return
 	}
-
-	// ✅ Otherwise return success
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Data:   CaseHistoryList,
 		Desc:   "",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Cases", "GetCaseHistoryCaseId", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetCaseHistoryByCaseId Success.",
+	)
+	//=======AUDIT_END=====//
+	// ✅ Otherwise return success
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Create Case History
@@ -205,14 +278,23 @@ func InsertCaseHistory(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-
+	txtId := uuid.New().String()
+	start_time := time.Now()
 	var req model.CaseHistoryInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", "",
+			txtId, "", "Cases", "InsertCaseHistory", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -233,11 +315,19 @@ func InsertCaseHistory(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, strconv.Itoa(id), "Cases", "InsertCaseHistory", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -269,13 +359,20 @@ func InsertCaseHistory(c *gin.Context) {
 	additionalData := json.RawMessage(additionalJSON)
 	event := "CASE-HISTORY"
 	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "/case/"+req.CaseID, "hidden", nil, "", recipients, "/case/"+req.CaseID, "User", event, &additionalData)
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, strconv.Itoa(id), "Cases", "InsertCaseHistory", "",
+		"create", 0, start_time, GetQueryParams(c), response, "InsertCaseHistory Success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -299,15 +396,25 @@ func UpdateCaseHistory(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	id := c.Param("id")
+	start_time := time.Now()
+	txtId := uuid.New().String()
 
 	var req model.CaseHistoryUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", "",
+			txtId, "", "Cases", "UpdateCaseHistory", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
@@ -326,21 +433,36 @@ func UpdateCaseHistory(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Cases", "UpdateCaseHistory", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Cases", "UpdateCaseHistory", "",
+		"update", 0, start_time, GetQueryParams(c), response, "UpdateCaseHistory Success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Case History
@@ -363,24 +485,42 @@ func DeleteCaseHistory(c *gin.Context) {
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
 	query := `DELETE FROM public.tix_case_history_events WHERE id = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "DeleteCaseHistory", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Query Fail : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Cases", "DeleteCaseHistory", "",
+		"delete", -1, start_time, GetQueryParams(c), response, "DeleteCaseHistory Success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 }

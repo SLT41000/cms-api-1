@@ -5,8 +5,10 @@ import (
 	"mainPackage/utils"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -23,7 +25,11 @@ import (
 // @Router /api/v1/audit_log [get]
 func GetAuditlog(c *gin.Context) {
 	logger := utils.GetLog()
-
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -47,12 +53,20 @@ func GetAuditlog(c *gin.Context) {
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, length, start)
 	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Audit Log", "GetAuditLog", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		logger.Warn("Query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -87,6 +101,13 @@ func GetAuditlog(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Audit Log", "GetAuditLog", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -99,6 +120,13 @@ func GetAuditlog(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Audit Log", "GetAuditLog", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -107,6 +135,13 @@ func GetAuditlog(c *gin.Context) {
 			Data:   AuditLogList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Audit Log", "GetAuditLog", "",
+			"search", 0, start_time, GetQueryParams(c), response, "Success",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -131,7 +166,9 @@ func GetAuditlogByUsername(c *gin.Context) {
 	defer conn.Close(ctx)
 	orgId := GetVariableFromToken(c, "orgId")
 	username := c.Param("username")
-
+	id := c.Param("id")
+	start_time := time.Now()
+	txtId := uuid.New().String()
 	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
 	FROM public.audit_logs WHERE "orgId"=$1 AND username=$2`
 	var rows pgx.Rows
@@ -139,11 +176,19 @@ func GetAuditlogByUsername(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username,
+			txtId, id, "Audit Log", "GetAuditlogByUsername", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -178,6 +223,13 @@ func GetAuditlogByUsername(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   errorMsg,
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username,
+				txtId, id, "Audit Log", "GetAuditlogByUsername", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -190,6 +242,13 @@ func GetAuditlogByUsername(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username,
+			txtId, id, "Audit Log", "GetAuditlogByUsername", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -198,6 +257,12 @@ func GetAuditlogByUsername(c *gin.Context) {
 			Data:   AuditLogList,
 			Desc:   "",
 		}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username,
+			txtId, id, "Audit Log", "GetAuditlogByUsername", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetAuditlog By Username Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }

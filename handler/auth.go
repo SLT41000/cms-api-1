@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -176,6 +177,8 @@ func UserLogin(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 	organization := c.Query("organization")
+	txtId := uuid.New().String()
+	start_time := time.Now()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -253,11 +256,19 @@ WHERE u.username = $1
 		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, UserOpt.OrgID, username,
+			txtId, "", "Auth", "UserLogin", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		return
 	}
 	var dec string
@@ -270,14 +281,22 @@ WHERE u.username = $1
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
 		tokenString, refreshtoken, err := CreateToken(username, id)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			response := gin.H{
 				"error":   "Token creation failed",
 				"message": err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, UserOpt.OrgID, username,
+				txtId, "", "Auth", "UserLogin", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Token creation failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusUnauthorized, response)
 			logger.Debug(err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, model.Response{
+		response := model.Response{
 			Status: "0",
 			Msg:    "Success",
 			Desc:   "",
@@ -287,13 +306,29 @@ WHERE u.username = $1
 				"token_type":   "bearer",
 				"user":         UserOpt,
 			},
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, UserOpt.OrgID, username,
+			txtId, "", "Auth", "UserLogin", "",
+			"search", 0, start_time, GetQueryParams(c), response, "Login successfully",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusOK, response)
 	} else {
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "",
 			Desc:   "Invalid credentials",
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, UserOpt.OrgID, username,
+			txtId, "", "Auth", "UserLogin", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 	}
 }
 
@@ -314,14 +349,24 @@ func UserLoginPost(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	start_time := time.Now()
+	txtId := uuid.New().String()
 	var req model.Login
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", "",
+			txtId, "", "Auth", "UserLoginPost", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -335,11 +380,19 @@ func UserLoginPost(c *gin.Context) {
 	err := conn.QueryRow(ctx, query, organization).Scan(&id)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", username,
+			txtId, "", "Auth", "UserLoginPost", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		return
 	}
 
@@ -397,17 +450,33 @@ WHERE u.username = $1
 		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
 	if err != nil {
 		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", username,
+			txtId, "", "Auth", "UserLoginPost", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		return
 	}
 	var dec string
 	dec, err = decrypt(UserOpt.Password)
 	if err != nil {
-		logger.Warn("Decryption failed", zap.Error(err)) // Use Warn for visibility
+		response := zap.Error(err)
+		logger.Warn("Decryption failed", response) // Use Warn for visibility
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, UserOpt.OrgID, username,
+			txtId, "", "Auth", "UserLoginPost", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Decryption failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		return
 	}
 	// logger.Debug(UserOpt.Password)
@@ -415,10 +484,18 @@ WHERE u.username = $1
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
 		tokenString, refreshtoken, err := CreateToken(username, id)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			response := gin.H{
 				"error":   "Token creation failed",
 				"message": err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, UserOpt.OrgID, username,
+				txtId, "", "Auth", "UserLoginPost", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusUnauthorized, response)
 			logger.Debug(err.Error())
 			return
 		}
@@ -431,11 +508,19 @@ WHERE u.username = $1
 		rows, err := conn.Query(ctx, query, UserOpt.OrgID, UserOpt.RoleID)
 		if err != nil {
 			logger.Warn("Query failed", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, UserOpt.OrgID, username,
+				txtId, "", "Auth", "UserLoginPost", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 		for rows.Next() {
@@ -447,13 +532,20 @@ WHERE u.username = $1
 					Msg:    "Failed",
 					Desc:   err.Error(),
 				}
+				//=======AUDIT_START=====//
+				_ = utils.InsertAuditLogs(
+					c, conn, UserOpt.OrgID, username,
+					txtId, "", "Auth", "UserLoginPost", "",
+					"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+				)
+				//=======AUDIT_END=====//
 				c.JSON(http.StatusInternalServerError, response)
 			}
 			RolePermissionList = append(RolePermissionList, permId)
 
 		}
 		UserOpt.Permission = RolePermissionList
-		c.JSON(http.StatusOK, model.Response{
+		response := model.Response{
 			Status: "0",
 			Msg:    "Success",
 			Desc:   "",
@@ -464,14 +556,30 @@ WHERE u.username = $1
 				"user":         UserOpt,
 				// "permission":   RolePermissionList,
 			},
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", username,
+			txtId, UserOpt.OrgID, "Auth", "UserLoginPost", "",
+			"search", 0, start_time, GetQueryParams(c), response, "Successfully",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusOK, response)
 		return
 	} else {
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "",
 			Desc:   "Invalid credentials",
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, UserOpt.OrgID, username,
+			txtId, "", "Auth", "UserLoginPost", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		return
 	}
 
@@ -494,14 +602,26 @@ func UserAddAuth(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	var req model.UserAdminInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Auth", "UserAddAuth", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -513,6 +633,13 @@ func UserAddAuth(c *gin.Context) {
 	var id int
 	enc, err = encrypt(req.Password)
 	if err != nil {
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Auth", "UserAddAuth", "",
+			"search", -1, start_time, GetQueryParams(c), "", "encrypt fail : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		return
 	}
 	now := time.Now()
@@ -548,21 +675,36 @@ func UserAddAuth(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Auth", "UserAddAuth", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Auth", "UserAddAuth", "",
+		"create", 0, start_time, GetQueryParams(c), response, "Create User success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Refresh Token
@@ -577,23 +719,44 @@ func UserAddAuth(c *gin.Context) {
 func RefreshToken(c *gin.Context) {
 	logger := utils.GetLog()
 	var req model.RefreshInput
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Auth", "RefreshToken", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
 	parsedToken, err := verifyRefreshToken(req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Auth", "RefreshToken", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusUnauthorized, response)
 		c.Abort()
 		return
 	}
@@ -605,14 +768,22 @@ func RefreshToken(c *gin.Context) {
 		if uOK && orgOK {
 			tokenString, _, err := CreateToken(username, orgId)
 			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{
+				response := gin.H{
 					"error":   "Token creation failed",
 					"message": err.Error(),
-				})
+				}
+				//=======AUDIT_START=====//
+				_ = utils.InsertAuditLogs(
+					c, nil, orgId, username,
+					txtId, id, "Auth", "RefreshToken", "",
+					"update", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
+				)
+				//=======AUDIT_END=====//
+				c.JSON(http.StatusUnauthorized, response)
 				logger.Debug(err.Error())
 				return
 			}
-			c.JSON(http.StatusOK, model.Response{
+			response := model.Response{
 				Status: "0",
 				Msg:    "Success",
 				Desc:   "",
@@ -621,7 +792,15 @@ func RefreshToken(c *gin.Context) {
 					// "refreshToken": refreshtoken,
 					"token_type": "bearer",
 				},
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, nil, orgId, username,
+				txtId, id, "Auth", "RefreshToken", "",
+				"update", 0, start_time, GetQueryParams(c), response, "RefreshToken Success",
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusOK, response)
 
 		}
 	}

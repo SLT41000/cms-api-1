@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -44,7 +45,7 @@ func MinimalCreateCase(c *gin.Context) {
 	}
 	username := "apiwat.rod"
 	orgId := "434c0f16-b7ea-4a7b-a74b-e2e0f859f549"
-
+	txtId := uuid.New().String()
 	now := time.Now()
 	caseId := req.CaseId
 	var id int
@@ -83,11 +84,19 @@ func MinimalCreateCase(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure.1",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, username,
+			txtId, "", "Cases", "MinimalCreateCase", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
@@ -102,11 +111,19 @@ func MinimalCreateCase(c *gin.Context) {
 		fmt.Printf("=======yyy========")
 		err = MinCaseCurrentStageInsert(username, orgId, conn, ctx, c, data)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure.2",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId, username,
+				txtId, "", "Cases", "MinimalCreateCase", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 	}
@@ -130,11 +147,19 @@ func MinimalCreateCase(c *gin.Context) {
 	event := "CASE-CREATE"
 	genNotiCustom(c, conn, orgId, "System", "MEETRIQ", "", "Create", data, "เปิด Case สำเร็จ : "+caseId, recipients, "", "User", event)
 
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId, username,
+		txtId, "", "Cases", "MinimalCreateCase", "",
+		"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 
 }
 

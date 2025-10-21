@@ -35,6 +35,12 @@ func GetCaseStatus(c *gin.Context) {
 	defer conn.Close(ctx)
 	startStr := c.DefaultQuery("start", "0")
 	start, err := strconv.Atoi(startStr)
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
 	if err != nil {
 		start = 0
 	}
@@ -53,11 +59,19 @@ func GetCaseStatus(c *gin.Context) {
 	rows, err = conn.Query(ctx, query, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseStatus", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed = "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -74,6 +88,13 @@ func GetCaseStatus(c *gin.Context) {
 				Msg:    "Failed",
 				Desc:   err.Error(),
 			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Cases", "GetCaseStatus", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
+			)
+			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -86,6 +107,13 @@ func GetCaseStatus(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   "not found",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseStatus", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 	} else {
 		response := model.Response{
@@ -94,6 +122,13 @@ func GetCaseStatus(c *gin.Context) {
 			Data:   DepartmentList,
 			Desc:   "",
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseStatus", "",
+			"search", 0, start_time, GetQueryParams(c), response, "GetCaseStatus Success.",
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
 	}
 }
@@ -111,6 +146,10 @@ func GetCaseStatus(c *gin.Context) {
 func GetCaseStatusById(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -126,11 +165,19 @@ func GetCaseStatusById(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, id)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseStatusById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
@@ -146,6 +193,13 @@ func GetCaseStatusById(c *gin.Context) {
 			Msg:    "Failed",
 			Desc:   errorMsg,
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "GetCaseStatusById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Scan failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -156,6 +210,13 @@ func GetCaseStatusById(c *gin.Context) {
 		Data:   Department,
 		Desc:   "",
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Cases", "GetCaseStatusById", "",
+		"search", -1, start_time, GetQueryParams(c), response, "GetCaseStatusById Success.",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
 }
@@ -180,17 +241,26 @@ func InsertCaseStatus(c *gin.Context) {
 	defer cancel()
 
 	var req model.CaseStatusInsert
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, "", "",
+			"", "", "Cases", "InsertCaseStatus", "",
+			"create", -1, time.Now(), GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 	username := GetVariableFromToken(c, "username")
-	// orgId := GetVariableFromToken(c, "orgId")
+	orgId := GetVariableFromToken(c, "orgId")
 	uuid := uuid.New()
 	now := time.Now()
 	var id int
@@ -212,21 +282,36 @@ func InsertCaseStatus(c *gin.Context) {
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid.String(), "", "Cases", "InsertCaseStatus", "",
+			"create", -1, now, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		uuid.String(), "", "Cases", "InsertCaseStatus", "",
+		"create", 0, now, GetQueryParams(c), response, "InsertCaseStatus Success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 
 }
 
@@ -251,19 +336,30 @@ func UpdateCaseStatus(c *gin.Context) {
 	defer cancel()
 
 	id := c.Param("id")
-
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 	var req model.CaseStatusUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Update failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "UpdateCaseStatus", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	now := time.Now()
-	username := GetVariableFromToken(c, "username")
+
 	// orgId := GetVariableFromToken(c, "orgId")
 	query := `UPDATE public."case_status"
 	SET th=$2, en=$3, "color"=$4,active=$5,
@@ -281,21 +377,37 @@ func UpdateCaseStatus(c *gin.Context) {
 		}))
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "UpdateCaseStatus", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
 
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Cases", "UpdateCaseStatus", "",
+		"update", 0, start_time, GetQueryParams(c), response, "UpdateCaseStatus Success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Delete Case Status
@@ -319,24 +431,43 @@ func DeleteCaseStatus(c *gin.Context) {
 	defer cancel()
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+
 	query := `DELETE FROM public."case_status" WHERE id = $1`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Cases", "DeleteCaseStatus", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Update failed", zap.Error(err))
 		return
 	}
-
-	// Continue logic...
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Cases", "DeleteCaseStatus", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "Delete CaseStatus success.",
+	)
+	//=======AUDIT_END=====//
+	// Continue logic...
+	c.JSON(http.StatusOK, response)
 }

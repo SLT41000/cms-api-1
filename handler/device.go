@@ -7,8 +7,10 @@ import (
 	"mainPackage/utils"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
@@ -25,6 +27,11 @@ import (
 // @Router /api/v1/devices [get]
 func GetDeviceIoT(c *gin.Context) {
 	logger := utils.GetLog()
+
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
 
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
@@ -53,17 +60,27 @@ func GetDeviceIoT(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "DeviceIoT", "GetDeviceIoT", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer rows.Close()
 
 	var devices []model.DeviceIoT
+	found := false
 	for rows.Next() {
+		found = true
 		var d model.DeviceIoT
 		err := rows.Scan(
 			&d.OrgID,
@@ -82,21 +99,54 @@ func GetDeviceIoT(c *gin.Context) {
 		)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failure",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "DeviceIoT", "GetDeviceIoT", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Scan : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 		devices = append(devices, d)
 	}
 
-	c.JSON(http.StatusOK, model.Response{
+	if !found {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failed",
+			Desc:   "Not found",
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "DeviceIoT", "GetDeviceIoT", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Data:   devices,
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "DeviceIoT", "GetDeviceIoT", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetDeviceIoT Success",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Device IoT By ID
@@ -111,6 +161,10 @@ func GetDeviceIoT(c *gin.Context) {
 func GetDeviceIoTById(c *gin.Context) {
 	logger := utils.GetLog()
 	deviceId := c.Param("id") // path param like /device-iot/:id
+
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
 
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
@@ -156,19 +210,35 @@ func GetDeviceIoTById(c *gin.Context) {
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusNotFound, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Not Found",
 				Desc:   fmt.Sprintf("No device found with deviceId %s", deviceId),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, deviceId, "DeviceIoT", "GetDeviceIoTById", "",
+				"search", -1, start_time, GetQueryParams(c), response, "Not Found : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusNotFound, response)
 			return
 		}
 		logger.Warn("Query failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, deviceId, "DeviceIoT", "GetDeviceIoTById", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -177,5 +247,12 @@ func GetDeviceIoTById(c *gin.Context) {
 		Msg:    "Success",
 		Data:   device,
 	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, deviceId, "DeviceIoT", "GetDeviceIoTById", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetDeviceIoTById Success",
+	)
+	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 }

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,19 +32,30 @@ import (
 // @router /api/v1/upload/{path} [post]
 func UploadFile(c *gin.Context) {
 	logger := utils.GetLog()
-	orgId := GetVariableFromToken(c, "orgId")
+	id := c.Param("id")
+	start_time := time.Now()
 	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
 
 	path := c.Param("path") // e.g. "profile"
 	caseId := c.DefaultPostForm("caseId", "")
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "❌ File is required",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Files", "UploadFile", "",
+			"upload", -1, start_time, GetQueryParams(c), response, "File is required: "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -59,10 +71,18 @@ func UploadFile(c *gin.Context) {
 	} else if contains_(docExts, ext) {
 		group = "doc"
 	} else {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    fmt.Sprintf("❌ Unsupported file extension: .%s", ext),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Files", "UploadFile", "",
+			"upload", -1, start_time, GetQueryParams(c), response, "Unsupported file extension: "+ext,
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -79,21 +99,37 @@ func UploadFile(c *gin.Context) {
 	}
 
 	if sizeKB > maxSizeKB {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    fmt.Sprintf("❌ File too large (%d KB > %d KB allowed for %s)", sizeKB, maxSizeKB, group),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Files", "UploadFile", "",
+			"upload", -1, start_time, GetQueryParams(c), response, "File too large",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	// ---------- 📂 Open source file ----------
 	src, err := file.Open()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "❌ Failed to open file",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Files", "UploadFile", "",
+			"upload", -1, start_time, GetQueryParams(c), response, "Failed to open file: "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	defer src.Close()
@@ -114,11 +150,19 @@ func UploadFile(c *gin.Context) {
 		minio.PutObjectOptions{ContentType: file.Header.Get("Content-Type")},
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "❌ Failed to upload file",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, id, "Files", "UploadFile", "",
+			"upload", -1, start_time, GetQueryParams(c), response, "Failed to upload to MinIO: "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -138,10 +182,18 @@ func UploadFile(c *gin.Context) {
 	if caseId != "" {
 		conn, ctx, cancel := utils.ConnectDB()
 		if conn == nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "❌ Database connection failed",
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, nil, orgId.(string), username.(string),
+				txtId, id, "Files", "UploadFile", "",
+				"upload", -1, start_time, GetQueryParams(c), response, "Database connection failed",
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 		defer cancel()
@@ -160,22 +212,38 @@ func UploadFile(c *gin.Context) {
 
 		if err != nil {
 			logger.Error("Insert attachment failed", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "❌ Failed to insert attachment record",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Files", "UploadFile", "",
+				"upload", -1, start_time, GetQueryParams(c), response, "Failed to insert attachment record: "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 	}
 
 	// ✅ Success
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "✅ File uploaded successfully",
 		Desc:   fmt.Sprintf("path=%s filename=%s", path, uuidFilename),
 		Data:   attachment,
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, nil, orgId.(string), username.(string), // conn is out of scope here or nil
+		txtId, id, "Files", "UploadFile", "",
+		"upload", 0, start_time, GetQueryParams(c), response, "File uploaded successfully",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 // Helper function
@@ -200,14 +268,26 @@ func contains_(arr []string, target string) bool {
 func DeleteFile(c *gin.Context) {
 	logger := utils.GetLog()
 	orgId := GetVariableFromToken(c, "orgId")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+	var entityId string
 
 	var req model.DeleteFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Invalid request",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, entityId, "Files", "DeleteFile", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "Invalid request: "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -218,11 +298,19 @@ func DeleteFile(c *gin.Context) {
 	err := utils.MinioClient.RemoveObject(context.Background(), bucket, objectName, minio.RemoveObjectOptions{})
 	if err != nil {
 		logger.Error("MinIO delete failed", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, model.Response{
+		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed to delete file from storage",
 			Desc:   err.Error(),
-		})
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, nil, orgId.(string), username.(string),
+			txtId, entityId, "Files", "DeleteFile", "",
+			"delete", -1, start_time, GetQueryParams(c), response, "MinIO delete failed: "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -230,10 +318,18 @@ func DeleteFile(c *gin.Context) {
 	if req.CaseId != "" && req.AttId != "" {
 		conn, ctx, cancel := utils.ConnectDB()
 		if conn == nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "DB connection failed",
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, nil, orgId.(string), username.(string),
+				txtId, entityId, "Files", "DeleteFile", "",
+				"delete", -1, start_time, GetQueryParams(c), response, "DB connection failed",
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 		defer cancel()
@@ -246,11 +342,19 @@ func DeleteFile(c *gin.Context) {
 		cmdTag, err := conn.Exec(ctx, query, orgId, req.CaseId, req.AttId)
 		if err != nil {
 			logger.Error("DB delete failed", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, model.Response{
+			response := model.Response{
 				Status: "-1",
 				Msg:    "Failed to delete DB record",
 				Desc:   err.Error(),
-			})
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, entityId, "Files", "DeleteFile", "",
+				"delete", -1, start_time, GetQueryParams(c), response, "DB delete failed: "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 
@@ -260,11 +364,19 @@ func DeleteFile(c *gin.Context) {
 	}
 
 	// 🔹 3) Success response
-	c.JSON(http.StatusOK, model.Response{
+	response := model.Response{
 		Status: "0",
 		Msg:    "🗑️ File deleted successfully",
 		Desc:   fmt.Sprintf("path=%s filename=%s", req.Path, req.Filename),
-	})
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, nil, orgId.(string), username.(string), // conn is out of scope or nil
+		txtId, entityId, "Files", "DeleteFile", "",
+		"delete", 0, start_time, GetQueryParams(c), response, "File deleted successfully",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
 }
 
 func InsertCaseAttachments(ctx context.Context, conn *pgx.Conn, orgId, caseId, username string, attachments []model.TixCaseAttachmentInput, logger *zap.Logger) error {
