@@ -302,6 +302,8 @@ func main() {
 		v1.POST("/upload/:path", handler.UploadFile)
 		v1.DELETE("/delete/", handler.DeleteFile)
 
+		v1.POST("/logout", handler.UserLogout)
+
 	}
 
 	minimal := router.Group("/api/minimal")

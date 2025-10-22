@@ -3223,6 +3223,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/logout": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout",
+                "operationId": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK - Logout successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mdm/companies": {
             "get": {
                 "security": [
@@ -7538,6 +7566,9 @@ const docTemplate = `{
                 "extReceive": {
                     "type": "string"
                 },
+                "formData": {
+                    "$ref": "#/definitions/model.FormAnswerRequest"
+                },
                 "phoneNo": {
                     "type": "string"
                 },
@@ -7922,8 +7953,7 @@ const docTemplate = `{
                 "formFieldJson": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": true
+                        "$ref": "#/definitions/model.IndividualFormField"
                     }
                 },
                 "formId": {
@@ -7963,8 +7993,7 @@ const docTemplate = `{
                 "formFieldJson": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": true
+                        "$ref": "#/definitions/model.IndividualFormField"
                     }
                 },
                 "formName": {
@@ -7996,6 +8025,89 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "publish": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.FormRule": {
+            "type": "object",
+            "properties": {
+                "allowedCountries": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowedFileTypes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "contain": {
+                    "type": "string"
+                },
+                "futureDateOnly": {
+                    "type": "boolean"
+                },
+                "hasLowercase": {
+                    "type": "boolean"
+                },
+                "hasNumber": {
+                    "type": "boolean"
+                },
+                "hasSpecialChar": {
+                    "type": "boolean"
+                },
+                "hasUppercase": {
+                    "type": "boolean"
+                },
+                "maxDate": {
+                    "type": "string"
+                },
+                "maxFileSize": {
+                    "type": "integer"
+                },
+                "maxFiles": {
+                    "type": "integer"
+                },
+                "maxLength": {
+                    "type": "integer"
+                },
+                "maxLocalDate": {
+                    "type": "string"
+                },
+                "maxSelections": {
+                    "type": "integer"
+                },
+                "maxnumber": {
+                    "type": "number"
+                },
+                "minDate": {
+                    "type": "string"
+                },
+                "minFiles": {
+                    "type": "integer"
+                },
+                "minLength": {
+                    "type": "integer"
+                },
+                "minLocalDate": {
+                    "type": "string"
+                },
+                "minSelections": {
+                    "type": "integer"
+                },
+                "minnumber": {
+                    "type": "number"
+                },
+                "noWhitespace": {
+                    "type": "boolean"
+                },
+                "pastDateOnly": {
+                    "type": "boolean"
+                },
+                "validEmailFormat": {
                     "type": "boolean"
                 }
             }
@@ -8045,8 +8157,7 @@ const docTemplate = `{
                 "formFieldJson": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": true
+                        "$ref": "#/definitions/model.IndividualFormField"
                     }
                 },
                 "formId": {
@@ -8070,6 +8181,55 @@ const docTemplate = `{
                 "versions": {
                     "type": "string"
                 }
+            }
+        },
+        "model.IndividualFormField": {
+            "type": "object",
+            "properties": {
+                "DynamicFieldColSpan": {
+                    "type": "integer"
+                },
+                "GroupColSpan": {
+                    "type": "integer"
+                },
+                "colSpan": {
+                    "type": "integer"
+                },
+                "enableSearch": {
+                    "type": "boolean"
+                },
+                "formRule": {
+                    "$ref": "#/definitions/model.FormRule"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isChild": {
+                    "type": "boolean"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {}
+                },
+                "placeholder": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "showLabel": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "value": {}
             }
         },
         "model.IotInfo": {

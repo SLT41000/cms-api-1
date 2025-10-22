@@ -3,10 +3,10 @@ package model
 import "time"
 
 type AuditLog struct {
-	ID        int       `json:"id" db:"id"`
-	OrgID     string    `json:"orgId" db:"orgId"`
-	Username  string    `json:"username" db:"username"`
-	TxID      string    `json:"txId" db:"txId"`
+	ID int `json:"id" db:"id"`
+	// OrgID     string    `json:"orgId" db:"orgId"`
+	Username string `json:"username" db:"username"`
+	// TxID      string    `json:"txId" db:"txId"`
 	UniqueId  string    `json:"uniqueId" db:"uniqueId"`
 	MainFunc  string    `json:"mainFunc" db:"mainFunc"`
 	SubFunc   string    `json:"subFunc" db:"subFunc"`

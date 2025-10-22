@@ -326,7 +326,7 @@ func UpdateRole(c *gin.Context) {
 	}
 
 	query := `UPDATE public."um_roles"
-	SET roleName=$2, active=$3,
+	SET "roleName"=$2, active=$3,
 	 "updatedAt"=$4, "updatedBy"=$5
 	WHERE id = $1 AND "orgId"=$6`
 	_, err := conn.Exec(ctx, query,

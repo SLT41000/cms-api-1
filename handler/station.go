@@ -60,7 +60,8 @@ func GetStation(c *gin.Context) {
 	logger.Debug(`GetStation : Query`, zap.String("query", query))
 	rows, err = conn.Query(ctx, query, orgId, length, start)
 	if err != nil {
-		logger.Warn("GetStation :  Query failed", zap.Error(err))
+		///logger.Warn("GetStation :  Query failed", zap.Error(err))
+		utils.WriteConsole("error", "GetStation", "Query failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
@@ -90,7 +91,8 @@ func GetStation(c *gin.Context) {
 		err := rows.Scan(&Station.ID, &Station.OrgID, &Station.DeptID, &Station.CommID, &Station.StnID, &Station.En, &Station.Th,
 			&Station.Active, &Station.CreatedAt, &Station.UpdatedAt, &Station.CreatedBy, &Station.UpdatedBy)
 		if err != nil {
-			logger.Warn("GetStation : Scan failed", zap.Error(err))
+			//logger.Warn("GetStation : Scan failed", zap.Error(err))
+			utils.WriteConsole("error", "GetStation", "Scan failed", zap.Error(err))
 			response := model.Response{
 				Status: "-2",
 				Msg:    "Failed",
@@ -136,9 +138,11 @@ func GetStation(c *gin.Context) {
 		//=======AUDIT_START=====//
 		responseJSON, err := json.Marshal(response)
 		if err != nil {
-			logger.Error("GetStation : Failed to marshal response", zap.Error(err))
+			//logger.Error("GetStation : Failed to marshal response", zap.Error(err))
+			utils.WriteConsole("error", "GetStation", "Failed response", zap.Error(err))
 		} else {
-			logger.Info("GetStation : Success", zap.String("response", string(responseJSON)))
+			utils.WriteConsole("Info", "GetStation", "Success", zap.String("response", string(responseJSON)))
+			//logger.Info("GetStation : Success", zap.String("response", string(responseJSON)))
 		}
 
 		_ = utils.InsertAuditLogs(
@@ -188,14 +192,15 @@ func GetDepartmentCommandStation(c *gin.Context) {
 	logger.Debug(`GetDepartmentCommandStation : Query`, zap.String("query", query))
 	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
-		logger.Warn("GetDepartmentCommandStation : Query failed", zap.Error(err))
+		//logger.Warn("GetDepartmentCommandStation : Query failed", zap.Error(err))
+		utils.WriteConsole("error", "GetDepartmentCommandStation", "Query failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
 			Desc:   err.Error(),
 		}
 
-		//============//
+		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			txtId, "", "Station", "GetDepartmentCommandStation", "",
@@ -219,7 +224,8 @@ func GetDepartmentCommandStation(c *gin.Context) {
 			&Station.CommandEn, &Station.CommandTh, &Station.CommandActive,
 			&Station.DeptEn, &Station.DeptTh, &Station.DeptActive)
 		if err != nil {
-			logger.Warn("GetDepartmentCommandStation : Scan failed", zap.Error(err))
+			//logger.Warn("GetDepartmentCommandStation : Scan failed", zap.Error(err))
+			utils.WriteConsole("error", "GetDepartmentCommandStation", "Scan failed", zap.Error(err))
 			response := model.Response{
 				Status: "-1",
 				Msg:    "Failed",
@@ -265,9 +271,11 @@ func GetDepartmentCommandStation(c *gin.Context) {
 		//=======AUDIT_START=====//
 		responseJSON, err := json.Marshal(response)
 		if err != nil {
-			logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+			//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+			utils.WriteConsole("error", "GetDepartmentCommandStation", "Failed fairesponseled", zap.Error(err))
 		} else {
-			logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+			//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+			utils.WriteConsole("Info", "GetDepartmentCommandStation", "Success", zap.String("response", string(responseJSON)))
 		}
 
 		_ = utils.InsertAuditLogs(
@@ -294,7 +302,7 @@ func GetDepartmentCommandStation(c *gin.Context) {
 func GetStationbyId(c *gin.Context) {
 	txtId := uuid.New().String()
 	start_time := time.Now()
-	logger := utils.GetLog()
+	//logger := utils.GetLog()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	id := c.Param("id")
@@ -311,8 +319,8 @@ func GetStationbyId(c *gin.Context) {
 	          FROM public.sec_stations
 	          WHERE "stnId" = $1 AND "orgId" = $2`
 
-	logger.Debug(`GetStationById : Query`, zap.String("query", query))
-
+	//logger.Debug(`GetStationById : Query`, zap.String("query", query))
+	utils.WriteConsole("debug", "GetStationById", "Query", zap.String("query", query))
 	var station model.Station
 	err := conn.QueryRow(ctx, query, id, orgId).Scan(
 		&station.ID, &station.OrgID, &station.DeptID, &station.CommID,
@@ -320,8 +328,8 @@ func GetStationbyId(c *gin.Context) {
 		&station.CreatedAt, &station.UpdatedAt, &station.CreatedBy, &station.UpdatedBy,
 	)
 	if err != nil {
-		logger.Warn("GetStationById : QueryRow failed", zap.Error(err))
-
+		//logger.Warn("GetStationById : QueryRow failed", zap.Error(err))
+		utils.WriteConsole("error", "GetStationById", "QueryRow failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
@@ -348,6 +356,15 @@ func GetStationbyId(c *gin.Context) {
 		Desc:   "",
 	}
 
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+		utils.WriteConsole("error", "GetStationById", "Failed response", zap.Error(err))
+	} else {
+		//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+		utils.WriteConsole("Info", "GetStationById", "Success", zap.String("response", string(responseJSON)))
+	}
+
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
@@ -371,7 +388,7 @@ func GetStationbyId(c *gin.Context) {
 func InsertStations(c *gin.Context) {
 	txtId := uuid.New().String()
 	start_time := time.Now()
-	logger := utils.GetLog()
+	//logger := utils.GetLog()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	conn, ctx, cancel := utils.ConnectDB()
@@ -384,7 +401,8 @@ func InsertStations(c *gin.Context) {
 	var req model.StationInsert
 	if err := c.ShouldBindJSON(&req); err != nil {
 
-		logger.Warn("Insert failed", zap.Error(err))
+		//logger.Warn("Insert failed", zap.Error(err))
+		utils.WriteConsole("error", "InsertStations", "Insert failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
@@ -409,6 +427,15 @@ func InsertStations(c *gin.Context) {
 			Status: "-2",
 			Msg:    "Failure",
 			Desc:   "Missing username in token",
+		}
+
+		responseJSON, err := json.Marshal(response)
+		if err != nil {
+			//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+			utils.WriteConsole("error", "InsertStations", "Failed response", zap.Error(err))
+		} else {
+			//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+			utils.WriteConsole("Info", "InsertStations", "Success", zap.String("response", string(responseJSON)))
 		}
 
 		//=======AUDIT_START=====//
@@ -457,6 +484,7 @@ func InsertStations(c *gin.Context) {
 			Desc:   err.Error(),
 		}
 
+		utils.WriteConsole("error", "InsertStations", "Insert failed", zap.Error(err))
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
@@ -473,6 +501,16 @@ func InsertStations(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   fmt.Sprintf("Station created successfully (ID: %d)", id),
+	}
+
+	//utils.WriteConsole("error", "InsertStations", "Success", response)
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+		utils.WriteConsole("error", "InsertStations", "Failed response", zap.Error(err))
+	} else {
+		//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+		utils.WriteConsole("Info", "InsertStations", "Success", zap.String("response", string(responseJSON)))
 	}
 
 	//=======AUDIT_START=====//
@@ -516,7 +554,8 @@ func UpdateStations(c *gin.Context) {
 
 	var req model.StationUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warn("Update failed", zap.Error(err))
+		//logger.Warn("Update failed", zap.Error(err))
+		utils.WriteConsole("error", "UpdateStations", "Failed response", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
@@ -557,8 +596,8 @@ func UpdateStations(c *gin.Context) {
 			Desc:   err.Error(),
 		}
 
-		logger.Warn("Update failed", zap.Error(err))
-
+		//logger.Warn("Update failed", zap.Error(err))
+		utils.WriteConsole("error", "UpdateStations", "Update failed", zap.Error(err))
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
@@ -575,6 +614,15 @@ func UpdateStations(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Update successfully",
+	}
+
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+		utils.WriteConsole("error", "UpdateStations", "Failed response", zap.Error(err))
+	} else {
+		//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+		utils.WriteConsole("Info", "UpdateStations", "Success", zap.String("response", string(responseJSON)))
 	}
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
@@ -627,8 +675,8 @@ func DeleteStations(c *gin.Context) {
 			Msg:    "Failure",
 			Desc:   err.Error(),
 		}
-		logger.Warn("Delete failed", zap.Error(err))
-
+		//logger.Warn("Delete failed", zap.Error(err))
+		utils.WriteConsole("error", "DeleteStations", "Delete failed", zap.Error(err))
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
@@ -646,6 +694,15 @@ func DeleteStations(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Delete successfully",
+	}
+
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
+		utils.WriteConsole("error", "DeleteStations", "Failed response", zap.Error(err))
+	} else {
+		//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
+		utils.WriteConsole("Info", "DeleteStations", "Success", zap.String("response", string(responseJSON)))
 	}
 
 	//=======AUDIT_START=====//

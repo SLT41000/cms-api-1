@@ -46,7 +46,7 @@ func GetAuditlog(c *gin.Context) {
 	if err != nil {
 		length = 1000
 	}
-	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
+	query := `SELECT id, username, "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
 	FROM public.audit_logs ORDER BY "createdAt" DESC LIMIT $1 OFFSET $2 FOR SHARE SKIP LOCKED`
 
 	var rows pgx.Rows
@@ -78,9 +78,9 @@ func GetAuditlog(c *gin.Context) {
 
 		err := rows.Scan(
 			&AuditLog.ID,
-			&AuditLog.OrgID,
+			// &AuditLog.OrgID,
 			&AuditLog.Username,
-			&AuditLog.TxID,
+			// &AuditLog.TxID,
 			&AuditLog.UniqueId,
 			&AuditLog.MainFunc,
 			&AuditLog.SubFunc,
@@ -169,7 +169,7 @@ func GetAuditlogByUsername(c *gin.Context) {
 	id := c.Param("id")
 	start_time := time.Now()
 	txtId := uuid.New().String()
-	query := `SELECT id, "orgId", username, "txId", "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
+	query := `SELECT id, username, "uniqueId", "mainFunc", "subFunc", "nameFunc", action, status, duration, "newData", "oldData", "resData", message, "createdAt"
 	FROM public.audit_logs WHERE "orgId"=$1 AND username=$2`
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query))
@@ -200,9 +200,9 @@ func GetAuditlogByUsername(c *gin.Context) {
 
 		err := rows.Scan(
 			&AuditLog.ID,
-			&AuditLog.OrgID,
+			// &AuditLog.OrgID,
 			&AuditLog.Username,
-			&AuditLog.TxID,
+			// &AuditLog.TxID,
 			&AuditLog.UniqueId,
 			&AuditLog.MainFunc,
 			&AuditLog.SubFunc,

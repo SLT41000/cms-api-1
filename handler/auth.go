@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/subtle"
 	"fmt"
+	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
@@ -804,4 +805,69 @@ func RefreshToken(c *gin.Context) {
 
 		}
 	}
+}
+
+// @summary Logout
+// @tags Authentication
+// @security ApiKeyAuth
+// @id Logout
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Logout successful"
+// @Router /api/v1/logout [post]
+func UserLogout(c *gin.Context) {
+
+	logger := utils.GetLog()
+	startTime := time.Now()
+	txtId := uuid.New().String()
+
+	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
+
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1", Msg: "Failure", Desc: "Cannot connect to database",
+		})
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	query := `
+		UPDATE public.um_users
+		SET "islogin" = FALSE, "updatedAt" = NOW(), "updatedBy" = $3
+		WHERE "orgId" = $1 AND "username" = $2
+	`
+	log.Print(username)
+	cmdTag, err := conn.Exec(ctx, query, orgId, username, username)
+	if err != nil {
+		logger.Warn("Logout update failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1", Msg: "Failure", Desc: "Logout failed: " + err.Error(),
+		})
+		return
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, model.Response{
+			Status: "-1", Msg: "Failure", Desc: "User not found or already logged out",
+		})
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Logout successful",
+	}
+
+	// Optionally record audit log
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Authentication", "Logout", "",
+		"logout", 0, startTime, nil, response, "User logged out successfully",
+	)
+
+	c.JSON(http.StatusOK, response)
 }

@@ -266,6 +266,8 @@ definitions:
         type: string
       extReceive:
         type: string
+      formData:
+        $ref: '#/definitions/model.FormAnswerRequest'
       phoneNo:
         type: string
       phoneNoHide:
@@ -525,8 +527,7 @@ definitions:
         type: integer
       formFieldJson:
         items:
-          additionalProperties: true
-          type: object
+          $ref: '#/definitions/model.IndividualFormField'
         type: array
       formId:
         type: string
@@ -552,8 +553,7 @@ definitions:
         type: integer
       formFieldJson:
         items:
-          additionalProperties: true
-          type: object
+          $ref: '#/definitions/model.IndividualFormField'
         type: array
       formName:
         type: string
@@ -574,6 +574,61 @@ definitions:
       formId:
         type: string
       publish:
+        type: boolean
+    type: object
+  model.FormRule:
+    properties:
+      allowedCountries:
+        items:
+          type: string
+        type: array
+      allowedFileTypes:
+        items:
+          type: string
+        type: array
+      contain:
+        type: string
+      futureDateOnly:
+        type: boolean
+      hasLowercase:
+        type: boolean
+      hasNumber:
+        type: boolean
+      hasSpecialChar:
+        type: boolean
+      hasUppercase:
+        type: boolean
+      maxDate:
+        type: string
+      maxFileSize:
+        type: integer
+      maxFiles:
+        type: integer
+      maxLength:
+        type: integer
+      maxLocalDate:
+        type: string
+      maxSelections:
+        type: integer
+      maxnumber:
+        type: number
+      minDate:
+        type: string
+      minFiles:
+        type: integer
+      minLength:
+        type: integer
+      minLocalDate:
+        type: string
+      minSelections:
+        type: integer
+      minnumber:
+        type: number
+      noWhitespace:
+        type: boolean
+      pastDateOnly:
+        type: boolean
+      validEmailFormat:
         type: boolean
     type: object
   model.FormUpdate:
@@ -606,8 +661,7 @@ definitions:
         type: integer
       formFieldJson:
         items:
-          additionalProperties: true
-          type: object
+          $ref: '#/definitions/model.IndividualFormField'
         type: array
       formId:
         type: string
@@ -623,6 +677,39 @@ definitions:
         type: string
       versions:
         type: string
+    type: object
+  model.IndividualFormField:
+    properties:
+      DynamicFieldColSpan:
+        type: integer
+      GroupColSpan:
+        type: integer
+      colSpan:
+        type: integer
+      enableSearch:
+        type: boolean
+      formRule:
+        $ref: '#/definitions/model.FormRule'
+      id:
+        type: string
+      isChild:
+        type: boolean
+      label:
+        type: string
+      options:
+        items: {}
+        type: array
+      placeholder:
+        type: string
+      required:
+        type: boolean
+      showLabel:
+        type: boolean
+      type:
+        type: string
+      uid:
+        type: string
+      value: {}
     type: object
   model.IotInfo:
     properties:
@@ -3520,6 +3607,23 @@ paths:
       summary: Generate Case ID
       tags:
       - Public
+  /api/v1/logout:
+    post:
+      consumes:
+      - application/json
+      operationId: Logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Logout successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Logout
+      tags:
+      - Authentication
   /api/v1/mdm/companies:
     get:
       consumes:
