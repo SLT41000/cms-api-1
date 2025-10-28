@@ -500,105 +500,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/case/caseId/{caseId}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Cases By CaseId",
-                "operationId": "CaseData By CaseId",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "caseId",
-                        "name": "caseId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Case not found",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/case/result": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "List CasesResult",
-                "operationId": "CaseResult",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "start",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "length",
-                        "name": "length",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/case/{id}": {
             "get": {
                 "security": [
@@ -703,6 +604,105 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.CaseUpdate"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/caseId/{caseId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Cases By CaseId",
+                "operationId": "CaseData By CaseId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Case not found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/caseResult": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List CasesResult",
+                "operationId": "CaseResult",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1129,7 +1129,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "List CasesSubType",
                 "operationId": "ListCaseSubTypes",
@@ -1173,7 +1173,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Create CaseSubType",
                 "operationId": "Create CaseSubType",
@@ -1212,13 +1212,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Delete CaseSubType",
                 "operationId": "Delete CaseSubType",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1247,13 +1247,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Update CaseSubType",
                 "operationId": "Update CaseSubType",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1293,9 +1293,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
-                "summary": "List Cases",
+                "summary": "List Cases Type",
                 "operationId": "ListCaseTypes",
                 "parameters": [
                     {
@@ -1337,7 +1337,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Create CaseType",
                 "operationId": "Create CaseType",
@@ -1376,13 +1376,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Delete CaseType",
                 "operationId": "Delete CaseType",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1411,13 +1411,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "Update CaseType",
                 "operationId": "Update CaseType",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -1457,7 +1457,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Cases"
+                    "Case-Types and Case-SubTypes"
                 ],
                 "summary": "List Cases Type with Sub type",
                 "operationId": "List Cases Type with Sub type",
@@ -7449,6 +7449,12 @@ const docTemplate = `{
                 "en": {
                     "type": "string"
                 },
+                "mDeviceType": {
+                    "type": "string"
+                },
+                "mWorkOrderType": {
+                    "type": "string"
+                },
                 "priority": {
                     "type": "string"
                 },
@@ -7490,6 +7496,12 @@ const docTemplate = `{
                 "en": {
                     "type": "string"
                 },
+                "mDeviceType": {
+                    "type": "string"
+                },
+                "mWorkOrderType": {
+                    "type": "string"
+                },
                 "priority": {
                     "type": "string"
                 },
@@ -7497,6 +7509,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "th": {
+                    "type": "string"
+                },
+                "typeId": {
                     "type": "string"
                 },
                 "unitPropLists": {

@@ -166,6 +166,10 @@ definitions:
         type: string
       en:
         type: string
+      mDeviceType:
+        type: string
+      mWorkOrderType:
+        type: string
       priority:
         type: string
       sTypeCode:
@@ -193,11 +197,17 @@ definitions:
         type: string
       en:
         type: string
+      mDeviceType:
+        type: string
+      mWorkOrderType:
+        type: string
       priority:
         type: string
       sTypeCode:
         type: string
       th:
+        type: string
+      typeId:
         type: string
       unitPropLists:
         items:
@@ -1972,69 +1982,6 @@ paths:
       summary: Create Case
       tags:
       - Cases
-  /api/v1/case/caseId/{caseId}:
-    get:
-      consumes:
-      - application/json
-      operationId: CaseData By CaseId
-      parameters:
-      - description: caseId
-        in: path
-        name: caseId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.Response'
-        "404":
-          description: Case not found
-          schema:
-            $ref: '#/definitions/model.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Cases By CaseId
-      tags:
-      - Cases
-  /api/v1/case/result:
-    get:
-      consumes:
-      - application/json
-      operationId: CaseResult
-      parameters:
-      - default: 0
-        description: start
-        in: query
-        name: start
-        type: integer
-      - default: 10
-        description: length
-        in: query
-        name: length
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: List CasesResult
-      tags:
-      - Cases
   /api/v1/case_history:
     get:
       consumes:
@@ -2286,6 +2233,69 @@ paths:
       summary: Create Case Status
       tags:
       - Cases
+  /api/v1/caseId/{caseId}:
+    get:
+      consumes:
+      - application/json
+      operationId: CaseData By CaseId
+      parameters:
+      - description: caseId
+        in: path
+        name: caseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Case not found
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Cases By CaseId
+      tags:
+      - Cases
+  /api/v1/caseResult:
+    get:
+      consumes:
+      - application/json
+      operationId: CaseResult
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List CasesResult
+      tags:
+      - Cases
   /api/v1/casesubtypes:
     get:
       consumes:
@@ -2313,7 +2323,7 @@ paths:
       - ApiKeyAuth: []
       summary: List CasesSubType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casesubtypes/{id}:
     delete:
       consumes:
@@ -2324,7 +2334,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2336,7 +2346,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete CaseSubType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
     patch:
       consumes:
       - application/json
@@ -2346,7 +2356,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update data
         in: body
         name: Body
@@ -2364,7 +2374,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update CaseSubType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casesubtypes/add:
     post:
       consumes:
@@ -2388,7 +2398,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create CaseSubType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casetypes:
     get:
       consumes:
@@ -2414,9 +2424,9 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: List Cases
+      summary: List Cases Type
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casetypes/{id}:
     delete:
       consumes:
@@ -2427,7 +2437,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2439,7 +2449,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete CaseType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
     patch:
       consumes:
       - application/json
@@ -2449,7 +2459,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update data
         in: body
         name: Body
@@ -2467,7 +2477,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update CaseType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casetypes/add:
     post:
       consumes:
@@ -2491,7 +2501,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create CaseType
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/casetypes_with_subtype:
     get:
       consumes:
@@ -2508,7 +2518,7 @@ paths:
       - ApiKeyAuth: []
       summary: List Cases Type with Sub type
       tags:
-      - Cases
+      - Case-Types and Case-SubTypes
   /api/v1/commands:
     get:
       consumes:
