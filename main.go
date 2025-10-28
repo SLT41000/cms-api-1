@@ -94,6 +94,7 @@ func main() {
 
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
+	handler.RateLimiterInstance = instance
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	// router.Use(cors.Default())
@@ -332,6 +333,7 @@ func main() {
 	health := router.Group("/")
 	{
 		health.GET("/health", handler.Health)
+		health.GET("/rate_limit", handler.Ratelimit)
 	}
 
 	notifications := router.Group("/api/v1/notifications")
