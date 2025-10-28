@@ -7,6 +7,7 @@ type CaseGroupType struct {
 	En             string   `json:"en"`
 	Th             string   `json:"th"`
 	GroupTypeLists []string `json:"groupTypeLists"`
+	Prefix         string   `json:"prefix"`
 }
 
 type DCaseSummary struct {

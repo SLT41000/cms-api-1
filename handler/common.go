@@ -1194,22 +1194,37 @@ func SendDashboardSummaryFromCaseSummary(
 	username string,
 	recipients []model.Recipient,
 ) error {
-	// Query: SUM(total) by groupTypeId, join with case_type_groups for names
+	// ✅ โหลด group type ทั้งหมด
+	groupTypes, err := utils.GroupTypeGetOrLoad(conn)
+	if err != nil {
+		return fmt.Errorf("cannot load group types: %v", err)
+	}
+
+	groupMap := make(map[string]struct {
+		Prefix string
+		En     string
+		Th     string
+	})
+	for _, g := range groupTypes {
+		groupMap[g.GroupTypeId] = struct {
+			Prefix string
+			En     string
+			Th     string
+		}{
+			Prefix: g.Prefix,
+			En:     g.En,
+			Th:     g.Th,
+		}
+	}
+
+	// ✅ ดึงข้อมูลจาก d_case_summary
 	query := `
-		SELECT 
-			g."en",
-			g."th",
-			COALESCE(SUM(CAST(s.total AS INT)), 0) AS total
+		SELECT s."groupTypeId", COALESCE(SUM(CAST(s.total AS INT)), 0) AS total
 		FROM d_case_summary s
-		JOIN case_type_groups g 
-			ON s."groupTypeId" = g."groupTypeId"
 		WHERE s."orgId" = $1
 		  AND s.date = TO_CHAR(CURRENT_DATE, 'YYYY/MM/DD')
-		GROUP BY g."en", g."th"
-		ORDER BY g."en"
+		GROUP BY s."groupTypeId"
 	`
-
-	log.Print(query)
 	rows, err := conn.Query(c, query, orgId)
 	if err != nil {
 		return fmt.Errorf("query dashboard summary failed: %w", err)
@@ -1217,24 +1232,22 @@ func SendDashboardSummaryFromCaseSummary(
 	defer rows.Close()
 
 	type SummaryData struct {
-		En  string `json:"en"`
-		Th  string `json:"th"`
-		Val int    `json:"val"`
+		GroupTypeId string
+		Val         int
 	}
-
-	var summaryList []SummaryData
+	summaryMap := make(map[string]int)
 	totalSum := 0
 
 	for rows.Next() {
 		var item SummaryData
-		if err := rows.Scan(&item.En, &item.Th, &item.Val); err != nil {
+		if err := rows.Scan(&item.GroupTypeId, &item.Val); err != nil {
 			return fmt.Errorf("scan dashboard summary failed: %w", err)
 		}
-		summaryList = append(summaryList, item)
+		summaryMap[item.GroupTypeId] = item.Val
 		totalSum += item.Val
 	}
 
-	// Build data
+	// ✅ เตรียมผลลัพธ์ JSON
 	data := []interface{}{
 		map[string]interface{}{
 			"total_en": "Total",
@@ -1242,15 +1255,22 @@ func SendDashboardSummaryFromCaseSummary(
 			"val":      totalSum,
 		},
 	}
-	for _, s := range summaryList {
+
+	// ✅ รวม group ทั้งหมด (แม้ไม่มีข้อมูล ก็ให้ val = 0)
+	for _, g := range groupTypes {
+		val := 0
+		if v, ok := summaryMap[g.GroupTypeId]; ok {
+			val = v
+		}
+
 		data = append(data, map[string]interface{}{
-			"g_en": s.En,
-			"g_th": s.Th,
-			"val":  s.Val,
+			fmt.Sprintf("%s_en", g.Prefix): g.En,
+			fmt.Sprintf("%s_th", g.Prefix): g.Th,
+			"val":                          val,
 		})
 	}
 
-	// Create payload
+	// ✅ สร้าง payload
 	summary := model.DashboardSummary{
 		Type:    "CASE-SUMMARY",
 		TitleEn: "Work Order Summary",
@@ -1264,27 +1284,15 @@ func SendDashboardSummaryFromCaseSummary(
 	}
 	raw := json.RawMessage(jsonBytes)
 
-	// Send notification
+	// ✅ ส่ง Notification
 	err = genNotiCustom(
-		c,
-		conn,
-		orgId,
-		username,
-		username,
-		"",
-		"hidden", // hidden eventType for dashboard
-		nil,
-		"",
-		recipients,
-		"",
-		"User",
-		"DASHBOARD",
-		&raw,
+		c, conn, orgId, username, username, "",
+		"hidden", nil, "", recipients, "", "User", "DASHBOARD", &raw,
 	)
 	if err != nil {
 		return fmt.Errorf("send dashboard notification failed: %w", err)
 	}
 
-	log.Printf("✅ Dashboard summary sent successfully: total=%d groups=%d", totalSum, len(summaryList))
+	log.Printf("✅ Dashboard summary sent successfully: total=%d groups=%d", totalSum, len(groupTypes))
 	return nil
 }

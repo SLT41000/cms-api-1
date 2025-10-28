@@ -257,7 +257,7 @@ func GroupTypeGetOrLoad(conn *pgx.Conn) ([]model.CaseGroupType, error) {
 
 	// ❌ ไม่มี cache → query จาก DB
 	rows, err := conn.Query(context.Background(), `
-		SELECT id, "orgId", "groupTypeId", en, th, "groupTypeLists"
+		SELECT id, "orgId", "groupTypeId", en, th, "groupTypeLists", "prefix"
 		FROM case_type_groups`)
 	if err != nil {
 		return nil, fmt.Errorf("query group types failed: %v", err)
@@ -268,7 +268,7 @@ func GroupTypeGetOrLoad(conn *pgx.Conn) ([]model.CaseGroupType, error) {
 	for rows.Next() {
 		var g model.CaseGroupType
 		var groupLists string
-		if err := rows.Scan(&g.ID, &g.OrgId, &g.GroupTypeId, &g.En, &g.Th, &groupLists); err != nil {
+		if err := rows.Scan(&g.ID, &g.OrgId, &g.GroupTypeId, &g.En, &g.Th, &groupLists, &g.Prefix); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal([]byte(groupLists), &g.GroupTypeLists)
