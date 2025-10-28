@@ -65,14 +65,14 @@ func SlaMonitor(c *gin.Context) error {
 			c.Set("orgId", orgId)
 
 			for _, stage := range stages {
-				fmt.Println("Stage Data JSON:", stage)
+				//fmt.Println("Stage Data JSON:", stage)
 				caseId := stage.CaseId
 				req := model.UpdateStageRequest{
 					CaseId:   caseId,
 					Status:   RecheckSLA(stage.StatusId),
 					UnitUser: MONITOR_NAME, // หรือ set ค่า default
 				}
-				log.Print(req)
+				//log.Print(req)
 				delay, err := strconv.Atoi(stage.OverSlaCount)
 				if err != nil {
 					log.Printf("Invalid OverSlaCount=%s, defaulting to 0", stage.OverSlaCount)
@@ -274,11 +274,7 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 
 		//fmt.Printf("📋 expireTime Results: %v\n", now.After(expireTime))
 		if now.After(expireTime) {
-			fmt.Printf("📋 UpdatedAt : %s\n", updatedAt)
-			fmt.Printf("📋 now : %s\n", now)
-			fmt.Printf("📋 slaMin : %d\n", slaMin)
-			fmt.Printf("📋 expireTime : %s\n", expireTime)
-			fmt.Printf("====YES===")
+			fmt.Printf("📋 UpdatedAt: %s | now: %s | slaMin: %d | expireTime: %s\n", updatedAt, now, slaMin, expireTime)
 			results[i].NextNode = nextNode
 			results_data = append(results_data, results[i])
 		}

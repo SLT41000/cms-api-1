@@ -465,7 +465,7 @@ func BroadcastNotification(noti model.Notification) {
 		}
 
 		sentTo[connInfo.ID] = true
-		log.Printf("✅ Broadcasting finished for notification ID: %s", noti.ID)
+		log.Printf("✅ Broadcasting finished for notification ID: %d", noti.ID)
 	}
 }
 

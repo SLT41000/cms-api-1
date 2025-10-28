@@ -81,6 +81,12 @@ func main() {
 	// }()
 
 	go func() {
+		if err := handler.ESB_NOTIFICATIONS(); err != nil {
+			log.Printf("Kafka ESB_NOTIFICATIONS error: %v", err)
+		}
+	}()
+
+	go func() {
 		if err := handler.SlaMonitor(&gin.Context{}); err != nil {
 			log.Printf("SlaMonitor error: %v", err)
 		}

@@ -1017,8 +1017,8 @@ func GenerateNotiAndComment(ctx *gin.Context,
 		return fmt.Errorf("status %s has nil Th field", req.Status)
 	}
 
-	log.Print("====statusName===")
-	log.Print(statusName)
+	//log.Print("====statusName===")
+	//log.Print(statusName)
 	provID, wfId, versions, err := GetInfoFromCase(ctx, conn, orgId, req.CaseId)
 	if err != nil {
 		log.Printf("error getting provId: %v", err)

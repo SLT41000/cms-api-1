@@ -505,7 +505,23 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 		}
 		// Broadcast async
 		notiCopy := noti
-		go BroadcastNotification(notiCopy)
+
+		// Change noti to ESB
+		//go BroadcastNotification(notiCopy)
+
+		payloadMap, err := StructToMap(notiCopy)
+		if err != nil {
+			log.Println("convert struct to map failed:", err)
+
+		}
+		res, err := callAPI(os.Getenv("METTTER_SERVER")+"/welcome/v1/notification/create", "POST", payloadMap)
+		if err != nil {
+			log.Printf("❌ Send to ESB : %v", err)
+		} else {
+			log.Printf("✅ Send to ESB : %v", res)
+		}
+
+		//utils.SendKafkaJSONMessage([]string{os.Getenv("ESB_SERVER")}, os.Getenv("ESB_NOTIFICATIONS"), "noti", payloadMap)
 
 		createdNotifications = append(createdNotifications, noti)
 	}
@@ -520,4 +536,14 @@ func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateReq
 func generate6DigitID() int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return r.Intn(90000000) + 10000000 // generates 100000–999999
+}
+
+func StructToMap(data interface{}) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	tmp, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(tmp, &result)
+	return result, err
 }
