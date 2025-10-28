@@ -7,6 +7,7 @@ type CaseStageInfo struct {
 	StatusId     string        `json:"statusId"`
 	Data         string        `json:"data"`
 	CreatedDate  *time.Time    `json:"createdDate"`
+	UpdatedAt    *time.Time    `json:"updatedAt"`
 	Versions     string        `json:"versions"`
 	OverSlaCount string        `json:"overSlaCount"`
 	WfId         string        `json:"wfId"`

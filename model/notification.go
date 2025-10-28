@@ -87,3 +87,11 @@ type NotificationCreateRequest struct {
 	Recipients  *[]Recipient `json:"recipients,omitempty"` // ใช้ตอนสร้างเท่านั้น
 	Additional  interface{}  `json:"additionalJson,omitempty" swaggertype:"object"`
 }
+
+type HiddenNotification struct {
+	Event      *string     `json:"EVENT,omitempty"` // optional, original event name
+	ID         int         `json:"id,omitempty"`
+	EventType  string      `json:"eventType"`      // should be "hidden"
+	Additional interface{} `json:"additionalJson"` // dashboard or summary JSON
+
+}

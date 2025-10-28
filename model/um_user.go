@@ -86,6 +86,30 @@ type Um_User struct {
 	Areas                 *[]map[string]interface{} `json:"areas"`
 }
 
+type User_UnitInfo struct {
+	ID          string                    `json:"id"`
+	DisplayName string                    `json:"displayName"`
+	Title       string                    `json:"title"`
+	FirstName   string                    `json:"firstName"`
+	MiddleName  *string                   `json:"middleName"`
+	LastName    string                    `json:"lastName"`
+	Gender      string                    `json:"gender"`
+	MobileNo    *string                   `json:"mobileNo"`
+	Address     *string                   `json:"address"`
+	Photo       *string                   `json:"photo"`
+	Username    string                    `json:"username"`
+	Email       *string                   `json:"email"`
+	DeptID      string                    `json:"deptId"`
+	CommID      string                    `json:"commId"`
+	StnID       string                    `json:"stnId"`
+	CreatedAt   time.Time                 `json:"createdAt"`
+	UpdatedAt   time.Time                 `json:"updatedAt"`
+	CreatedBy   string                    `json:"createdBy"`
+	UpdatedBy   string                    `json:"updatedBy"`
+	Skills      *[]map[string]interface{} `json:"skills"`
+	Areas       *[]map[string]interface{} `json:"areas"`
+}
+
 type UserInput struct {
 	DisplayName           string     `json:"displayName"`
 	Title                 string     `json:"title"`

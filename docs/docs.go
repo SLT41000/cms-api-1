@@ -440,15 +440,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "default": "\"createdAt\"",
-                        "description": "orderBy field name",
+                        "description": "orderBy (can be comma-separated)",
                         "name": "orderBy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "default": "\"DESC\"",
-                        "description": "direction ASC or DESC",
+                        "description": "direction (can be comma-separated)",
                         "name": "direction",
                         "in": "query"
                     }
@@ -490,6 +488,105 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.CaseInsert"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/case/caseId/{caseId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "Cases By CaseId",
+                "operationId": "CaseData By CaseId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "caseId",
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Case not found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/case/result": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cases"
+                ],
+                "summary": "List CasesResult",
+                "operationId": "CaseResult",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -606,105 +703,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.CaseUpdate"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/caseId/{caseId}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "Cases By CaseId",
-                "operationId": "CaseData By CaseId",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "caseId",
-                        "name": "caseId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK - Request successful",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Case not found",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/caseResult": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cases"
-                ],
-                "summary": "List CasesResult",
-                "operationId": "CaseResult",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "start",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "length",
-                        "name": "length",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5464,7 +5462,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "User Skills"
                 ],
                 "summary": "Get Skill",
                 "operationId": "Get Skill",
@@ -5508,7 +5506,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "User Skills"
                 ],
                 "summary": "Create Skill",
                 "operationId": "Create Skill",
@@ -5547,7 +5545,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "User Skills"
                 ],
                 "summary": "Get Skill by ID",
                 "operationId": "Get Skill by ID",
@@ -5582,13 +5580,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "User Skills"
                 ],
                 "summary": "Delete Skill",
                 "operationId": "Delete Skill",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -5617,13 +5615,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "User Skills"
                 ],
                 "summary": "Update Skill",
                 "operationId": "Update Skill",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -6093,6 +6091,43 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.ResetPasswordRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/username/ForCaseInfo/{username}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User by username for CaseInfo",
+                "operationId": "Get User by username for CaseInfo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {

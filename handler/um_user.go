@@ -185,6 +185,7 @@ func GetUmUserList(c *gin.Context) {
 func GetUmUserByUsername(c *gin.Context) {
 	logger := utils.GetLog()
 	id := c.Param("id")
+	username_ := c.Param("username")
 	now := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
@@ -209,9 +210,9 @@ func GetUmUserByUsername(c *gin.Context) {
 	var rows pgx.Rows
 	logger.Debug(`Query`, zap.String("query", query),
 		zap.Any("Input", []any{
-			username, orgId,
+			username_, orgId,
 		}))
-	rows, err := conn.Query(ctx, query, username, orgId)
+	rows, err := conn.Query(ctx, query, username_, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		response := model.Response{
@@ -269,6 +270,105 @@ func GetUmUserByUsername(c *gin.Context) {
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
 		txtId, id, "um_user", "GetUmUserByUsername", "",
+		"view", 0, now, GetQueryParams(c), response, "GetUmUserByUsername Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
+}
+
+// @summary Get User by username for CaseInfo
+// @tags User
+// @security ApiKeyAuth
+// @id Get User by username for CaseInfo
+// @accept json
+// @produce json
+// @Param username path string true "username"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users/username/ForCaseInfo/{username} [get]
+func GetUserByUsernameForCaseInfo(c *gin.Context) {
+	logger := utils.GetLog()
+	id := c.Param("id")
+	username_ := c.Param("username")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	query := `
+		SELECT "id","displayName","title","firstName","middleName","lastName","gender",
+			"mobileNo","address","photo","username","email","deptId","commId","stnId",
+			"createdAt","updatedAt","createdBy","updatedBy"
+		FROM public.um_users
+		WHERE username=$1 AND "orgId"=$2`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query),
+		zap.Any("Input", []any{
+			username_, orgId,
+		}))
+	rows, err := conn.Query(ctx, query, username_, orgId)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "um_user", "GetUmUserByUsername", "",
+			"view", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	defer rows.Close()
+	var errorMsg string
+	var u model.User_UnitInfo
+	if rows.Next() {
+		err = rows.Scan(&u.ID,
+			&u.DisplayName, &u.Title, &u.FirstName, &u.MiddleName, &u.LastName,
+			&u.Gender, &u.MobileNo, &u.Address, &u.Photo, &u.Username, &u.Email,
+			&u.DeptID, &u.CommID, &u.StnID,
+			&u.CreatedAt, &u.UpdatedAt,
+			&u.CreatedBy, &u.UpdatedBy,
+		)
+		if err != nil {
+			errorMsg = err.Error()
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "um_user", "GetUserByUsernameForCaseInfo", "",
+				"view", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+	}
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "um_user", "GetUserByUsernameForCaseInfo", "",
 		"view", 0, now, GetQueryParams(c), response, "GetUmUserByUsername Success.",
 	)
 	//=======AUDIT_END=====//

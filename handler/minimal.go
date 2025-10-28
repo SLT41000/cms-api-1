@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"mainPackage/model"
@@ -145,7 +146,15 @@ func MinimalCreateCase(c *gin.Context) {
 		{Type: "provId", Value: req.IotInfo.ProvID},
 	}
 	event := "CASE-CREATE"
-	genNotiCustom(c, conn, orgId, "System", "MEETRIQ", "", "Create", data, "เปิด Case สำเร็จ : "+caseId, recipients, "", "User", event)
+	additionalJsonMap := map[string]interface{}{
+		"caseId": req.CaseId,
+	}
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	if err != nil {
+		log.Printf("covent additionalData Error :", err)
+	}
+	additionalData := json.RawMessage(additionalJSON)
+	genNotiCustom(c, conn, orgId, "System", "MEETRIQ", "", "Create", data, "เปิด Case สำเร็จ : "+caseId, recipients, "", "User", event, &additionalData)
 
 	response := model.Response{
 		Status: "0",

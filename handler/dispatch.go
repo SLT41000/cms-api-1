@@ -137,7 +137,7 @@ func GetSOP(c *gin.Context) {
 	cusCase.ReferCaseLists = referCaseLists
 
 	//Get Units
-	unitLists, count, err := GetUnits(ctx, conn, orgId.(string), caseId, "", "")
+	unitLists, count, err := GetUnitsWithDispatch(ctx, conn, orgId.(string), caseId, "S003", "")
 	if err != nil {
 		panic(err)
 	}
@@ -780,6 +780,73 @@ WHERE
 	for rows.Next() {
 		var u model.UnitDispatch
 		if err := rows.Scan(&u.UnitID, &u.Username, &u.FirstName, &u.LastName); err != nil {
+			return nil, 0, err
+		}
+		unitLists = append(unitLists, u)
+	}
+
+	count := len(unitLists)
+
+	return unitLists, count, nil
+}
+
+// GetUnits returns a list of units (unitId, username)
+func GetUnitsWithDispatch(ctx context.Context, conn *pgx.Conn, orgID string, caseID string, statusId string, unitID string) ([]model.UnitDispatch, int, error) {
+	var unitLists []model.UnitDispatch
+	//st := []string{"S007", "S016", "S017", "S018"}
+
+	// If statusId is in the skip list, return empty slice
+	// if contains(st, statusId) {
+	// 	//return unitLists, nil
+	// }
+
+	query := `
+		SELECT 
+			r."unitId",
+			u."username",
+			u."firstName",
+			u."lastName",
+			r."createdBy",
+			r."statusId"
+		FROM public.tix_case_responders AS r
+		JOIN public.um_users AS u
+			ON r."userOwner" = u."username"
+			AND r."orgId" = u."orgId"
+		WHERE 
+			r."unitId" != 'case' 
+			AND r."orgId" = $1
+			AND r."caseId" =  $2
+	`
+
+	args := []interface{}{orgID, caseID}
+	argIndex := 3
+
+	// ถ้ามี statusId ให้เพิ่ม filter จาก JSONB
+	if statusId != "" {
+		query += fmt.Sprintf(` AND r."statusId" = $%d`, argIndex)
+		args = append(args, statusId)
+		argIndex++
+	}
+
+	// ถ้ามี unitID ให้เพิ่ม filter ด้วย
+	if unitID != "" {
+		query += fmt.Sprintf(` AND r."unitId" = $%d`, argIndex)
+		args = append(args, unitID)
+		argIndex++
+	}
+	log.Print(query)
+	log.Print(args)
+	rows, err := conn.Query(ctx, query, args...)
+
+	//rows, err := conn.Query(ctx, query, orgID, caseID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u model.UnitDispatch
+		if err := rows.Scan(&u.UnitID, &u.Username, &u.FirstName, &u.LastName, &u.CreatedBy, &u.StatusId); err != nil {
 			return nil, 0, err
 		}
 		unitLists = append(unitLists, u)

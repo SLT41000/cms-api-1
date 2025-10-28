@@ -2,11 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"mainPackage/model"
+	"mainPackage/utils"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -14,6 +17,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 func callAPI(url string, method string, data map[string]interface{}) (string, error) {
@@ -313,16 +317,207 @@ func getTimeNowUTC() time.Time {
 	return time.Now().UTC()
 }
 
-func getTimeNowBangkok() time.Time {
-	loc, _ := time.LoadLocation("Asia/Bangkok")
-	return time.Now().In(loc)
+// func getTimeNowBangkok() time.Time {
+// 	loc, _ := time.LoadLocation("Asia/Bangkok")
+// 	return time.Now().In(loc)
+// }
+
+// func displayBangkokTime(t time.Time) string {
+// 	loc, _ := time.LoadLocation("Asia/Bangkok")
+// 	return t.In(loc).Format("2006-01-02 15:04:05")
+// }
+
+// func displayTime(t time.Time) string {
+// 	return t.Format("2006-01-02 15:04:05")
+// }
+
+func genNotiCustom(
+	c context.Context,
+	conn *pgx.Conn,
+	orgId string,
+	createdBy string,
+	senderName string,
+	senderPhoto string,
+	eventType string,
+	data []model.Data,
+	message string,
+	recipients []model.Recipient,
+	redirectUrl string,
+	senderType string,
+	event string,
+	additional ...*json.RawMessage,
+) error {
+
+	user, err := utils.GetUserByUsername(c, conn, orgId, senderName)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	}
+
+	if user == nil {
+		log.Printf("User not found")
+	} else {
+		if user.Photo != nil {
+			senderPhoto = *user.Photo
+		} else {
+			senderPhoto = ""
+		}
+	}
+
+	// เตรียม request ชุดเดียว
+	now := time.Now().Add(24 * time.Hour)
+	req := model.NotificationCreateRequest{
+		OrgID:       orgId,
+		SenderType:  senderType,
+		Sender:      senderName,
+		SenderPhoto: senderPhoto,
+		Message:     message,
+		EventType:   eventType,
+		RedirectUrl: redirectUrl,
+		Data:        &data,
+		Recipients:  &recipients,
+		CreatedBy:   createdBy,
+		ExpiredAt:   &now, // default TTL 24 ชม.
+		Event:       &event,
+	}
+	if len(additional) > 0 && additional[0] != nil {
+		req.Additional = *additional[0]
+		log.Printf("Additional data set: %s", string(*additional[0]))
+	} else {
+		log.Println("No additional data provided")
+	}
+	// ยิงเข้า CoreNotifications
+	created, err := CoreNotifications(c, []model.NotificationCreateRequest{req})
+	if err != nil {
+		return err
+	}
+	if len(created) == 0 {
+		return fmt.Errorf("no notifications were created")
+	}
+
+	// ใช้ตัวที่ DB สร้างจริง (มี id/createdAt) เพื่อ log
+	if b, merr := json.MarshalIndent(created[0], "", "  "); merr == nil {
+		log.Println(string(b))
+	}
+
+	// ถ้า CoreNotifications ยัง "ไม่" broadcast ภายใน ให้เปิดบรรทัดนี้
+	// go BroadcastNotification(created[0])
+
+	return nil
 }
 
-func displayBangkokTime(t time.Time) string {
-	loc, _ := time.LoadLocation("Asia/Bangkok")
-	return t.In(loc).Format("2006-01-02 15:04:05")
+func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateRequest) ([]model.Notification, error) {
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("notification array cannot be empty")
+	}
+
+	conn, ctx, cancel := utils.ConnectDB()
+	defer cancel()
+	defer conn.Close(ctx)
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var createdNotifications []model.Notification
+	now := time.Now()
+	for _, input := range inputs {
+		noti := model.Notification{
+			OrgID:       input.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
+			SenderType:  input.SenderType,
+			Sender:      input.Sender,
+			SenderPhoto: input.SenderPhoto,
+			Message:     input.Message,
+			EventType:   input.EventType,
+			RedirectUrl: input.RedirectUrl,
+			Data:        input.Data,
+			CreatedAt:   &now, // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
+			CreatedBy:   input.CreatedBy,
+			ExpiredAt:   input.ExpiredAt,
+			Recipients:  input.Recipients,
+			Additional:  input.Additional,
+			Event:       input.Event,
+		}
+
+		recipientsJSON, err := json.Marshal(noti.Recipients)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process recipients: %w", err)
+		}
+		dataJSON, err := json.Marshal(noti.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process custom data: %w", err)
+		}
+
+		if noti.EventType != "hidden" {
+			err = tx.QueryRow(ctx, `
+			INSERT INTO notifications 
+			("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
+		`, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
+				noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
+
+			if err != nil {
+				return nil, fmt.Errorf("database insert failed: %w", err)
+			}
+
+			log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
+		} else {
+			noti.ID = generate6DigitID()
+			// Support json hidden type
+			// 			{
+			//   "EVENT": "DASHBOARD",
+			//   "eventType": "hidden",
+			//   "recipients": [
+			//     {
+			//       "type": "provId",
+			//       "value": "c"
+			//     }
+			//   ],
+			//   "additionalJson": {
+			//     "type": "CASE-SUMMARY",
+			//     "title_en": "Work Order Summary",
+			//     "title_th": "สรุปใบสั่งงาน",
+			//     "data": [
+			//       {
+			//         "total_en": "Total",
+			//         "total_th": "ทั้งหมด",
+			//         "val": 376
+			//       },
+			//       {
+			//         "g1_en": "Censor",
+			//         "g1_th": "เซ็นเซอร์",
+			//         "val": 188
+			//       },
+			//       {
+			//         "g2_en": "CCTV",
+			//         "g2_th": "กล้อง",
+			//         "val": 112
+			//       },
+			//       {
+			//         "g3_en": "Traffic",
+			//         "g3_th": "การจราจร",
+			//         "val": 79
+			//       }
+			//     ]
+			//   }
+			// }
+		}
+		// Broadcast async
+		notiCopy := noti
+		go BroadcastNotification(notiCopy)
+
+		createdNotifications = append(createdNotifications, noti)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("transaction commit failed: %w", err)
+	}
+
+	return createdNotifications, nil
 }
 
-func displayTime(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
+func generate6DigitID() int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r.Intn(90000000) + 10000000 // generates 100000–999999
 }

@@ -136,11 +136,11 @@ func main() {
 
 		v1.GET("/case", handler.ListCase)
 		v1.GET("/case/:id", handler.CaseById)
-		v1.GET("/caseId/:caseId", handler.CaseByCaseId)
+		v1.GET("/case/caseId/:caseId", handler.CaseByCaseId)
 		v1.POST("/case/add", handler.InsertCase)
 		v1.PATCH("/case/:id", handler.UpdateCase)
 		v1.DELETE("/case/:id", handler.DeleteCase)
-		v1.GET("/caseResult/", handler.CaseResult)
+		v1.GET("/case/result/", handler.CaseResult)
 
 		v1.GET("/case_status", handler.GetCaseStatus)
 		v1.GET("/case_status/:id", handler.GetCaseStatusById)
@@ -223,6 +223,7 @@ func main() {
 
 		v1.PATCH("/users/change_password/:id", handler.ChangeUserPassword)
 		v1.GET("/users/username/:username", handler.GetUmUserByUsername)
+		v1.GET("/users/username/ForCaseInfo/:username", handler.GetUserByUsernameForCaseInfo)
 		v1.PATCH("/users/username/:username", handler.UserUpdateByUsername)
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)
@@ -241,6 +242,12 @@ func main() {
 		v1.PATCH("/users_with_socials/:id", handler.UpdateUserWithSocials)
 		v1.DELETE("/users_with_socials/:id", handler.DeleteUserWithSocials)
 		v1.GET("/user_groups/all", handler.GetUmGroupList)
+
+		v1.GET("/skill", handler.GetSkill)
+		v1.POST("/skill/add", handler.InsertSkill)
+		v1.GET("/skill/:id", handler.GetSkillbyId)
+		v1.PATCH("/skill/:id", handler.UpdateSkill)
+		v1.DELETE("/skill/:id", handler.DeleteSkill)
 
 		v1.GET("/mdm/properties", handler.GetMmdProperty)
 		v1.GET("/mdm/properties/:id", handler.GetMmdPropertyById)

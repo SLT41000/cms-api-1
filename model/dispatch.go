@@ -104,10 +104,12 @@ type GetSkills struct {
 
 // Struct for result
 type UnitDispatch struct {
-	UnitID    string `json:"unitId"`
-	Username  string `json:"username"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	UnitID    string  `json:"unitId"`
+	Username  string  `json:"username"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	CreatedBy *string `json:"createdBy"`
+	StatusId  *string `json:"statusId"`
 }
 
 type GetUnisProp struct {

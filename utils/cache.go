@@ -2,8 +2,10 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+
 	"mainPackage/model"
 	"strings"
 
@@ -239,4 +241,44 @@ func GetCaseStatusList(ctx *gin.Context, conn *pgx.Conn, orgID string) ([]model.
 	}
 
 	return statuses, nil
+}
+
+// ====== GroupType Cache & Loader ======
+func GroupTypeGetOrLoad(conn *pgx.Conn) ([]model.CaseGroupType, error) {
+	cacheData, err := GroupTypeGet()
+	if err == nil && cacheData != "" {
+		// ✅ ถ้ามี cache
+		var cached []model.CaseGroupType
+		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
+			log.Println("✅ Loaded GroupType from Redis cache")
+			return cached, nil
+		}
+	}
+
+	// ❌ ไม่มี cache → query จาก DB
+	rows, err := conn.Query(context.Background(), `
+		SELECT id, "orgId", "groupTypeId", en, th, "groupTypeLists"
+		FROM case_type_groups`)
+	if err != nil {
+		return nil, fmt.Errorf("query group types failed: %v", err)
+	}
+	defer rows.Close()
+
+	var result []model.CaseGroupType
+	for rows.Next() {
+		var g model.CaseGroupType
+		var groupLists string
+		if err := rows.Scan(&g.ID, &g.OrgId, &g.GroupTypeId, &g.En, &g.Th, &groupLists); err != nil {
+			return nil, err
+		}
+		_ = json.Unmarshal([]byte(groupLists), &g.GroupTypeLists)
+		result = append(result, g)
+	}
+
+	// ✅ save to cache
+	jsonData, _ := json.Marshal(result)
+	_ = GroupTypeSet(string(jsonData))
+	log.Println("💾 GroupType cached in Redis")
+
+	return result, nil
 }

@@ -78,8 +78,8 @@ func genCaseID() string {
 // @Param distId query string false "distId (can be comma-separated)"
 // @Param category query string false "category (alias for statusId)"
 // @Param createBy query string false "createBy"
-// @Param orderBy query string false "orderBy field name" default("createdAt")
-// @Param direction query string false "direction ASC or DESC" default("DESC")
+// @Param orderBy query string false "orderBy (can be comma-separated)"
+// @Param direction query string false "direction (can be comma-separated)"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
 func ListCase(c *gin.Context) {
@@ -106,13 +106,15 @@ func ListCase(c *gin.Context) {
 	provId := c.Query("provId")
 	distId := c.Query("distId")
 	createBy := c.Query("createBy")
-	orderBy := c.DefaultQuery("orderBy", "createdAt")
-	direction := strings.ToUpper(c.DefaultQuery("direction", "DESC"))
 
-	if direction != "ASC" && direction != "DESC" {
-		direction = "DESC"
-	}
+	// ✅ Multiple orderBy and direction support
+	orderByParam := c.DefaultQuery("orderBy", "createdAt")
+	directionParam := strings.ToUpper(c.DefaultQuery("direction", "DESC"))
 
+	orderByFields := strings.Split(orderByParam, ",")
+	directionFields := strings.Split(directionParam, ",")
+
+	// ✅ Allowlist for security
 	allowedOrderFields := map[string]bool{
 		"createdAt":   true,
 		"priority":    true,
@@ -122,9 +124,29 @@ func ListCase(c *gin.Context) {
 		"caseSTypeId": true,
 		"statusId":    true,
 	}
-	if !allowedOrderFields[orderBy] {
-		orderBy = "createdAt"
+
+	var orderClauses []string
+	for i, field := range orderByFields {
+		field = strings.TrimSpace(field)
+		if !allowedOrderFields[field] {
+			continue
+		}
+
+		dir := "ASC"
+		if i < len(directionFields) {
+			d := strings.ToUpper(strings.TrimSpace(directionFields[i]))
+			if d == "DESC" {
+				dir = "DESC"
+			}
+		}
+		orderClauses = append(orderClauses, fmt.Sprintf(`"%s" %s`, field, dir))
 	}
+
+	if len(orderClauses) == 0 {
+		orderClauses = append(orderClauses, `"createdAt" DESC`)
+	}
+
+	orderBySQL := " ORDER BY " + strings.Join(orderClauses, ", ")
 
 	// ============ Base Query ==============
 	baseQuery := `
@@ -187,11 +209,8 @@ func ListCase(c *gin.Context) {
 		paramIndex++
 	}
 
-	// ========================
 	// ✅ Total counts
-	// ========================
 	var totalRecords, totalFiltered int
-
 	if err := conn.QueryRow(ctx,
 		`SELECT COUNT(*) FROM public.tix_cases WHERE "orgId" = $1`, orgId,
 	).Scan(&totalRecords); err != nil {
@@ -205,9 +224,7 @@ func ListCase(c *gin.Context) {
 		totalFiltered = 0
 	}
 
-	// ========================
-	// ✅ Pagination & Pages
-	// ========================
+	// ✅ Pagination
 	currentPage := 1
 	if length > 0 {
 		currentPage = (start / length) + 1
@@ -217,16 +234,14 @@ func ListCase(c *gin.Context) {
 		totalPage = int(math.Ceil(float64(totalFiltered) / float64(length)))
 	}
 
-	// ========================
-	// ✅ Main Data Query
-	// ========================
+	// ✅ Main Query
 	query := `
 	SELECT id, "caseId", "referCaseId", "caseTypeId", "caseSTypeId",
 		priority, "caseDetail",
 		"statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
 		"createdAt", "startedDate", usercreate,
 		"createdBy", "caseSla"
-	` + baseQuery + fmt.Sprintf(` ORDER BY "%s" %s LIMIT $%d OFFSET $%d`, orderBy, direction, paramIndex, paramIndex+1)
+	` + baseQuery + orderBySQL + fmt.Sprintf(` LIMIT $%d OFFSET $%d`, paramIndex, paramIndex+1)
 
 	params = append(params, length, start)
 
@@ -258,9 +273,6 @@ func ListCase(c *gin.Context) {
 		caseLists = append(caseLists, cusCase)
 	}
 
-	// ========================
-	// ✅ Response
-	// ========================
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
@@ -268,7 +280,6 @@ func ListCase(c *gin.Context) {
 		Desc:   "",
 	}
 
-	// Add pagination info at the top level
 	c.JSON(http.StatusOK, gin.H{
 		"status":        response.Status,
 		"msg":           response.Msg,
@@ -291,7 +302,7 @@ func ListCase(c *gin.Context) {
 // @Param start query int false "start" default(0)
 // @Param length query int false "length" default(10)
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/caseResult [get]
+// @Router /api/v1/case/result [get]
 func CaseResult(c *gin.Context) {
 	logger := utils.GetLog()
 	conn, ctx, cancel := utils.ConnectDB()
@@ -543,7 +554,7 @@ func CaseById(c *gin.Context) {
 // @response 400 {object} model.Response "Bad Request"
 // @response 404 {object} model.Response "Case not found"
 // @response 500 {object} model.Response "Internal Server Error"
-// @Router /api/v1/caseId/{caseId} [get]
+// @Router /api/v1/case/caseId/{caseId} [get]
 func CaseByCaseId(c *gin.Context) {
 	logger := utils.GetLog()
 	conn, ctx, cancel := utils.ConnectDB()
@@ -552,7 +563,7 @@ func CaseByCaseId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	id := c.Param("id")
+	id := c.Param("caseId")
 	start_time := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
@@ -860,7 +871,15 @@ func InsertCase(c *gin.Context) {
 	}
 
 	event := "CASE-CREATE"
-	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", event)
+	additionalJsonMap := map[string]interface{}{
+		"caseId": req.CaseId,
+	}
+	additionalJSON, err := json.Marshal(additionalJsonMap)
+	if err != nil {
+		log.Printf("covent additionalData Error :", err)
+	}
+	additionalData := json.RawMessage(additionalJSON)
+	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", event, &additionalData)
 
 	//Add Comment
 	evt := model.CaseHistoryEvent{
@@ -876,6 +895,12 @@ func InsertCase(c *gin.Context) {
 	err = InsertCaseHistoryEvent(ctx, conn, evt)
 	if err != nil {
 		log.Fatalf("Insert failed: %v", err)
+	}
+
+	// For Dashboard
+	err = CalDashboardCaseSummary(ctx, conn, orgId.(string), recipients, username.(string), req.CaseTypeID, req.CountryID, req.ProvID, req.DistID)
+	if err != nil {
+		logger.Error("AddOrUpdateCaseSummary failed", zap.Error(err))
 	}
 	response := model.ResponseCreateCase{
 		Status: "0",
@@ -1025,7 +1050,7 @@ func UpdateCase(c *gin.Context) {
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
 		txtId, id, "Cases", "UpdateCase", "",
-		"update", 0, now, GetQueryParams(c), response, "Update Case Success.",
+		"update", 0, now, req, response, "Update Case Success.",
 	)
 	//=======AUDIT_END=====//
 	// Continue logic...

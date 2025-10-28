@@ -93,7 +93,7 @@ func CacheDel(key string) error {
 	return Rdb.Del(context.Background(), name).Err()
 }
 
-// ####====SLA=====
+// ####====SLA Monitoring=====
 func OwnerSLASet(value string) error {
 	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_SLA"))
 	log.Print(name)
@@ -109,5 +109,41 @@ func OwnerSLAGet() (string, error) {
 func OwnerSLADel(key string) error {
 	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_SLA"))
 	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Dashboard=====
+func GroupTypeSet(value string) error {
+	cachePrefix := os.Getenv("CACHE_PREFIX")
+	appName := os.Getenv("CACHE_GROUP_TYPE") // ✅ แนะนำให้ใช้ APP_NAME หรือ MODULE_NAME แทน XXXXX
+	name := fmt.Sprintf("%s:%s", cachePrefix, appName)
+
+	log.Printf("🔹 CacheSet: %s", name)
+	expiration := getExpire()
+
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+// 🔹 Get Cache
+func GroupTypeGet() (string, error) {
+	cachePrefix := os.Getenv("CACHE_PREFIX")
+	appName := os.Getenv("CACHE_GROUP_TYPE")
+	name := fmt.Sprintf("%s:%s", cachePrefix, appName)
+
+	log.Printf("🔹 CacheGet: %s", name)
+	val, err := Rdb.Get(context.Background(), name).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("cache key not found: %s", os.Getenv("CACHE_GROUP_TYPE"))
+	}
+	return val, err
+}
+
+// 🔹 Delete Cache
+func GroupTypeDet() error {
+	cachePrefix := os.Getenv("CACHE_PREFIX")
+	appName := os.Getenv("CACHE_GROUP_TYPE")
+	name := fmt.Sprintf("%s:%s", cachePrefix, appName)
+
+	log.Printf("🗑️ CacheDel: %s", name)
 	return Rdb.Del(context.Background(), name).Err()
 }

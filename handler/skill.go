@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 
 // ListSkill godoc
 // @summary Get Skill
-// @tags User
+// @tags User Skills
 // @security ApiKeyAuth
 // @id Get Skill
 // @accept json
@@ -132,7 +133,7 @@ func GetSkill(c *gin.Context) {
 
 // ListSkill godoc
 // @summary Get Skill by ID
-// @tags User
+// @tags User Skills
 // @security ApiKeyAuth
 // @id Get Skill by ID
 // @accept json
@@ -147,103 +148,102 @@ func GetSkillbyId(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Database connection failed",
+		})
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	query := `SELECT id,"orgId", "skillId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.um_skills WHERE "skillId" = $1 AND "orgId"=$2`
 
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query),
-		zap.Any("Input", []any{
-			id, orgId,
-		}))
-	rows, err := conn.Query(ctx, query, id, orgId)
+	query := `
+	SELECT id, "orgId", "skillId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.um_skills 
+	WHERE "skillId" = $1 AND "orgId" = $2
+	`
+
+	logger.Debug("Executing query",
+		zap.String("query", query),
+		zap.Any("params", []any{id, orgId}),
+	)
+
+	var skill model.Skill
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
+		&skill.ID,
+		&skill.OrgID,
+		&skill.SkillID,
+		&skill.En,
+		&skill.Th,
+		&skill.Active,
+		&skill.CreatedAt,
+		&skill.UpdatedAt,
+		&skill.CreatedBy,
+		&skill.UpdatedBy,
+	)
+
 	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
+		// Case: No rows found
+		if errors.Is(err, pgx.ErrNoRows) {
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Not found",
+				Desc:   "No skill found for the given ID",
+			}
+
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "Skill", "GetSkillById", "",
+				"search", -1, now, GetQueryParams(c), response, "No record found",
+			)
+
+			c.JSON(http.StatusNotFound, response)
+			return
+		}
+
+		// Case: Query failed
+		logger.Warn("QueryRow failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
 		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Skill", "GetSkillById", "",
-			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
 
-		return
-	}
-	defer rows.Close()
-	var errorMsg string
-	var Skill model.Skill
-	err = rows.Scan(&Skill.ID, &Skill.OrgID, &Skill.SkillID, &Skill.En, &Skill.Th,
-		&Skill.Active, &Skill.CreatedAt, &Skill.UpdatedAt, &Skill.CreatedBy, &Skill.UpdatedBy)
-	if err != nil {
-		logger.Warn("Scan failed", zap.Error(err))
-		errorMsg = err.Error()
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			txtId, id, "Skill", "GetSkillById", "",
-			"search", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+			"search", -1, now, GetQueryParams(c), response, "Failed: "+err.Error(),
 		)
-		//=======AUDIT_END=====//
+
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Skill", "GetSkillById", "",
-			"search", -1, now, GetQueryParams(c), response, "Failed : "+errorMsg,
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   Skill,
-			Desc:   "",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Skill", "GetSkillById", "",
-			"search", -1, now, GetQueryParams(c), response, "GetSkillbyId Success",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusOK, response)
+	// Case: Success
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   skill,
+		Desc:   "",
 	}
+
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Skill", "GetSkillById", "",
+		"search", 0, now, GetQueryParams(c), response, "GetSkillById success",
+	)
+
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Create Skill
 // @id Create Skill
 // @security ApiKeyAuth
-// @tags User
+// @tags User Skills
 // @accept json
 // @produce json
 // @param Body body model.SkillInsert true "Create Data"
@@ -326,8 +326,8 @@ func InsertSkill(c *gin.Context) {
 // @security ApiKeyAuth
 // @accept json
 // @produce json
-// @tags User
-// @Param id path int true "id"
+// @tags User Skills
+// @Param id path string true "id"
 // @param Body body model.SkillUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/skill/{id} [patch]
@@ -339,7 +339,6 @@ func UpdateSkill(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
 
 	id := c.Param("id")
 	now := time.Now()
@@ -369,7 +368,7 @@ func UpdateSkill(c *gin.Context) {
 	query := `UPDATE public."um_skills"
 	SET en=$2, th=$3, active=$4,
 	 "updatedAt"=$5, "updatedBy"=$6
-	WHERE id = $1 AND "orgId"=$7`
+	WHERE "skillId" = $1 AND "orgId"=$7`
 	_, err := conn.Exec(ctx, query,
 		id, req.En, req.Th, req.Active,
 		now, username, orgId,
@@ -419,9 +418,9 @@ func UpdateSkill(c *gin.Context) {
 // @id Delete Skill
 // @security ApiKeyAuth
 // @accept json
-// @tags User
+// @tags User Skills
 // @produce json
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/skill/{id} [delete]
 func DeleteSkill(c *gin.Context) {
@@ -439,7 +438,7 @@ func DeleteSkill(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-	query := `DELETE FROM public."um_skills" WHERE id = $1 AND "orgId"=$2`
+	query := `DELETE FROM public."um_skills" WHERE "skillId" = $1 AND "orgId"=$2`
 	logger.Debug("Query", zap.String("query", query), zap.Any("id", id))
 	_, err := conn.Exec(ctx, query, id, orgId)
 	if err != nil {

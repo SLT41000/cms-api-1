@@ -265,8 +265,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLogin", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
+			txtId, "", "Authentication", "UserLogin", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusUnauthorized, response)
@@ -289,8 +289,8 @@ WHERE u.username = $1
 			//=======AUDIT_START=====//
 			_ = utils.InsertAuditLogs(
 				c, conn, UserOpt.OrgID, username,
-				txtId, "", "Auth", "UserLogin", "",
-				"authertication", -1, start_time, GetQueryParams(c), response, "Token creation failed = "+err.Error(),
+				txtId, "", "Authentication", "UserLogin", "",
+				"login", -1, start_time, GetQueryParams(c), response, "Token creation failed = "+err.Error(),
 			)
 			//=======AUDIT_END=====//
 			c.JSON(http.StatusUnauthorized, response)
@@ -311,8 +311,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLogin", "",
-			"authertication", 0, start_time, GetQueryParams(c), response, "Login successfully",
+			txtId, "", "Authentication", "UserLogin", "",
+			"login", 0, start_time, GetQueryParams(c), response, "Login successfully",
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
@@ -325,8 +325,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLogin", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
+			txtId, "", "Authentication", "UserLogin", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusUnauthorized, response)
@@ -363,8 +363,8 @@ func UserLoginPost(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, "", "",
-			txtId, "", "Auth", "UserLoginPost", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusBadRequest, response)
@@ -389,8 +389,8 @@ func UserLoginPost(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, "", username,
-			txtId, "", "Auth", "UserLoginPost", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusUnauthorized, response)
@@ -459,8 +459,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, "", username,
-			txtId, "", "Auth", "UserLoginPost", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusUnauthorized, response)
@@ -474,8 +474,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLoginPost", "",
-			"authertication", -1, start_time, GetQueryParams(c), response, "Decryption failed : "+err.Error(),
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Decryption failed : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		return
@@ -492,8 +492,8 @@ WHERE u.username = $1
 			//=======AUDIT_START=====//
 			_ = utils.InsertAuditLogs(
 				c, conn, UserOpt.OrgID, username,
-				txtId, "", "Auth", "UserLoginPost", "",
-				"authertication", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
+				txtId, "", "Authentication", "UserLoginPost", "",
+				"login", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
 			)
 			//=======AUDIT_END=====//
 			c.JSON(http.StatusUnauthorized, response)
@@ -515,10 +515,11 @@ WHERE u.username = $1
 				Desc:   err.Error(),
 			}
 			//=======AUDIT_START=====//
+			org := os.Getenv("INTEGRATION_ORG_ID")
 			_ = utils.InsertAuditLogs(
-				c, conn, UserOpt.OrgID, username,
-				txtId, "", "Auth", "UserLoginPost", "",
-				"authertication", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+				c, conn, org, username,
+				txtId, "", "Authentication", "UserLoginPost", "",
+				"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 			)
 			//=======AUDIT_END=====//
 			c.JSON(http.StatusInternalServerError, response)
@@ -536,8 +537,8 @@ WHERE u.username = $1
 				//=======AUDIT_START=====//
 				_ = utils.InsertAuditLogs(
 					c, conn, UserOpt.OrgID, username,
-					txtId, "", "Auth", "UserLoginPost", "",
-					"authertication", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+					txtId, "", "Authentication", "UserLoginPost", "",
+					"login", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
 				)
 				//=======AUDIT_END=====//
 				c.JSON(http.StatusInternalServerError, response)
@@ -561,8 +562,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLoginPost", "",
-			"authertication", 0, start_time, GetQueryParams(c), response, "Successfully",
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", 0, start_time, GetQueryParams(c), response, "Successfully",
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusOK, response)
@@ -576,8 +577,8 @@ WHERE u.username = $1
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Auth", "UserLoginPost", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusUnauthorized, response)
@@ -618,8 +619,8 @@ func UserAddAuth(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
-			txtId, "", "Auth", "UserAddAuth", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+			txtId, "", "Authentication", "UserAddAuth", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		c.JSON(http.StatusBadRequest, response)
@@ -637,8 +638,8 @@ func UserAddAuth(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
-			txtId, "", "Auth", "UserAddAuth", "",
-			"search", -1, start_time, GetQueryParams(c), "", "encrypt fail : "+err.Error(),
+			txtId, "", "Authentication", "UserAddAuth", "",
+			"login", -1, start_time, GetQueryParams(c), "", "encrypt fail : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
 		return
@@ -684,7 +685,7 @@ func UserAddAuth(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
-			txtId, "", "Auth", "UserAddAuth", "",
+			txtId, "", "Authentication", "UserAddAuth", "",
 			"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
@@ -700,7 +701,7 @@ func UserAddAuth(c *gin.Context) {
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
-		txtId, "", "Auth", "UserAddAuth", "",
+		txtId, "", "Authentication", "UserAddAuth", "",
 		"create", 0, start_time, GetQueryParams(c), response, "Create User success.",
 	)
 	//=======AUDIT_END=====//
@@ -734,7 +735,7 @@ func RefreshToken(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, nil, orgId.(string), username.(string),
-			txtId, id, "Auth", "RefreshToken", "",
+			txtId, id, "Authentication", "RefreshToken", "",
 			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
@@ -753,7 +754,7 @@ func RefreshToken(c *gin.Context) {
 		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, nil, orgId.(string), username.(string),
-			txtId, id, "Auth", "RefreshToken", "",
+			txtId, id, "Authentication", "RefreshToken", "",
 			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
 		)
 		//=======AUDIT_END=====//
@@ -776,7 +777,7 @@ func RefreshToken(c *gin.Context) {
 				//=======AUDIT_START=====//
 				_ = utils.InsertAuditLogs(
 					c, nil, orgId, username,
-					txtId, id, "Auth", "RefreshToken", "",
+					txtId, id, "Authentication", "RefreshToken", "",
 					"update", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
 				)
 				//=======AUDIT_END=====//
@@ -797,7 +798,7 @@ func RefreshToken(c *gin.Context) {
 			//=======AUDIT_START=====//
 			_ = utils.InsertAuditLogs(
 				c, nil, orgId, username,
-				txtId, id, "Auth", "RefreshToken", "",
+				txtId, id, "Authentication", "RefreshToken", "",
 				"update", 0, start_time, GetQueryParams(c), response, "RefreshToken Success",
 			)
 			//=======AUDIT_END=====//

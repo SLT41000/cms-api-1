@@ -231,152 +231,6 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 	return nil
 }
 
-func CoreNotifications(ctx context.Context, inputs []model.NotificationCreateRequest) ([]model.Notification, error) {
-	if len(inputs) == 0 {
-		return nil, fmt.Errorf("notification array cannot be empty")
-	}
-
-	conn, ctx, cancel := utils.ConnectDB()
-	defer cancel()
-	defer conn.Close(ctx)
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	var createdNotifications []model.Notification
-	now := time.Now()
-	for _, input := range inputs {
-		noti := model.Notification{
-			OrgID:       input.OrgID, // ใช้ orgId จาก input แทนที่จะใช้ orgId[0]
-			SenderType:  input.SenderType,
-			Sender:      input.Sender,
-			SenderPhoto: input.SenderPhoto,
-			Message:     input.Message,
-			EventType:   input.EventType,
-			RedirectUrl: input.RedirectUrl,
-			Data:        input.Data,
-			CreatedAt:   &now, // ใช้เวลาปัจจุบันเสมอ ไม่รับจาก input
-			CreatedBy:   input.CreatedBy,
-			ExpiredAt:   input.ExpiredAt,
-			Recipients:  input.Recipients,
-			Additional:  input.Additional,
-			Event:       input.Event,
-		}
-
-		recipientsJSON, err := json.Marshal(noti.Recipients)
-		if err != nil {
-			return nil, fmt.Errorf("failed to process recipients: %w", err)
-		}
-		dataJSON, err := json.Marshal(noti.Data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to process custom data: %w", err)
-		}
-
-		if noti.EventType != "hidden" {
-			err = tx.QueryRow(ctx, `
-			INSERT INTO notifications 
-			("orgId", "senderType", "sender", "senderPhoto", "message", "eventType", "redirectUrl", "createdAt", "createdBy", "expiredAt", "recipients", "data")
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "id"
-		`, noti.OrgID, noti.SenderType, noti.Sender, noti.SenderPhoto, noti.Message,
-				noti.EventType, noti.RedirectUrl, noti.CreatedAt, noti.CreatedBy, noti.ExpiredAt, string(recipientsJSON), dataJSON).Scan(&noti.ID)
-
-			if err != nil {
-				return nil, fmt.Errorf("database insert failed: %w", err)
-			}
-
-			log.Printf("Database (Tx): Queued insert for notification ID: %d", noti.ID)
-		}
-		// Broadcast async
-		notiCopy := noti
-		go BroadcastNotification(notiCopy)
-
-		createdNotifications = append(createdNotifications, noti)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("transaction commit failed: %w", err)
-	}
-
-	return createdNotifications, nil
-}
-
-func genNotiCustom(
-	c context.Context,
-	conn *pgx.Conn,
-	orgId string,
-	createdBy string,
-	senderName string,
-	senderPhoto string,
-	eventType string,
-	data []model.Data,
-	message string,
-	recipients []model.Recipient,
-	redirectUrl string,
-	senderType string,
-	event string,
-	additional ...*json.RawMessage,
-) error {
-
-	user, err := utils.GetUserByUsername(c, conn, orgId, senderName)
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
-
-	if user == nil {
-		log.Printf("User not found")
-	} else {
-		if user.Photo != nil {
-			senderPhoto = *user.Photo
-		} else {
-			senderPhoto = ""
-		}
-	}
-
-	// เตรียม request ชุดเดียว
-	now := time.Now().Add(24 * time.Hour)
-	req := model.NotificationCreateRequest{
-		OrgID:       orgId,
-		SenderType:  senderType,
-		Sender:      senderName,
-		SenderPhoto: senderPhoto,
-		Message:     message,
-		EventType:   eventType,
-		RedirectUrl: redirectUrl,
-		Data:        &data,
-		Recipients:  &recipients,
-		CreatedBy:   createdBy,
-		ExpiredAt:   &now, // default TTL 24 ชม.
-		Event:       &event,
-	}
-	if len(additional) > 0 && additional[0] != nil {
-		req.Additional = *additional[0]
-		log.Printf("Additional data set: %s", string(*additional[0]))
-	} else {
-		log.Println("No additional data provided")
-	}
-	// ยิงเข้า CoreNotifications
-	created, err := CoreNotifications(c, []model.NotificationCreateRequest{req})
-	if err != nil {
-		return err
-	}
-	if len(created) == 0 {
-		return fmt.Errorf("no notifications were created")
-	}
-
-	// ใช้ตัวที่ DB สร้างจริง (มี id/createdAt) เพื่อ log
-	if b, merr := json.MarshalIndent(created[0], "", "  "); merr == nil {
-		log.Println(string(b))
-	}
-
-	// ถ้า CoreNotifications ยัง "ไม่" broadcast ภายใน ให้เปิดบรรทัดนี้
-	// go BroadcastNotification(created[0])
-
-	return nil
-}
-
 // UpdateCurrentStage replaces fn_dispatch_unit_stage
 func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest) (model.Response, error) {
 	var result model.Response
@@ -1278,4 +1132,159 @@ func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseH
 	)
 
 	return err
+}
+
+func CalDashboardCaseSummary(ctx context.Context, conn *pgx.Conn, orgId string, recipients []model.Recipient, username, groupTypeId, countryId, provId, distId string) error {
+	now := time.Now()
+	currentDate := now.Format("2006/01/02")
+	currentHour := now.Hour()
+	currentTime := fmt.Sprintf("%02d:00:00", currentHour) // e.g., "01:00:00"
+
+	// ✅ โหลดข้อมูล groupType จาก Redis หรือ DB
+	groupTypes, err := utils.GroupTypeGetOrLoad(conn)
+	if err != nil {
+		return fmt.Errorf("cannot load group types: %v", err)
+	}
+
+	// ✅ ตรวจสอบ groupTypeId ภายใน field groupTypeLists
+	found := false
+	for _, g := range groupTypes {
+		for _, id := range g.GroupTypeLists {
+			if id == groupTypeId {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("groupTypeId not found in any groupTypeLists: %s", groupTypeId)
+	}
+
+	// ✅ UPSERT (เพิ่ม +1 ถ้ามีอยู่แล้ว)
+	query := `
+		INSERT INTO d_case_summary 
+			("orgId", date, time, "groupTypeId", "countryId", "provId", "distId", total)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, '1')
+		ON CONFLICT ("orgId", date, time, "groupTypeId", "countryId", "provId", "distId")
+		DO UPDATE SET total = (d_case_summary.total::int + 1)::varchar;
+	`
+
+	_, err = conn.Exec(context.Background(), query, orgId, currentDate, currentTime, groupTypeId, countryId, provId, distId)
+	if err != nil {
+		return fmt.Errorf("failed to upsert summary: %v", err)
+	}
+
+	err = SendDashboardSummaryFromCaseSummary(ctx, conn, orgId, username, recipients)
+	if err != nil {
+		log.Printf("Dashboard notification error: %v", err)
+	}
+
+	log.Printf("✅ Upsert summary success for groupTypeId=%s, countryId=%s, provId=%s, distId=%s", groupTypeId, countryId, provId, distId)
+	return nil
+}
+
+func SendDashboardSummaryFromCaseSummary(
+	c context.Context,
+	conn *pgx.Conn,
+	orgId string,
+	username string,
+	recipients []model.Recipient,
+) error {
+	// Query: SUM(total) by groupTypeId, join with case_type_groups for names
+	query := `
+		SELECT 
+			g."en",
+			g."th",
+			COALESCE(SUM(CAST(s.total AS INT)), 0) AS total
+		FROM d_case_summary s
+		JOIN case_type_groups g 
+			ON s."groupTypeId" = g."groupTypeId"
+		WHERE s."orgId" = $1
+		  AND s.date = TO_CHAR(CURRENT_DATE, 'YYYY/MM/DD')
+		GROUP BY g."en", g."th"
+		ORDER BY g."en"
+	`
+
+	log.Print(query)
+	rows, err := conn.Query(c, query, orgId)
+	if err != nil {
+		return fmt.Errorf("query dashboard summary failed: %w", err)
+	}
+	defer rows.Close()
+
+	type SummaryData struct {
+		En  string `json:"en"`
+		Th  string `json:"th"`
+		Val int    `json:"val"`
+	}
+
+	var summaryList []SummaryData
+	totalSum := 0
+
+	for rows.Next() {
+		var item SummaryData
+		if err := rows.Scan(&item.En, &item.Th, &item.Val); err != nil {
+			return fmt.Errorf("scan dashboard summary failed: %w", err)
+		}
+		summaryList = append(summaryList, item)
+		totalSum += item.Val
+	}
+
+	// Build data
+	data := []interface{}{
+		map[string]interface{}{
+			"total_en": "Total",
+			"total_th": "ทั้งหมด",
+			"val":      totalSum,
+		},
+	}
+	for _, s := range summaryList {
+		data = append(data, map[string]interface{}{
+			"g_en": s.En,
+			"g_th": s.Th,
+			"val":  s.Val,
+		})
+	}
+
+	// Create payload
+	summary := model.DashboardSummary{
+		Type:    "CASE-SUMMARY",
+		TitleEn: "Work Order Summary",
+		TitleTh: "สรุปใบสั่งงาน",
+		Data:    data,
+	}
+
+	jsonBytes, err := json.Marshal(summary)
+	if err != nil {
+		return fmt.Errorf("marshal dashboard summary failed: %w", err)
+	}
+	raw := json.RawMessage(jsonBytes)
+
+	// Send notification
+	err = genNotiCustom(
+		c,
+		conn,
+		orgId,
+		username,
+		username,
+		"",
+		"hidden", // hidden eventType for dashboard
+		nil,
+		"",
+		recipients,
+		"",
+		"User",
+		"DASHBOARD",
+		&raw,
+	)
+	if err != nil {
+		return fmt.Errorf("send dashboard notification failed: %w", err)
+	}
+
+	log.Printf("✅ Dashboard summary sent successfully: total=%d groups=%d", totalSum, len(summaryList))
+	return nil
 }

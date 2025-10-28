@@ -127,7 +127,7 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 	statusStr_ := ConvertStatusList(statusStr)
 
 	query := fmt.Sprintf(`
-		SELECT c."caseId", c."statusId", s."data", c."createdDate", 
+		SELECT c."caseId", c."statusId", s."data", s."updatedAt", 
 		       c."versions", c."overSlaCount", s."wfId", s."nodeId"
 		FROM tix_cases c
 		JOIN tix_case_current_stage s ON c."caseId" = s."caseId"
@@ -139,19 +139,19 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
           c."overSlaDate" IS NULL
           OR c."overSlaDate" < NOW() - INTERVAL '%d minute'
       	)
-		AND c."createdDate" IS NOT NULL;
+		AND s."updatedAt" IS NOT NULL;
 	`, orgId, statusStr_, maxAlert, alertDur)
 
 	//For test
-	query = fmt.Sprintf(`
-		SELECT c."caseId", c."statusId", s."data", c."createdDate", 
-		       c."versions", c."overSlaCount", s."wfId", s."nodeId"
-		FROM tix_cases c
-		JOIN tix_case_current_stage s ON c."caseId" = s."caseId"
-		WHERE s."stageType" = 'case'
-		AND c."orgId" = '%s'
-		AND c."caseId" = 'D251020-00006';
-	`, orgId)
+	// query = fmt.Sprintf(`
+	// 	SELECT c."caseId", c."statusId", s."data", s."updatedAt",
+	// 	       c."versions", c."overSlaCount", s."wfId", s."nodeId"
+	// 	FROM tix_cases c
+	// 	JOIN tix_case_current_stage s ON c."caseId" = s."caseId"
+	// 	WHERE s."stageType" = 'case'
+	// 	AND c."orgId" = '%s'
+	// 	AND c."caseId" = 'D251020-00006';
+	// `, orgId)
 
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
@@ -164,12 +164,12 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 
 	for rows.Next() {
 		var rec model.CaseStageInfo
-		if err := rows.Scan(&rec.CaseId, &rec.StatusId, &rec.Data, &rec.CreatedDate,
+		if err := rows.Scan(&rec.CaseId, &rec.StatusId, &rec.Data, &rec.UpdatedAt,
 			&rec.Versions, &rec.OverSlaCount, &rec.WfId, &rec.NodeId); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
-		if rec.CreatedDate == nil {
-			fmt.Printf("Case %s has NULL createdDate, skipping\n", rec.CaseId)
+		if rec.UpdatedAt == nil {
+			fmt.Printf("Case %s has NULL UpdatedAt, skipping\n", rec.CaseId)
 			continue
 		}
 		wfSet[rec.WfId] = struct{}{}
@@ -247,33 +247,40 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 		}
 		// --- FIX START ---
 
-		now := time.Now()                       // always compare in UTC
-		created := results[i].CreatedDate.UTC() // normalize both
-		expireTime := created.Add(time.Duration(slaMin) * time.Minute)
+		now := getTimeNowUTC()                  // always compare in UTC
+		updatedAt := results[i].UpdatedAt.UTC() // normalize both
+		expireTime := updatedAt.Add(time.Duration(slaMin) * time.Minute)
 		// --- FIX END ---
 
-		fmt.Printf("📋 slaMin : %d\n", slaMin)
-		fmt.Printf("📋 CreatedDate : %s\n", created)
+		// fmt.Printf("📋 UpdatedAt : %s\n", updatedAt)
+		// fmt.Printf("📋 now : %s\n", now)
+		// fmt.Printf("📋 slaMin : %d\n", slaMin)
+		// fmt.Printf("📋 expireTime : %s\n", expireTime)
 
-		fmt.Printf("📋 now : %s\n", now)
-		// fmt.Printf("📋 now getTimeNowUTC : %s\n", getTimeNowUTC())
-		// fmt.Printf("📋 now getTimeNow : %s\n", getTimeNow())
-		// fmt.Printf("📋 now getTimeNowUTC : %s\n", getTimeNowUTC())
+		//fmt.Printf("📋 now : %s\n", now)
+		// fmt.Printf("📋 now getTimeNowUTC : %s\n", now)
+		//fmt.Printf("📋 now getTimeNow : %s\n", getTimeNow())
+		//fmt.Printf("📋 now getTimeNowUTC : %s\n", getTimeNowUTC())
 		// fmt.Printf("📋 now getTimeNowBangkok : %s\n", getTimeNowBangkok())
 		// fmt.Printf("📋 now displayBangkokTime : %s\n", displayBangkokTime(getTimeNow()))
 
-		fmt.Printf("📋 expireTime : %s\n", expireTime)
-		fmt.Printf("📋 expireTime Results: %v\n", now.After(expireTime))
+		// fmt.Printf("📋 expireTime : %s\n", expireTime)
+		//fmt.Printf("📋 expireTime Results: %v\n", now.After(expireTime))
 
-		// x := created
-		// y := getTimeNowUTC()
-		// z := expireTime
-		// fmt.Printf("📋 Check  \n%s\n%s\n%s", x, y, z)
+		//x := created
+		//y := getTimeNowUTC()
+		//z := expireTime
+		//fmt.Printf("📋 Check  \n%s\n%s\n%s\n", x, y, z)
 
-		if expireTime.After(expireTime) {
+		//fmt.Printf("📋 expireTime Results: %v\n", now.After(expireTime))
+		if now.After(expireTime) {
+			fmt.Printf("📋 UpdatedAt : %s\n", updatedAt)
+			fmt.Printf("📋 now : %s\n", now)
+			fmt.Printf("📋 slaMin : %d\n", slaMin)
+			fmt.Printf("📋 expireTime : %s\n", expireTime)
 			fmt.Printf("====YES===")
-			//results[i].NextNode = nextNode
-			//results_data = append(results_data, results[i])
+			results[i].NextNode = nextNode
+			results_data = append(results_data, results[i])
 		}
 
 		//results[i].NextNode = nextNode
