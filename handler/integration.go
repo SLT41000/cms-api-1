@@ -474,7 +474,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 		"status":          "NEW",
 		"work_date":       currentDate,
 		"workspace":       os.Getenv("INTEGRATION_WORKSPACE"),
-		"namespace":       os.Getenv("INTEGRATION_WORKSPACE") + "." + *areaDist.NameSpace,
+		"namespace":       *areaDist.NameSpace,
 		"source":          os.Getenv("INTEGRATION_SOURCE"),
 	}
 
@@ -547,7 +547,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		"state":        "OPEN",
 		"work_date":    currentDate,
 		"workspace":    os.Getenv("INTEGRATION_WORKSPACE"),
-		"namespace":    os.Getenv("INTEGRATION_WORKSPACE") + "." + *areaDist.NameSpace,
+		"namespace":    *areaDist.NameSpace,
 		"source":       os.Getenv("INTEGRATION_SOURCE"),
 	}
 

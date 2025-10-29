@@ -236,9 +236,9 @@ func ListCase(c *gin.Context) {
 
 	// ✅ Main Query
 	query := `
-	SELECT id, "caseId", "referCaseId", "caseTypeId", "caseSTypeId",
+	SELECT  "caseId", "caseTypeId", "caseSTypeId",
 		priority, "caseDetail",
-		"statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+		"statusId", "caselocAddr", "caselocAddrDecs",
 		"createdAt", "startedDate", usercreate,
 		"createdBy", "caseSla"
 	` + baseQuery + orderBySQL + fmt.Sprintf(` LIMIT $%d OFFSET $%d`, paramIndex, paramIndex+1)
@@ -258,10 +258,9 @@ func ListCase(c *gin.Context) {
 	for rows.Next() {
 		var cusCase model.Case_
 		if err := rows.Scan(
-			&cusCase.ID, &cusCase.CaseID,
-			&cusCase.ReferCaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
+			&cusCase.CaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
 			&cusCase.Priority, &cusCase.CaseDetail,
-			&cusCase.StatusID, &cusCase.CaseLat, &cusCase.CaseLon,
+			&cusCase.StatusID,
 			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CreatedAt, &cusCase.StartedDate,
 			&cusCase.UserCreate, &cusCase.CreatedBy, &cusCase.CaseSLA,
 		); err != nil {

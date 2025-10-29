@@ -80,6 +80,13 @@ func main() {
 	// 	}
 	// }()
 
+
+ 	go func() {
+		if err := handler.ESB_USER_STATUS(); err != nil {
+			log.Printf("Kafka ESB_USER_STATUS error: %v", err)
+		}
+	}()
+
 	go func() {
 		if err := handler.ESB_NOTIFICATIONS(); err != nil {
 			log.Printf("Kafka ESB_NOTIFICATIONS error: %v", err)

@@ -412,16 +412,12 @@ type TixCaseAttachmentInput struct {
 }
 
 type Case_ struct {
-	ID              string     `json:"id"`
 	CaseID          string     `json:"caseId"`
-	ReferCaseID     *string    `json:"referCaseId"`
 	CaseTypeID      string     `json:"caseTypeId"`
 	CaseSTypeID     string     `json:"caseSTypeId"`
 	Priority        int        `json:"priority"`
 	CaseDetail      *string    `json:"caseDetail"`
 	StatusID        string     `json:"statusId"`
-	CaseLat         *string    `json:"caseLat"`
-	CaseLon         *string    `json:"caseLon"`
 	CaseLocAddr     *string    `json:"caseLocAddr"`
 	CaseLocAddrDecs *string    `json:"caseLocAddrDecs"`
 	CreatedAt       *time.Time `json:"createdAt"`

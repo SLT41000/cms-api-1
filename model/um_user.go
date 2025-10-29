@@ -287,3 +287,9 @@ type UserProfile struct {
 	CommID string `json:"commId"`
 	GrpID  string `json:"grpId"`
 }
+
+type KafkaUnitStatus struct {
+	Workspace string `json:"workspace"`  // maps to orgId or org name
+	UserCode  string `json:"user_code"`  // maps to username in mdm_units
+	CheckedIn bool   `json:"checked_in"` // maps to isLogin field
+}

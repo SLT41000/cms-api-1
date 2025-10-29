@@ -286,7 +286,7 @@ func GetCaseStageData(ctx context.Context, conn *pgx.Conn, orgId string) ([]mode
 	if err != nil {
 		log.Printf("❌ JSON marshal error: %v", err)
 	} else {
-		fmt.Printf("📋 CaseStageData Results:\n%s\n", string(jsonBytes))
+		fmt.Printf("📋 CaseStageData Results:\n%d\n", len(jsonBytes))
 	}
 
 	return results_data, nil
