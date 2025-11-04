@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"mainPackage/model"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -79,6 +78,18 @@ LIMIT 1;
 }
 
 func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username string) (*model.User, error) {
+
+	//Get Cache
+	val, err := UsernameGet(username)
+	if err != nil {
+		log.Println("Redis GET error:", err)
+	} else if val != "" {
+		var cachedUser model.User
+		if err := json.Unmarshal([]byte(val), &cachedUser); err == nil {
+			return &cachedUser, nil
+		}
+	}
+
 	query := `
 	SELECT  "username", "email", "displayName", 
 	       "roleId", "active", "photo", "empId", "firstName", "lastName", "photo", "mobileNo"
@@ -88,7 +99,7 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 	`
 
 	var u model.User
-	err := conn.QueryRow(ctx, query, orgId, username).Scan(
+	err = conn.QueryRow(ctx, query, orgId, username).Scan(
 		&u.Username,
 		&u.Email,
 		&u.DisplayName,
@@ -109,13 +120,24 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 		return nil, fmt.Errorf("query user failed: %w", err)
 	}
 
+	//Set Cache
+	userJSON, err := json.Marshal(u)
+	if err != nil {
+		log.Println("Error marshaling user:", err)
+	} else {
+		err = UsernameSet(username, string(userJSON))
+		if err != nil {
+			log.Println("Redis SET error:", err)
+		}
+	}
+
 	return &u, nil
 }
 
 func GetAreaByNamespace(ctx context.Context, conn *pgx.Conn, orgId, namespace string) (*model.AreaDistrict, error) {
 	// Example: "bma.n3-laksi-district" → "n3-laksi-district"
-	parts := strings.Split(namespace, ".")
-	ns := parts[len(parts)-1]
+	// parts := strings.Split(namespace, ".")
+	// ns := parts[len(parts)-1]
 
 	query := `
 		SELECT "countryId", "provId", "distId"
@@ -125,7 +147,7 @@ func GetAreaByNamespace(ctx context.Context, conn *pgx.Conn, orgId, namespace st
 	`
 
 	var a model.AreaDistrict
-	err := conn.QueryRow(ctx, query, orgId, ns).Scan(
+	err := conn.QueryRow(ctx, query, orgId, namespace).Scan(
 		&a.CountryID,
 		&a.ProvID,
 		&a.DistID,

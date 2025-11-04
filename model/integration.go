@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 type WorkOrder struct {
 	WorkOrderNumber       string        `json:"work_order_number"`
@@ -47,8 +51,8 @@ type SopMeta struct {
 }
 
 type GeoLocation struct {
-	Latitude  string `json:"latitude"`
-	Longitude string `json:"longitude"`
+	Latitude  StringOrNumber `json:"latitude"`
+	Longitude StringOrNumber `json:"longitude"`
 }
 
 type WorkflowBySubType struct {
@@ -85,4 +89,34 @@ type AssignedEmployee struct {
 	UserLastname     string `json:"user_lastname"`
 	UserAvatar       string `json:"user_avatar"`
 	UserPhone        string `json:"user_phone"`
+}
+
+type StringOrNumber string
+
+func (a *AssignedEmployee) UnmarshalJSON(data []byte) error {
+	// ถ้าเป็น string ว่าง ""
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		// ถ้าว่างก็ข้าม
+		if s == "" {
+			*a = AssignedEmployee{}
+			return nil
+		}
+		return fmt.Errorf("expected object or null, got string: %s", s)
+	}
+
+	// ถ้าเป็น null
+	if string(data) == "null" {
+		*a = AssignedEmployee{}
+		return nil
+	}
+
+	// ถ้าเป็น object ปกติ
+	type Alias AssignedEmployee
+	var tmp Alias
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*a = AssignedEmployee(tmp)
+	return nil
 }

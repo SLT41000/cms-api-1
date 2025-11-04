@@ -71,6 +71,7 @@ func ESB_WORK_ORDER_CREATE() error {
 	log.Println("Kafka ESB_WORK_ORDER_CREATE() started. Listening for messages...")
 
 	for msg := range partitionConsumer.Messages() {
+
 		go handleMessage_WO_Create(msg.Value)
 	}
 
@@ -79,15 +80,42 @@ func ESB_WORK_ORDER_CREATE() error {
 
 func handleMessage_WO_Create(message []byte) {
 	source := os.Getenv("INTEGRATION_SOURCE")
-	log.Printf("Raw message: %s", string(message))
+	log.Printf("Create :: Raw message: %s", string(message))
 	var wo model.WorkOrder
 	if err := json.Unmarshal(message, &wo); err != nil {
 		log.Printf("Error unmarshalling message: %v", err)
 		return
 	}
 
+	// Check owner -- Start
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Println("Hostname error:", err)
+		hostname = "unknown"
+	}
+
+	log.Printf("Recheck ESB Create WO on host: %s\n", hostname)
+
+	val, err := utils.EsbCreateGet(wo.IncidentNumber)
+	if err != nil {
+		log.Println("Redis GET error:", err)
+		return
+	}
+
+	if val == "" || val == hostname {
+		err = utils.EsbCreateSet(wo.WorkOrderNumber, hostname)
+		if err != nil {
+			log.Println("Redis SET error:", err)
+			return
+		}
+	} else {
+		log.Printf("Skip Message Not allow Owner : %s\n", hostname)
+		return
+	}
+	// Check owner -- End
+
 	if wo.Source == source {
-		log.Printf("Skip Message From Original Source : %s", source)
+		log.Printf("Skip Message From Original Source : %s\n", source)
 		return
 	}
 	conn, ctx, cancel := utils.ConnectDB()
@@ -171,7 +199,7 @@ func ESB_WORK_ORDER_UPDATE() error {
 
 func handleMessage_WO_Update(c *gin.Context, message []byte) {
 	source := os.Getenv("INTEGRATION_SOURCE")
-	log.Printf("Raw message: %s", string(message))
+	log.Printf("Update :: Raw message: %s", string(message))
 	var wo model.WorkOrder
 	if err := json.Unmarshal(message, &wo); err != nil {
 		log.Printf("Error unmarshalling message: %v", err)
@@ -202,7 +230,7 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 	// •	ONHOLD
 	// •	CANCEL
 
-	if wo.Status == "NEW" || wo.Status == "ASSIGNED" {
+	if wo.Status == "NEW" {
 		return
 	}
 	log.Print("====1===")

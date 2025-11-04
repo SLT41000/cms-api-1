@@ -81,6 +81,11 @@ func main() {
 	// }()
 
 
+        go func() {
+		if err := handler.ESB_WORK_ORDER_CREATE(); err != nil {
+			log.Printf("Kafka ESB_WORK_ORDER_CREATE error: %v", err)
+		}
+	}()
  	go func() {
 		if err := handler.ESB_USER_STATUS(); err != nil {
 			log.Printf("Kafka ESB_USER_STATUS error: %v", err)

@@ -124,7 +124,6 @@ func GroupTypeSet(value string) error {
 	return Rdb.Set(context.Background(), name, value, expiration).Err()
 }
 
-// 🔹 Get Cache
 func GroupTypeGet() (string, error) {
 	cachePrefix := os.Getenv("CACHE_PREFIX")
 	appName := os.Getenv("CACHE_GROUP_TYPE")
@@ -138,12 +137,49 @@ func GroupTypeGet() (string, error) {
 	return val, err
 }
 
-// 🔹 Delete Cache
 func GroupTypeDet() error {
 	cachePrefix := os.Getenv("CACHE_PREFIX")
 	appName := os.Getenv("CACHE_GROUP_TYPE")
 	name := fmt.Sprintf("%s:%s", cachePrefix, appName)
 
 	log.Printf("🗑️ CacheDel: %s", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####==== ESB - CREATE WO =====
+func EsbCreateSet(key string, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CREATE_WO"), key)
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func EsbCreateGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CREATE_WO"), key)
+	return RedisGet(name)
+}
+
+func EsbCreateDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CREATE_WO"), key)
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####==== GetUserByUsername =====
+func UsernameSet(key string, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USERNAME"), key)
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func UsernameGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USERNAME"), key)
+	return RedisGet(name)
+}
+
+func UsernameDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USERNAME"), key)
+	log.Print("Deleting:", name)
 	return Rdb.Del(context.Background(), name).Err()
 }
