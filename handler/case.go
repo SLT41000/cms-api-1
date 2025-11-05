@@ -568,54 +568,23 @@ func CaseByCaseId(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
 	println("test eq1", id)
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy"
-	FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
+	query := `SELECT "caseId","caseTypeId","caseSTypeId",priority,"caseDetail","statusId",
+    "caselocAddr","caselocAddrDecs","startedDate",usercreate,"createdAt","createdBy" FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
 	logger.Debug(`Query`, zap.String("query", query))
-	var cusCase model.Case
+	var cusCase model.Case_
 	err := conn.QueryRow(ctx, query, orgId, id).Scan(
-		&cusCase.ID,
-		&cusCase.OrgID,
 		&cusCase.CaseID,
-		&cusCase.CaseVersion,
-		&cusCase.ReferCaseID,
 		&cusCase.CaseTypeID,
 		&cusCase.CaseSTypeID,
 		&cusCase.Priority,
-		&cusCase.WfID,
-		&cusCase.WfVersions,
-		&cusCase.Source,
-		&cusCase.DeviceID,
-		&cusCase.PhoneNo,
-		&cusCase.PhoneNoHide,
 		&cusCase.CaseDetail,
-		&cusCase.ExtReceive,
 		&cusCase.StatusID,
-		&cusCase.CaseLat,
-		&cusCase.CaseLon,
 		&cusCase.CaseLocAddr,
 		&cusCase.CaseLocAddrDecs,
-		&cusCase.CountryID,
-		&cusCase.ProvID,
-		&cusCase.DistID,
-		&cusCase.CaseDuration,
-		&cusCase.CreatedDate,
 		&cusCase.StartedDate,
-		&cusCase.CommandedDate,
-		&cusCase.ReceivedDate,
-		&cusCase.ArrivedDate,
-		&cusCase.ClosedDate,
 		&cusCase.UserCreate,
-		&cusCase.UserCommand,
-		&cusCase.UserReceive,
-		&cusCase.UserArrive,
-		&cusCase.UserClose,
-		&cusCase.ResID,
-		&cusCase.ResDetail,
-		&cusCase.ScheduleDate,
 		&cusCase.CreatedAt,
-		&cusCase.UpdatedAt,
 		&cusCase.CreatedBy,
-		&cusCase.UpdatedBy,
 	)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
@@ -773,7 +742,10 @@ func InsertCase(c *gin.Context) {
 		return
 	}
 	req.CaseId = &caseId
-	CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"))
+
+	if req.PhoneNo == nil || *req.PhoneNo != os.Getenv("FOR_LOAD_TEST") {
+		CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"))
+	}
 
 	fmt.Printf("=======CurrentStage========")
 	fmt.Printf("%s", req.NodeID)
@@ -875,7 +847,7 @@ func InsertCase(c *gin.Context) {
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
-		log.Printf("covent additionalData Error :", err)
+		log.Printf("covent additionalData Error :", err.Error())
 	}
 	additionalData := json.RawMessage(additionalJSON)
 	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", event, &additionalData)
