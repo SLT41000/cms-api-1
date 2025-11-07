@@ -1041,22 +1041,22 @@ func DispatchCancelUnit(c *gin.Context) {
 	}
 
 	//[2] Insert responder
-	log.Print("--> 1. Insert responder")
-	_, err = conn.Exec(ctx, `
-		    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-		    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-		`, orgId, req.CaseId, req.UnitId, req.UnitUser, cancel_, username)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Insert Responder Fail ",
-			Desc:   err.Error(),
-		})
-		return
-	}
+	// log.Print("--> 1. Insert responder")
+	// _, err = conn.Exec(ctx, `
+	// 	    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+	// 	    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+	// 	`, orgId, req.CaseId, req.UnitId, req.UnitUser, cancel_, username)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, model.Response{
+	// 		Status: "-1",
+	// 		Msg:    "Insert Responder Fail ",
+	// 		Desc:   err.Error(),
+	// 	})
+	// 	return
+	// }
 
 	//[3] => Delete Unit
-	deletedCount, err := DeleteUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
+	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
@@ -1071,8 +1071,24 @@ func DispatchCancelUnit(c *gin.Context) {
 		log.Printf("No units deleted (maybe not found or status skipped)")
 	}
 
+	//[3.1] => Delete all Unit
+	deletedCount_, err := DeleteReponseUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Status: "-1",
+			Msg:    "Delete Unit Fail ",
+			Desc:   err.Error(),
+		})
+		return
+	}
+	if deletedCount_ > 0 {
+		log.Printf("Successfully deleted %d unit(s)", deletedCount_)
+	} else {
+		log.Printf("No units deleted (maybe not found or status skipped)")
+	}
+
 	//[4] => Check Unit Count && Update Case status S001
-	unitLists, count, err = GetUnits(ctx, conn, orgId.(string), caseId, "", "")
+	unitLists, count, err = GetUnitsWithDispatch(ctx, conn, orgId.(string), caseId, "", "")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-2",
@@ -1106,6 +1122,18 @@ func DispatchCancelUnit(c *gin.Context) {
 				return
 			}
 
+			//Delete case response !=  S001
+			count_, err := DeleteReponseCase(ctx, conn, orgId.(string), caseId, "S001")
+			if err != nil {
+				c.JSON(http.StatusBadRequest, model.Response{
+					Status: "-1",
+					Msg:    "Update stage failed",
+					Desc:   err.Error(),
+				})
+				return
+			}
+			log.Print(count_)
+
 		}
 	}
 
@@ -1113,13 +1141,13 @@ func DispatchCancelUnit(c *gin.Context) {
 	req_ := model.UpdateStageRequest{
 		CaseId:   caseId,
 		Status:   cancel_,
-		UnitUser: req.UnitUser, // หรือ set ค่า default
+		UnitUser: "", // หรือ set ค่า default
 	}
 	log.Print(req)
 	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
 
 	// req_.UnitUser = ""
-	// UpdateBusKafka_WO(c, conn, req_)
+	UpdateBusKafka_WO(c, conn, req_)
 
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
@@ -1128,7 +1156,7 @@ func DispatchCancelUnit(c *gin.Context) {
 	})
 }
 
-func DeleteUnit(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID, unitID string) (int64, error) {
+func DeleteCurrentUnit(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID, unitID string) (int64, error) {
 
 	query := `
 		DELETE FROM public.tix_case_current_stage
@@ -1148,7 +1176,67 @@ func DeleteUnit(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID, un
 	// Execute delete query
 	cmdTag, err := conn.Exec(ctx, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("DeleteUnit failed: %w", err)
+		return 0, fmt.Errorf("DeleteCurrentUnit failed: %w", err)
+	}
+
+	// cmdTag.RowsAffected() คืนค่าจำนวนแถวที่ถูกลบ
+	deletedCount := cmdTag.RowsAffected()
+	log.Printf("Deleted %d unit(s) from case %s", deletedCount, caseID)
+
+	return deletedCount, nil
+}
+
+func DeleteReponseUnit(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID, unitID string) (int64, error) {
+
+	query := `
+		DELETE FROM public.tix_case_responders
+		WHERE "orgId" = $1 
+		  AND "caseId" = $2 
+		  AND "unitId" != 'case'
+	`
+	args := []interface{}{orgID, caseID}
+	argIndex := 3
+
+	// ถ้ามี unitID ให้เพิ่ม filter
+	if unitID != "" {
+		query += fmt.Sprintf(` AND "unitId" = $%d`, argIndex)
+		args = append(args, unitID)
+	}
+	log.Printf("--->%s", query)
+	log.Printf("--->%s", args)
+	// Execute delete query
+	cmdTag, err := conn.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("DeleteReponseUnit failed: %w", err)
+	}
+
+	// cmdTag.RowsAffected() คืนค่าจำนวนแถวที่ถูกลบ
+	deletedCount := cmdTag.RowsAffected()
+	log.Printf("Deleted %d unit(s) from case %s", deletedCount, caseID)
+
+	return deletedCount, nil
+}
+
+func DeleteReponseCase(ctx context.Context, conn *pgx.Conn, orgID, caseID, statusID string) (int64, error) {
+	log.Print("---DeleteReponseCase--")
+	log.Print(orgID)
+	log.Print(caseID)
+	query := `
+		DELETE FROM public.tix_case_responders
+		WHERE "orgId" = $1 
+		  AND "caseId" = $2 
+		  AND "unitId" = 'case' AND "statusId" != $3
+	`
+	args := []interface{}{orgID, caseID, statusID}
+
+	// ถ้ามี unitID ให้เพิ่ม filter
+	log.Print(statusID)
+	log.Printf("--->%s", query)
+	log.Printf("--->%s", args)
+	// Execute delete query
+	cmdTag, err := conn.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("DeleteReponseUnit failed: %w", err)
 	}
 
 	// cmdTag.RowsAffected() คืนค่าจำนวนแถวที่ถูกลบ
@@ -1367,7 +1455,7 @@ func DispatchCancelCase(c *gin.Context) {
 	// }
 
 	//[2] => Delete all Unit
-	deletedCount, err := DeleteUnit(ctx, conn, orgId.(string), caseId, "", "")
+	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId.(string), caseId, "", "")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
@@ -1377,9 +1465,9 @@ func DispatchCancelCase(c *gin.Context) {
 		return
 	}
 	if deletedCount > 0 {
-		log.Printf("Successfully deleted %d unit(s)", deletedCount)
+		log.Printf("Successfully deleted Current %d ", deletedCount)
 	} else {
-		log.Printf("No units deleted (maybe not found or status skipped)")
+		log.Printf("No Current deleted (maybe not found or status skipped)")
 	}
 
 	err = UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, cancel_, username.(string))
@@ -1401,6 +1489,7 @@ func DispatchCancelCase(c *gin.Context) {
 	log.Print(req)
 	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
 
+	UpdateBusKafka_WO(c, conn, req_)
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
 		Msg:    "Success",

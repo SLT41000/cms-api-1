@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -93,11 +94,47 @@ type AssignedEmployee struct {
 
 type StringOrNumber string
 
+func (s *StringOrNumber) UnmarshalJSON(data []byte) error {
+	dataStr := strings.TrimSpace(string(data))
+
+	// null -> empty
+	if dataStr == "null" {
+		*s = ""
+		return nil
+	}
+
+	// "" -> empty
+	if dataStr == `""` {
+		*s = ""
+		return nil
+	}
+
+	// number -> convert to string
+	if dataStr != "" && (dataStr[0] >= '0' && dataStr[0] <= '9' || dataStr[0] == '-') {
+		*s = StringOrNumber(dataStr)
+		return nil
+	}
+
+	// quoted string
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err == nil {
+		*s = StringOrNumber(tmp)
+		return nil
+	}
+
+	return fmt.Errorf("StringOrNumber: invalid value %s", dataStr)
+}
+
 func (a *AssignedEmployee) UnmarshalJSON(data []byte) error {
+	// ถ้าเป็น null
+	if string(data) == "null" {
+		*a = AssignedEmployee{}
+		return nil
+	}
+
 	// ถ้าเป็น string ว่าง ""
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		// ถ้าว่างก็ข้าม
 		if s == "" {
 			*a = AssignedEmployee{}
 			return nil
@@ -105,13 +142,7 @@ func (a *AssignedEmployee) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("expected object or null, got string: %s", s)
 	}
 
-	// ถ้าเป็น null
-	if string(data) == "null" {
-		*a = AssignedEmployee{}
-		return nil
-	}
-
-	// ถ้าเป็น object ปกติ
+	// ปกติเป็น object
 	type Alias AssignedEmployee
 	var tmp Alias
 	if err := json.Unmarshal(data, &tmp); err != nil {

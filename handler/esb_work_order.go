@@ -12,6 +12,8 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 func ESB_WORK_ORDER_CREATE() error {
@@ -72,13 +74,13 @@ func ESB_WORK_ORDER_CREATE() error {
 
 	for msg := range partitionConsumer.Messages() {
 
-		go handleMessage_WO_Create(msg.Value)
+		go handleMessage_WO_Create(&gin.Context{}, msg.Value)
 	}
 
 	return nil
 }
 
-func handleMessage_WO_Create(message []byte) {
+func handleMessage_WO_Create(c *gin.Context, message []byte) {
 	source := os.Getenv("INTEGRATION_SOURCE")
 	log.Printf("Create :: Raw message: %s", string(message))
 	var wo model.WorkOrder
@@ -129,7 +131,10 @@ func handleMessage_WO_Create(message []byte) {
 	username := os.Getenv("INTEGRATION_USR")
 	orgId := os.Getenv("INTEGRATION_ORG_ID")
 
-	if err := IntegrateCreateCaseFromWorkOrder(ctx, conn, wo, username, orgId); err != nil {
+	c.Set("username", username)
+	c.Set("orgId", orgId)
+
+	if err := IntegrateCreateCaseFromWorkOrder(c, conn, wo, username, orgId); err != nil {
 		log.Printf("Error creating case from WorkOrder: %v", err)
 	}
 }
@@ -230,16 +235,62 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 	// •	ONHOLD
 	// •	CANCEL
 
+	username := os.Getenv("INTEGRATION_USR")
+	orgId := os.Getenv("INTEGRATION_ORG_ID")
+
+	c.Set("username", username)
+	c.Set("orgId", orgId)
+
 	if wo.Status == "NEW" {
 		return
 	}
+	if wo.Status == "CANCEL" {
+		log.Printf("WorkOrder %s cancelled, processing...", wo.WorkOrderNumber)
+
+		resId := os.Getenv("RESULT_CLOSE")
+
+		err := CancelCaseCore(c, conn, orgId, username, wo.WorkOrderNumber, resId, "cancel from workorder integration")
+		if err != nil {
+			log.Printf("cancel failed: %v", err)
+		}
+		return
+	}
+
 	log.Print("====1===")
-	username := os.Getenv("INTEGRATION_USR")
-	orgId := os.Getenv("INTEGRATION_ORG_ID")
-	c.Set("username", username)
-	c.Set("orgId", orgId)
 
 	if err := IntegrateUpdateCaseFromWorkOrder(c, conn, wo, username, orgId); err != nil {
 		log.Printf("Error creating case from WorkOrder: %v", err)
 	}
+}
+
+func CancelCaseCore(ctx *gin.Context, conn *pgx.Conn, orgId, username, caseId, resId, resDetail string) error {
+	logger := utils.GetLog()
+
+	cancelStatus := os.Getenv("CANCEL_CASE")
+
+	// Delete all unit
+	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId, caseId, "", "")
+	if err != nil {
+		return fmt.Errorf("delete unit failed: %w", err)
+	}
+	if deletedCount > 0 {
+		log.Printf("deleted %d current units", deletedCount)
+	}
+
+	// Update cancel
+	err = UpdateCancelCaseForUnit(ctx, conn, orgId, caseId, resId, resDetail, cancelStatus, username)
+	if err != nil {
+		return fmt.Errorf("update cancel case failed: %w", err)
+	}
+
+	// Notifications + Kafka Backfeed
+	req := model.UpdateStageRequest{
+		CaseId: caseId,
+		Status: cancelStatus,
+	}
+	GenerateNotiAndComment(ctx, conn, req, orgId, "0")
+	UpdateBusKafka_WO(ctx, conn, req)
+
+	logger.Info("case cancelled successfully", zap.String("caseId", caseId))
+	return nil
 }

@@ -369,7 +369,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			}
 			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0", &req.ResDetail)
 			//-->New Function for close
-			// UpdateBusKafka_WO(ctx, conn, req)
+			UpdateBusKafka_WO(ctx, conn, req)
 			return Result, err
 		} else {
 			log.Println("Status worng number-1 :", err)

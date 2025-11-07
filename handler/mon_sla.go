@@ -35,16 +35,16 @@ func SlaMonitor(c *gin.Context) error {
 			return err
 		}
 
-		err = utils.OwnerSLASet(hostname)
-		if err != nil {
-			log.Println("Redis SET error:", err)
-			return err
-		}
-
 		log.Printf("[Tick %d] Redis sla key = '%s'\n", counter, val)
 		val = ""
 		// Only this host should write if no one else owns the lock or it owns it
 		if val == "" || val == hostname {
+
+			err = utils.OwnerSLASet(hostname)
+			if err != nil {
+				log.Println("Redis SET error:", err)
+				return err
+			}
 
 			conn, ctx, cancel := utils.ConnectDB()
 			if conn == nil {

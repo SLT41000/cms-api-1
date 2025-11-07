@@ -68,25 +68,20 @@ func main() {
 	go handler.StartAutoDeleteScheduler()
 	utils.InitRedis()
 	utils.InitMinio()
-	// go func() {
-	// 	if err := handler.esb_work_order_create(); err != nil {
-	// 		log.Printf("Kafka worker error: %v", err)
-	// 	}
-	// }()
 
-	// go func() {
-	// 	if err := handler.esb_work_order_update(); err != nil {
-	// 		log.Printf("Kafka worker error: %v", err)
-	// 	}
-	// }()
-
-
-        go func() {
+	go func() {
 		if err := handler.ESB_WORK_ORDER_CREATE(); err != nil {
 			log.Printf("Kafka ESB_WORK_ORDER_CREATE error: %v", err)
 		}
 	}()
- 	go func() {
+
+	go func() {
+		if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
+			log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
+		}
+	}()
+
+	go func() {
 		if err := handler.ESB_USER_STATUS(); err != nil {
 			log.Printf("Kafka ESB_USER_STATUS error: %v", err)
 		}

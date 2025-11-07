@@ -7,17 +7,19 @@ import (
 	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
-func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
+func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
 	log.Printf("====IntegrateCreateCaseFromWorkOrder===")
 	now := time.Now()
 	caseId := workOrder.WorkOrderNumber
@@ -147,10 +149,76 @@ func IntegrateCreateCaseFromWorkOrder(ctx context.Context, conn *pgx.Conn, workO
 		log.Fatalf("IntegrateCaseCurrentStageInsert : %v", err_)
 	}
 
+	// === Attachments from WorkOrder images ===
+	for _, imgUrl := range workOrder.WorkOrderMetadata.Images {
+		if strings.TrimSpace(imgUrl) == "" {
+			continue
+		}
+
+		// extract name
+		parts := strings.Split(imgUrl, "/")
+		attName := parts[len(parts)-1]
+
+		err := InsertCaseAttachment(ctx, conn,
+			orgId, caseId, "case", attName, imgUrl, username)
+
+		if err != nil {
+			log.Printf("InsertCaseAttachment failed: %v", err)
+		}
+	}
+
 	// TODO: upsert device info
 
+	if workOrder.UserMetadata.AssignedEmployeeCode.UserEmployeeCode != "" {
+		unit := workOrder.UserMetadata.AssignedEmployeeCode.UserEmployeeCode
+		// === Stage update ===
+		var data = model.UpdateStageRequest{
+			CaseId:    caseId,
+			Status:    "S003",
+			UnitId:    unit,
+			UnitUser:  unit,
+			NodeId:    "",
+			ResID:     "",
+			ResDetail: "",
+		}
+
+		log.Print("====data1===")
+		b, _ := json.MarshalIndent(data, "", "  ")
+		fmt.Println(string(b))
+
+		log.Print("====8===")
+
+		_, _, _, dispatchNode, err := GetWorkflowAndCurrentNode(ctx, orgId, caseId, "")
+		if err != nil {
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			ctx.JSON(http.StatusInternalServerError, response)
+
+		}
+
+		log.Print("====dispatch===")
+		b, _ = json.MarshalIndent(dispatchNode, "", "  ")
+		fmt.Println(string(b))
+		data.NodeId = dispatchNode.NodeId
+
+		log.Print("====data2===")
+		b, _ = json.MarshalIndent(data, "", "  ")
+		fmt.Println(string(b))
+
+		log.Print("====Dispatch on Create===")
+		results, err := UpdateCurrentStageCore(ctx, conn, data)
+		if err != nil {
+			return fmt.Errorf("UpdateCurrentStageCore failed: %w", err)
+		}
+		log.Print(results)
+
+	}
+
 	// TODO: send notification
-	statuses, err := utils.GetCaseStatusList(&gin.Context{}, conn, orgId)
+	statuses, err := utils.GetCaseStatusList(ctx, conn, orgId)
 	if err != nil {
 
 	}
@@ -405,8 +473,35 @@ WHERE
 		ResID:     "",
 		ResDetail: "",
 	}
+	log.Print("====data1===")
+	b, _ := json.MarshalIndent(data, "", "  ")
+	fmt.Println(string(b))
 
 	log.Print("====8===")
+
+	if strings.TrimSpace(data.NodeId) == "" && data.Status == "S003" {
+		log.Print("====8.11111===")
+		_, _, _, dispatchNode, err := GetWorkflowAndCurrentNode(ctx, orgId, caseId, "")
+		if err != nil {
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   err.Error(),
+			}
+			ctx.JSON(http.StatusInternalServerError, response)
+
+		}
+
+		log.Print("====dispatch===")
+		b, _ = json.MarshalIndent(dispatchNode, "", "  ")
+		fmt.Println(string(b))
+		data.NodeId = dispatchNode.NodeId
+	}
+
+	log.Print("====data2===")
+	b, _ = json.MarshalIndent(data, "", "  ")
+	fmt.Println(string(b))
+
 	results, err := UpdateCurrentStageCore(ctx, conn, data)
 	if err != nil {
 		return fmt.Errorf("UpdateCurrentStageCore failed: %w", err)
@@ -519,6 +614,14 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	//---> REF Number
 	//---> user profile
 	// --- User assignment info
+	var state = "OPEN"
+	if stName == "CLOSED" {
+		state = stName
+		stName = "DONE"
+	}
+	if stName == "CANCEL" {
+		state = "CLOSED"
+	}
 	var uAssign interface{} = "" // default empty string
 	if req.UnitUser != "" {
 		user, err := utils.GetUserByUsername(ctx, conn, orgId.(string), req.UnitUser)
@@ -544,7 +647,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		},
 		"sop_metadata": map[string]interface{}{},
 		"status":       stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
-		"state":        "OPEN",
+		"state":        state,
 		"work_date":    currentDate,
 		"workspace":    os.Getenv("INTEGRATION_WORKSPACE"),
 		"namespace":    *areaDist.NameSpace,
@@ -562,8 +665,26 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	if err != nil {
 		return err
 	}
-
+	log.Print("/mettriq/v1/work_order/update")
+	log.Print(data)
 	log.Print(res)
 
 	return nil
+}
+
+func InsertCaseAttachment(ctx context.Context, conn *pgx.Conn,
+	orgId, caseId, attachmentType, attName, attUrl, createdBy string) error {
+
+	query := `
+		INSERT INTO public.tix_case_attachments
+		("orgId","caseId","type","attId","attName","attUrl","createdAt","updatedAt","createdBy","updatedBy")
+		VALUES ($1,$2,$3,$4,$5,$6,now(),now(),$7,$8)
+	`
+
+	attId := uuid.New().String()
+
+	_, err := conn.Exec(ctx, query,
+		orgId, caseId, attachmentType, attId, attName, attUrl, createdBy, createdBy)
+
+	return err
 }

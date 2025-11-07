@@ -87,6 +87,9 @@ func mapStatus(code string) string {
 	if contains(getEnvList("CONV_DONE"), code) {
 		return "DONE"
 	}
+	if contains(getEnvList("CONV_CLOSED"), code) {
+		return "CLOSED"
+	}
 	if contains(getEnvList("CONV_CANCEL"), code) {
 		return "CANCEL"
 	}
