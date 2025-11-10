@@ -425,6 +425,7 @@ func FormInsert(c *gin.Context) {
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
+		Data:   uuid,
 	}
 
 	//=======AUDIT_START=====//

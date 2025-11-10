@@ -189,7 +189,7 @@ func ListCase(c *gin.Context) {
 	addMultiValueFilter("distId", distId)
 
 	if detail != "" {
-		baseQuery += fmt.Sprintf(" AND \"caseDetail\" ILIKE $%d", paramIndex)
+		baseQuery += fmt.Sprintf(" OR \"caseDetail\" ILIKE $%d", paramIndex)
 		params = append(params, "%"+detail+"%")
 		paramIndex++
 	}
@@ -204,7 +204,7 @@ func ListCase(c *gin.Context) {
 		paramIndex++
 	}
 	if createBy != "" {
-		baseQuery += fmt.Sprintf(" AND \"createdBy\" = $%d", paramIndex)
+		baseQuery += fmt.Sprintf(" OR \"createdBy\" = $%d", paramIndex)
 		params = append(params, createBy)
 		paramIndex++
 	}
@@ -238,7 +238,7 @@ func ListCase(c *gin.Context) {
 	query := `
 	SELECT  "caseId", "caseTypeId", "caseSTypeId",
 		priority, "caseDetail",
-		"statusId", "caselocAddr", "caselocAddrDecs",
+		"statusId", "caselocAddr", "caselocAddrDecs", "createdDate",
 		"createdAt", "startedDate", usercreate,
 		"createdBy", "caseSla"
 	` + baseQuery + orderBySQL + fmt.Sprintf(` LIMIT $%d OFFSET $%d`, paramIndex, paramIndex+1)
@@ -261,7 +261,7 @@ func ListCase(c *gin.Context) {
 			&cusCase.CaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
 			&cusCase.Priority, &cusCase.CaseDetail,
 			&cusCase.StatusID,
-			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CreatedAt, &cusCase.StartedDate,
+			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CreatedDate, &cusCase.CreatedAt, &cusCase.StartedDate,
 			&cusCase.UserCreate, &cusCase.CreatedBy, &cusCase.CaseSLA,
 		); err != nil {
 			c.JSON(http.StatusInternalServerError, model.Response{
@@ -568,12 +568,13 @@ func CaseByCaseId(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
 	println("test eq1", id)
-	query := `SELECT "caseId","caseTypeId","caseSTypeId",priority,"caseDetail","statusId",
+	query := `SELECT "caseId","createdDate","caseTypeId","caseSTypeId",priority,"caseDetail","statusId",
     "caselocAddr","caselocAddrDecs","startedDate",usercreate,"createdAt","createdBy" FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
 	logger.Debug(`Query`, zap.String("query", query))
 	var cusCase model.Case_
 	err := conn.QueryRow(ctx, query, orgId, id).Scan(
 		&cusCase.CaseID,
+		&cusCase.CreatedDate,
 		&cusCase.CaseTypeID,
 		&cusCase.CaseSTypeID,
 		&cusCase.Priority,

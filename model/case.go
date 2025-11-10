@@ -25,8 +25,8 @@ type Case struct {
 	StatusID             string          `json:"statusId"`
 	CaseLat              *string         `json:"caseLat"`
 	CaseLon              *string         `json:"caseLon"`
-	CaseLocAddr          *string         `json:"caselocAddr"`
-	CaseLocAddrDecs      *string         `json:"caselocAddrDecs"`
+	CaseLocAddr          *string         `json:"caseLocAddr"`
+	CaseLocAddrDecs      *string         `json:"caseLocAddrDecs"`
 	CountryID            string          `json:"countryId"`
 	ProvID               string          `json:"provId"`
 	DistID               string          `json:"distId"`
@@ -421,6 +421,7 @@ type Case_ struct {
 	CaseLocAddr     *string    `json:"caseLocAddr"`
 	CaseLocAddrDecs *string    `json:"caseLocAddrDecs"`
 	CreatedAt       *time.Time `json:"createdAt"`
+	CreatedDate     *time.Time `json:"createdDate"`
 	StartedDate     *time.Time `json:"startedDate"`
 	UserCreate      *string    `json:"userCreate"`
 	CreatedBy       *string    `json:"createdBy"`
