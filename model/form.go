@@ -127,12 +127,12 @@ type FormLock struct {
 	Locks  bool   `json:"locks"`
 }
 type FormUpdate struct {
-	FormName      *string                  `json:"formName"`
-	FormColSpan   int                      `json:"formColSpan"`
-	Active        bool                     `json:"active"`
-	Publish       bool                     `json:"publish"`
-	Locks         bool                     `json:"locks"`
-	FormFieldJson []map[string]interface{} `json:"formFieldJson"`
+	FormName      *string               `json:"formName"`
+	FormColSpan   int                   `json:"formColSpan"`
+	Active        bool                  `json:"active"`
+	Publish       bool                  `json:"publish"`
+	Locks         bool                  `json:"locks"`
+	FormFieldJson []IndividualFormField `json:"formFieldJson"`
 }
 
 type WorkFlow struct {
@@ -236,6 +236,7 @@ type FormAnswerRequest struct {
 	FormName      string                `json:"formName"`
 	FormColSpan   int                   `json:"formColSpan"`
 	FormFieldJson []IndividualFormField `json:"formFieldJson"`
+	UID           *string               `json:"uid,omitempty"`
 }
 
 type NodeData struct {

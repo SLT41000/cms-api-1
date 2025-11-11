@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"mainPackage/model"
@@ -150,7 +149,8 @@ func GetSOP(c *gin.Context) {
 	log.Print(formId)
 	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, formId, false)
 	if err != nil {
-		log.Fatal("GetFormAnswers error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "get Form answer Error " + err.Error()})
+		return
 	}
 	cusCase.FormAnswer = answers
 	//Get SLA
@@ -858,65 +858,113 @@ func GetUnitsWithDispatch(ctx context.Context, conn *pgx.Conn, orgID string, cas
 }
 
 func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string, returnUid bool) (*model.FormAnswerRequest, error) {
-	// Query both form metadata and answers
 	query := `
 		SELECT 
-			fb."formName",
-			fb."formColSpan",
-			fb."versions" as formVersion,
-			fa."eleData",
-			fa."id" as uid
-		FROM form_builder fb
-		LEFT JOIN form_answers fa
-			ON fb."orgId" = fa."orgId"::uuid
-			AND fb."formId" = fa."formId"::uuid
-			AND fa."caseId" = $1
-		WHERE fb."orgId" = $2
-			AND fb."formId" = $3
-		ORDER BY fa."eleNumber" ASC NULLS LAST
+		fb."formName",
+		fb."versions" AS formVersion,
+		fa."eleData",
+		fa."id" AS uid
+	FROM form_builder fb
+	LEFT JOIN form_answers fa
+		ON fb."orgId" = fa."orgId"::uuid
+		AND fb."formId" = fa."formId"::uuid
+		AND fa."caseId" = $1
+	WHERE fb."orgId" = $2::uuid
+		AND fb."formId" = $3::uuid
 	`
 
-	rows, err := conn.Query(ctx, query, caseId, orgId, formId)
+	var (
+		formName    string
+		formVersion string
+		answersJSON model.Form
+		UID         *string
+	)
+
+	err := conn.QueryRow(ctx, query, caseId, orgId, formId).Scan(
+		&formName,
+		&formVersion,
+		&answersJSON,
+		&UID,
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var formName string
-	var formColSpan int
-	var formVersion string
-	var formFieldJson []model.IndividualFormField
-
-	for rows.Next() {
-		var eleDataBytes []byte
-		var uid sql.NullString
-
-		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes, &uid); err != nil {
-			return nil, err
-		}
-
-		if len(eleDataBytes) > 0 {
-			var field model.IndividualFormField
-			if err := json.Unmarshal(eleDataBytes, &field); err != nil {
-				return nil, err
-			}
-			if returnUid && uid.Valid {
-				field.UID = &uid.String
-			}
-			formFieldJson = append(formFieldJson, field)
-		}
-	}
 
 	response := model.FormAnswerRequest{
-		Versions: formVersion,
-		// WfId:          "", // optionally fill from your workflow
+		Versions:      formVersion,
 		FormId:        formId,
 		FormName:      formName,
-		FormColSpan:   formColSpan,
-		FormFieldJson: formFieldJson,
+		FormFieldJson: answersJSON.FormFieldJson,
+		FormColSpan:   answersJSON.FormColSpan,
 	}
+
+	if returnUid {
+		response.UID = UID
+	}
+
 	return &response, nil
 }
+
+// old db stuct
+// func __GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string, returnUid bool) (*model.FormAnswerRequest, error) {
+
+// 	query := `
+// 		SELECT
+// 			fb."formName",
+// 			fb."formColSpan",
+// 			fb."versions" as formVersion,
+// 			fa."eleData",
+// 			fa."id" as uid
+// 		FROM form_builder fb
+// 		LEFT JOIN form_answers fa
+// 			ON fb."orgId" = fa."orgId"::uuid
+// 			AND fb."formId" = fa."formId"::uuid
+// 			AND fa."caseId" = $1
+// 		WHERE fb."orgId" = $2
+// 			AND fb."formId" = $3
+// 		ORDER BY fa."eleNumber" ASC NULLS LAST
+// 	`
+
+// 	rows, err := conn.Query(ctx, query, caseId, orgId, formId)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	var formName string
+// 	var formColSpan int
+// 	var formVersion string
+// 	var formFieldJson []model.IndividualFormField
+
+// 	for rows.Next() {
+// 		var eleDataBytes []byte
+// 		var uid sql.NullString
+
+// 		if err := rows.Scan(&formName, &formColSpan, &formVersion, &eleDataBytes, &uid); err != nil {
+// 			return nil, err
+// 		}
+
+// 		if len(eleDataBytes) > 0 {
+// 			var field model.IndividualFormField
+// 			if err := json.Unmarshal(eleDataBytes, &field); err != nil {
+// 				return nil, err
+// 			}
+// 			if returnUid && uid.Valid {
+// 				field.UID = &uid.String
+// 			}
+// 			formFieldJson = append(formFieldJson, field)
+// 		}
+// 	}
+
+// 	response := model.FormAnswerRequest{
+// 		Versions: formVersion,
+// 		FormId:        formId,
+// 		FormName:      formName,
+// 		FormColSpan:   formColSpan,
+// 		FormFieldJson: formFieldJson,
+// 	}
+// 	return &response, nil
+// }
 
 func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitId string) ([]model.CaseResponderCustom, error) {
 	// 1. Get master status list

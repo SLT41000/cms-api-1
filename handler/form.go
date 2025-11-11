@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -161,14 +160,13 @@ func GetAllForm(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
-    form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy" 
-              ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
-              FROM public.form_builder 
-              INNER JOIN public.form_elements 
-              ON form_builder."formId" = form_elements."formId" 
-              WHERE form_builder."orgId" = $1
-              ORDER BY public.form_elements."eleNumber" ASC`
+	query := `SELECT DISTINCT ON (fb."formId") 
+    fb."formId", fe."versions", fb."active", fb."publish", fb."formName",
+    fb."locks", fe."eleData", fe."createdBy", fe."createdAt", fe."updatedAt", fe."updatedBy"
+	FROM public.form_builder AS fb 
+	INNER JOIN public.form_elements AS fe ON fb."formId" = fe."formId"
+	WHERE fb."orgId" = $1
+	ORDER BY fb."formId" ASC, CAST(fe."versions" AS INTEGER) DESC;`
 
 	logger.Debug("Query", zap.String("query", query))
 
@@ -205,7 +203,6 @@ func GetAllForm(c *gin.Context) {
 			&form.Publish,
 			&form.FormName,
 			&form.Locks,
-			&form.FormColSpan,
 			&rawJSON,
 			&form.CreatedBy,
 			&form.CreatedAt,
@@ -218,27 +215,16 @@ func GetAllForm(c *gin.Context) {
 			continue
 		}
 
-		var field model.IndividualFormField
-		if err := json.Unmarshal(rawJSON, &field); err != nil {
-			logger.Warn("Unmarshal field failed", zap.Error(err))
+		var eleData model.Form
+		if err := json.Unmarshal(rawJSON, &eleData); err != nil {
+			logger.Warn("Unmarshal eleData failed", zap.Error(err))
 			continue
 		}
 
-		form.FormFieldJson = []model.IndividualFormField{field}
+		form.FormFieldJson = eleData.FormFieldJson
+		form.FormColSpan = eleData.FormColSpan
 		forms = append(forms, form)
 		// logger.Debug("Row data", zap.Any("form", form))
-	}
-
-	var result []model.FormsManager
-	formMap := make(map[string]int)
-	for _, form := range forms {
-		if idx, exists := formMap[*form.FormName]; exists {
-			result[idx].FormFieldJson = append(result[idx].FormFieldJson, form.FormFieldJson...)
-		} else {
-			result = append(result, form)
-			formMap[*form.FormName] = len(result) - 1
-			logger.Debug("DEBUG", zap.Any("formMap", formMap))
-		}
 	}
 
 	if len(forms) == 0 {
@@ -261,7 +247,7 @@ func GetAllForm(c *gin.Context) {
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
-		Data:   result,
+		Data:   forms,
 	}
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
@@ -273,6 +259,159 @@ func GetAllForm(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// old_db_stuct
+// func ___GetAllForm(c *gin.Context) {
+// 	logger := utils.GetLog()
+// 	conn, ctx, cancel := utils.ConnectDB()
+// 	if conn == nil {
+// 		return
+// 	}
+// 	defer cancel()
+// 	defer conn.Close(ctx)
+
+// 	id := c.Param("id")
+// 	start_time := time.Now()
+// 	username := GetVariableFromToken(c, "username")
+// 	orgId := GetVariableFromToken(c, "orgId")
+// 	txtId := uuid.New().String()
+
+// 	if orgId == "" {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Invalid token",
+// 			Desc:   "orgId not found in token",
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetAllForm", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Invalid Token",
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusBadRequest, response)
+// 		return
+// 	}
+// 	query := `SELECT form_builder."formId", form_builder."versions",form_builder."active",form_builder."publish",
+//     form_builder."formName",form_builder."locks", form_builder."formColSpan", form_elements."eleData" , form_elements."createdBy"
+//               ,form_elements."createdAt", form_elements."updatedAt",  form_elements."updatedBy"
+//               FROM public.form_builder
+//               INNER JOIN public.form_elements
+//               ON form_builder."formId" = form_elements."formId"
+//               WHERE form_builder."orgId" = $1
+//               ORDER BY public.form_elements."eleNumber" ASC`
+
+// 	logger.Debug("Query", zap.String("query", query))
+
+// 	rows, err := conn.Query(ctx, query, orgId)
+// 	if err != nil {
+// 		logger.Warn("Query failed", zap.Error(err))
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetAllForm", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		return
+// 	}
+// 	defer rows.Close()
+
+// 	var forms []model.FormsManager
+
+// 	for rows.Next() {
+// 		var rawJSON []byte
+// 		var form model.FormsManager
+
+// 		err := rows.Scan(
+// 			&form.FormId,
+// 			&form.Versions,
+// 			&form.Active,
+// 			&form.Publish,
+// 			&form.FormName,
+// 			&form.Locks,
+// 			&form.FormColSpan,
+// 			&rawJSON,
+// 			&form.CreatedBy,
+// 			&form.CreatedAt,
+// 			&form.UpdatedAt,
+// 			&form.UpdatedBy,
+// 		)
+
+// 		if err != nil {
+// 			logger.Warn("Scan failed", zap.Error(err))
+// 			continue
+// 		}
+
+// 		var field model.IndividualFormField
+// 		if err := json.Unmarshal(rawJSON, &field); err != nil {
+// 			logger.Warn("Unmarshal field failed", zap.Error(err))
+// 			continue
+// 		}
+
+// 		form.FormFieldJson = []model.IndividualFormField{field}
+// 		forms = append(forms, form)
+// 		// logger.Debug("Row data", zap.Any("form", form))
+// 	}
+
+// 	var result []model.FormsManager
+// 	formMap := make(map[string]int)
+// 	for _, form := range forms {
+// 		if idx, exists := formMap[*form.FormName]; exists {
+// 			result[idx].FormFieldJson = append(result[idx].FormFieldJson, form.FormFieldJson...)
+// 		} else {
+// 			result = append(result, form)
+// 			formMap[*form.FormName] = len(result) - 1
+// 			logger.Debug("DEBUG", zap.Any("formMap", formMap))
+// 		}
+// 	}
+
+// 	if len(forms) == 0 {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "No data found",
+// 			Data:   nil,
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetAllForm", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusNotFound, response)
+// 		return
+// 	}
+
+// 	response := model.Response{
+// 		Status: "0",
+// 		Msg:    "Success",
+// 		Data:   result,
+// 	}
+// 	//=======AUDIT_START=====//
+// 	_ = utils.InsertAuditLogs(
+// 		c, conn, orgId.(string), username.(string),
+// 		txtId, id, "Form", "GetAllForm", "",
+// 		"search", 0, start_time, GetQueryParams(c), response, "GetAllForm Success.",
+// 	)
+// 	//=======AUDIT_END=====//
+// 	c.JSON(http.StatusOK, response)
+// }
+
+// @summary Create Form
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Create Form
+// @accept json
+// @produce json
+// @param Case body model.FormInsert true "Created Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/forms [post]
 // @summary Create Form
 // @tags Form and Workflow
 // @security ApiKeyAuth
@@ -319,6 +458,7 @@ func FormInsert(c *gin.Context) {
 	now := time.Now()
 	var id int
 	var exists bool
+	uuidStr := uuid.String()
 	checkQuery := `
 	SELECT EXISTS (
 		SELECT 1 FROM public."form_builder" 
@@ -362,12 +502,12 @@ func FormInsert(c *gin.Context) {
 	}
 	query := `
 	INSERT INTO public."form_builder"(
-	"orgId", "formId", "formName", "formColSpan", active, publish, versions, locks, "createdAt", "updatedAt", "createdBy", "updatedBy")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	"orgId", "formId", "formName", active, publish, versions, locks, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	RETURNING id ;
 	`
 	err = conn.QueryRow(ctx, query,
-		orgId, uuid, req.FormName, req.FormColSpan, req.Active, req.Publish, "draft", req.Locks, now,
+		orgId, uuid, req.FormName, req.Active, req.Publish, "1", req.Locks, now,
 		now, username, username).Scan(&id)
 
 	if err != nil {
@@ -389,43 +529,42 @@ func FormInsert(c *gin.Context) {
 		return
 	}
 
-	for i, item := range req.FormFieldJson {
-		logger.Debug("eleNumber", zap.Int("i", i+1))
-		logger.Debug("JsonArray", zap.Any("Json", item))
-		query := `
-				INSERT INTO public.form_elements(
-				"orgId", "formId", versions, "eleNumber", "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				RETURNING id ;
-				`
-		err = conn.QueryRow(ctx, query,
-			orgId, uuid, "draft", i+1, item, now, now, username, username).Scan(&id)
+	form := model.Form{
+		FormName:      req.FormName,
+		FormId:        &uuidStr,
+		FormColSpan:   req.FormColSpan,
+		FormFieldJson: req.FormFieldJson,
+	}
 
-		if err != nil {
-			// log.Printf("Insert failed: %v", err)
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failure",
-				Desc:   err.Error(),
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, orgId.(string), username.(string),
-				txtId, uuid.String(), "Form", "FormInsert", "",
-				"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusInternalServerError, response)
-			logger.Warn("Insert failed", zap.Error(err))
-			return
+	err = InsertFormElement(conn, ctx, form, orgId.(string), username.(string), "1", uuid.String(), nil, nil)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
 		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, uuid.String(), "Form", "FormInsert", "",
+			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Insert failed", zap.Error(err))
+		return
 	}
 
 	response := model.Response{
 		Status: "0",
 		Msg:    "Success",
 		Desc:   "Create successfully",
-		Data:   uuid,
+		Data: map[string]interface{}{
+			"formId":  uuid,
+			"version": 1,
+		},
 	}
 
 	//=======AUDIT_START=====//
@@ -437,6 +576,163 @@ func FormInsert(c *gin.Context) {
 	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 }
+
+// old db stuct
+// func ___FormInsert(c *gin.Context) {
+// 	logger := utils.GetLog()
+// 	conn, ctx, cancel := utils.ConnectDB()
+// 	if conn == nil {
+// 		return
+// 	}
+// 	defer cancel()
+// 	defer conn.Close(ctx)
+
+// 	start_time := time.Now()
+// 	username := GetVariableFromToken(c, "username")
+// 	orgId := GetVariableFromToken(c, "orgId")
+// 	txtId := uuid.New().String()
+
+// 	var req model.FormInsert
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, "", "Form", "FormInsert", "",
+// 			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusBadRequest, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+
+// 	uuid := uuid.New()
+// 	now := time.Now()
+// 	var id int
+// 	var exists bool
+// 	checkQuery := `
+// 	SELECT EXISTS (
+// 		SELECT 1 FROM public."form_builder"
+// 		WHERE "orgId" = $1 AND "formName" = $2
+// 	);
+// `
+// 	err := conn.QueryRow(ctx, checkQuery, orgId, req.FormName).Scan(&exists)
+// 	if err != nil {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, "", "Form", "FormInsert", "",
+// 			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+// 	if exists {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   "form name already exists",
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, "", "Form", "FormInsert", "",
+// 			"create", -1, start_time, GetQueryParams(c), response, "form name already exists.",
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		logger.Warn("Insert failed form name already exists")
+// 		return
+// 	}
+// 	query := `
+// 	INSERT INTO public."form_builder"(
+// 	"orgId", "formId", "formName", "formColSpan", active, publish, versions, locks, "createdAt", "updatedAt", "createdBy", "updatedBy")
+// 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+// 	RETURNING id ;
+// 	`
+// 	err = conn.QueryRow(ctx, query,
+// 		orgId, uuid, req.FormName, req.FormColSpan, req.Active, req.Publish, "draft", req.Locks, now,
+// 		now, username, username).Scan(&id)
+
+// 	if err != nil {
+// 		// log.Printf("Insert failed: %v", err)
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, "", "Form", "FormInsert", "",
+// 			"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+
+// 	for i, item := range req.FormFieldJson {
+// 		logger.Debug("eleNumber", zap.Int("i", i+1))
+// 		logger.Debug("JsonArray", zap.Any("Json", item))
+// 		query := `
+// 				INSERT INTO public.form_elements(
+// 				"orgId", "formId", versions, "eleNumber", "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
+// 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+// 				RETURNING id ;
+// 				`
+// 		err = conn.QueryRow(ctx, query,
+// 			orgId, uuid, "draft", i+1, item, now, now, username, username).Scan(&id)
+
+// 		if err != nil {
+// 			// log.Printf("Insert failed: %v", err)
+// 			response := model.Response{
+// 				Status: "-1",
+// 				Msg:    "Failure",
+// 				Desc:   err.Error(),
+// 			}
+// 			//=======AUDIT_START=====//
+// 			_ = utils.InsertAuditLogs(
+// 				c, conn, orgId.(string), username.(string),
+// 				txtId, uuid.String(), "Form", "FormInsert", "",
+// 				"create", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 			)
+// 			//=======AUDIT_END=====//
+// 			c.JSON(http.StatusInternalServerError, response)
+// 			logger.Warn("Insert failed", zap.Error(err))
+// 			return
+// 		}
+// 	}
+
+// 	response := model.Response{
+// 		Status: "0",
+// 		Msg:    "Success",
+// 		Desc:   "Create successfully",
+// 		Data:   uuid,
+// 	}
+
+// 	//=======AUDIT_START=====//
+// 	_ = utils.InsertAuditLogs(
+// 		c, conn, orgId.(string), username.(string),
+// 		txtId, uuid.String(), "Form", "FormInsert", "",
+// 		"create", 0, start_time, GetQueryParams(c), response, "FormInsert Success.",
+// 	)
+// 	//=======AUDIT_END=====//
+// 	c.JSON(http.StatusOK, response)
+// }
 
 // @summary Update Form
 // @tags Form and Workflow
@@ -468,13 +764,11 @@ func FormUpdate(c *gin.Context) {
 			Msg:    "Failure",
 			Desc:   err.Error(),
 		}
-		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			uuid, "", "Form", "FormUpdate", "",
 			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
 		)
-		//=======AUDIT_END=====//
 		c.JSON(http.StatusBadRequest, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
@@ -482,92 +776,130 @@ func FormUpdate(c *gin.Context) {
 
 	now := time.Now()
 	var id int
+	var formElementsLastVersion int
+	var currentVersion string
 
-	query := `
-	UPDATE public.form_builder
-	SET "formName"=$2, "formColSpan"=$3, active=$4, publish=$5,
-	 versions=$6, locks=$7, "updatedAt"=$8,"updatedBy"=$9
-	WHERE "formId"=$1 AND "orgId"=$10;
-	`
-	_, err := conn.Exec(ctx, query, uuid,
-		req.FormName, req.FormColSpan, req.Active, req.Publish, "draft", req.Locks,
-		now, username, orgId)
+	err := conn.QueryRow(ctx, `
+		SELECT versions FROM public.form_builder
+		WHERE "formId"=$1 AND "orgId"=$2
+	`, uuid, orgId).Scan(&currentVersion)
+
+	println("form current Version :" + currentVersion)
 
 	if err != nil {
-		// log.Printf("Insert failed: %v", err)
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failure",
 			Desc:   err.Error(),
 		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			uuid, "", "Form", "FormUpdate", "",
-			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, response)
-		logger.Warn("Insert failed", zap.Error(err))
-		return
-	}
-
-	query = `
-	DELETE FROM public.form_elements
-	WHERE "formId"=$1;
-	`
-	_, err = conn.Exec(ctx, query, uuid)
-
-	if err != nil {
-		// log.Printf("Insert failed: %v", err)
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
 			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
 		)
-		//=======AUDIT_END=====//
 		c.JSON(http.StatusInternalServerError, response)
 		logger.Warn("Insert failed", zap.Error(err))
 		return
 	}
 
-	for i, item := range req.FormFieldJson {
-		now := time.Now()
-		logger.Debug("eleNumber", zap.Int("i", i+1))
-		logger.Debug("JsonArray", zap.Any("Json", item))
-		query := `
-				INSERT INTO public.form_elements(
-				"orgId", "formId", versions, "eleNumber", "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				RETURNING id ;
-				`
-		err = conn.QueryRow(ctx, query,
-			orgId, uuid, "draft", i+1, item, now, now, username, username).Scan(&id)
+	var createBy string
+	var createAt time.Time
 
-		if err != nil {
-			// log.Printf("Insert failed: %v", err)
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failure",
-				Desc:   err.Error(),
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, orgId.(string), username.(string),
-				uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
-				"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusInternalServerError, response)
-			logger.Warn("Insert failed", zap.Error(err))
-			return
+	err = conn.QueryRow(ctx, `
+		SELECT CAST(versions AS INTEGER) AS max_version,
+			"createdAt", "createdBy"
+		FROM public.form_elements
+		WHERE "formId" = $1 AND "orgId" = $2
+		ORDER BY CAST(versions AS INTEGER) DESC
+		LIMIT 1
+	`, uuid, orgId).Scan(&formElementsLastVersion, &createAt, &createBy)
+
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
 		}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Update main form
+	query := `
+	UPDATE public.form_builder
+	SET "formName"=$2, active=$3, publish=$4,
+	    locks=$5, "updatedAt"=$6, "updatedBy"=$7
+	WHERE "formId"=$1 AND "orgId"=$8;
+	`
+	_, err = conn.Exec(ctx, query, uuid,
+		req.FormName, req.Active, req.Publish, req.Locks,
+		now, username, orgId)
+
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, "", "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
+
+	// Convert version string to int
+	currentVersionInt, _ := strconv.Atoi(currentVersion)
+
+	if currentVersionInt == formElementsLastVersion {
+		form := model.Form{
+			FormName:      req.FormName,
+			FormId:        &uuid,
+			FormColSpan:   req.FormColSpan,
+			FormFieldJson: req.FormFieldJson,
+		}
+		newVersion := strconv.Itoa(currentVersionInt + 1)
+		err = InsertFormElement(conn, ctx, form, orgId.(string), username.(string), newVersion, uuid, &createAt, &createBy)
+	} else {
+		form := model.Form{
+			FormName:      req.FormName,
+			FormColSpan:   req.FormColSpan,
+			FormFieldJson: req.FormFieldJson,
+			FormId:        &uuid,
+		}
+
+		eleData, _ := json.Marshal(form)
+		updateEleQuery := `
+			UPDATE public.form_elements
+			SET "eleData"=$3, "updatedAt"=$4, "updatedBy"=$5
+			WHERE "formId"=$1 AND "orgId"=$2 AND versions=$6;
+		`
+		_, err = conn.Exec(ctx, updateEleQuery, uuid, orgId, eleData, now, username, strconv.Itoa(formElementsLastVersion))
+	}
+
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Insert failed", zap.Error(err))
+		return
 	}
 
 	response := model.Response{
@@ -575,15 +907,151 @@ func FormUpdate(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Update successfully",
 	}
-	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
 		uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
 		"Update", 0, start_time, GetQueryParams(c), response, "FormUpdate Success.",
 	)
-	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 }
+
+//old db stuct
+// func FormUpdate(c *gin.Context) {
+// 	logger := utils.GetLog()
+// 	conn, ctx, cancel := utils.ConnectDB()
+// 	if conn == nil {
+// 		return
+// 	}
+// 	defer cancel()
+// 	defer conn.Close(ctx)
+// 	uuid := c.Param("uuid")
+// 	start_time := time.Now()
+// 	username := GetVariableFromToken(c, "username")
+// 	orgId := GetVariableFromToken(c, "orgId")
+
+// 	var req model.FormUpdate
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			uuid, "", "Form", "FormUpdate", "",
+// 			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusBadRequest, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+
+// 	now := time.Now()
+// 	var id int
+
+// 	query := `
+// 	UPDATE public.form_builder
+// 	SET "formName"=$2, "formColSpan"=$3, active=$4, publish=$5,
+// 	 versions=$6, locks=$7, "updatedAt"=$8,"updatedBy"=$9
+// 	WHERE "formId"=$1 AND "orgId"=$10;
+// 	`
+// 	_, err := conn.Exec(ctx, query, uuid,
+// 		req.FormName, req.FormColSpan, req.Active, req.Publish, "draft", req.Locks,
+// 		now, username, orgId)
+
+// 	if err != nil {
+// 		// log.Printf("Insert failed: %v", err)
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			uuid, "", "Form", "FormUpdate", "",
+// 			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+
+// 	query = `
+// 	DELETE FROM public.form_elements
+// 	WHERE "formId"=$1;
+// 	`
+// 	_, err = conn.Exec(ctx, query, uuid)
+
+// 	if err != nil {
+// 		// log.Printf("Insert failed: %v", err)
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+// 			"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+
+// 	for i, item := range req.FormFieldJson {
+// 		now := time.Now()
+// 		logger.Debug("eleNumber", zap.Int("i", i+1))
+// 		logger.Debug("JsonArray", zap.Any("Json", item))
+// 		query := `
+// 				INSERT INTO public.form_elements(
+// 				"orgId", "formId", versions, "eleNumber", "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
+// 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+// 				RETURNING id ;
+// 				`
+// 		err = conn.QueryRow(ctx, query,
+// 			orgId, uuid, "draft", i+1, item, now, now, username, username).Scan(&id)
+
+// 		if err != nil {
+// 			// log.Printf("Insert failed: %v", err)
+// 			response := model.Response{
+// 				Status: "-1",
+// 				Msg:    "Failure",
+// 				Desc:   err.Error(),
+// 			}
+// 			//=======AUDIT_START=====//
+// 			_ = utils.InsertAuditLogs(
+// 				c, conn, orgId.(string), username.(string),
+// 				uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+// 				"Update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 			)
+// 			//=======AUDIT_END=====//
+// 			c.JSON(http.StatusInternalServerError, response)
+// 			logger.Warn("Insert failed", zap.Error(err))
+// 			return
+// 		}
+// 	}
+
+// 	response := model.Response{
+// 		Status: "0",
+// 		Msg:    "Success",
+// 		Desc:   "Update successfully",
+// 	}
+// 	//=======AUDIT_START=====//
+// 	_ = utils.InsertAuditLogs(
+// 		c, conn, orgId.(string), username.(string),
+// 		uuid, strconv.Itoa(id), "Form", "FormUpdate", "",
+// 		"Update", 0, start_time, GetQueryParams(c), response, "FormUpdate Success.",
+// 	)
+// 	//=======AUDIT_END=====//
+// 	c.JSON(http.StatusOK, response)
+// }
 
 // @summary Update Form Publish
 // @tags Form and Workflow
@@ -609,7 +1077,7 @@ func FormPublish(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-
+	var formElementsLastVersion int
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response := model.Response{
 			Status: "-1",
@@ -629,13 +1097,39 @@ func FormPublish(c *gin.Context) {
 	}
 
 	now := time.Now()
+	err := conn.QueryRow(ctx, `
+		SELECT CAST(versions AS INTEGER) AS max_version
+		FROM public.form_elements
+		WHERE "formId" = $1 AND "orgId" = $2
+		ORDER BY CAST(versions AS INTEGER) DESC
+		LIMIT 1
+	`, req.FormID, orgId).Scan(&formElementsLastVersion)
+
+	if err != nil {
+		// log.Printf("Insert failed: %v", err)
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormPubilsh", "",
+			"update", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Insert failed", zap.Error(err))
+		return
+	}
 
 	query := `
 	UPDATE public.form_builder
-	SET publish=$2, "updatedAt"=$3,"updatedBy"=$4
+	SET publish=$2, "updatedAt"=$3,"updatedBy"=$4, versions =$6
 	WHERE "formId"=$1 AND "orgId"=$5;
 	`
-	_, err := conn.Exec(ctx, query, req.FormID, req.Publish, now, username, orgId)
+	_, err = conn.Exec(ctx, query, req.FormID, req.Publish, now, username, orgId, strconv.Itoa(formElementsLastVersion))
 	logger.Debug("Update Case SQL Args",
 		zap.String("query", query),
 		zap.Any("Input", []any{
@@ -1859,7 +2353,7 @@ WHERE t1."wfId" = $1
 	}
 	logger.Debug(formId)
 	rows.Close()
-	query = `SELECT t1."formId",t1."formName",t1."formColSpan",t2."eleData" 
+	query = `SELECT t1."formId",t1."formName",t2."eleData" 
 	FROM public.form_builder t1
 	INNER JOIN public.form_elements t2
 	ON t1."formId"=t2."formId" AND t2."versions"=t1."versions"
@@ -1887,12 +2381,11 @@ WHERE t1."wfId" = $1
 		return
 	}
 	defer rows.Close()
-	var formFields []model.IndividualFormField
 	var form model.FormAnswerRequest
 	found := false
 	for rows.Next() {
 		var rawJSON []byte
-		err := rows.Scan(&form.FormId, &form.FormName, &form.FormColSpan, &rawJSON)
+		err := rows.Scan(&form.FormId, &form.FormName, &rawJSON)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -1911,7 +2404,7 @@ WHERE t1."wfId" = $1
 			return
 		}
 
-		var field model.IndividualFormField
+		var field model.Form
 		if err := json.Unmarshal(rawJSON, &field); err != nil {
 			logger.Warn("unmarshal field failed", zap.Error(err))
 			response := model.Response{
@@ -1930,8 +2423,8 @@ WHERE t1."wfId" = $1
 			return
 		}
 
-		formFields = append(formFields, field)
-		form.FormFieldJson = formFields
+		form.FormColSpan = field.FormColSpan
+		form.FormFieldJson = field.FormFieldJson
 		found = true
 	}
 	if !found {
@@ -1970,42 +2463,326 @@ WHERE t1."wfId" = $1
 
 }
 
-func InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
-	for i, field := range fa.FormFieldJson { // i = int, field = map[string]interface{}
-		eleDataJSON, err := json.Marshal(field)
-		if err != nil {
-			return err
-		}
+// old db stuct
+// func GetFormByCaseSubType(c *gin.Context) {
+// 	logger := utils.GetLog()
+// 	conn, ctx, cancel := utils.ConnectDB()
+// 	if conn == nil {
+// 		return
+// 	}
+// 	defer cancel()
+// 	defer conn.Close(ctx)
+// 	id := c.Param("id")
+// 	start_time := time.Now()
+// 	username := GetVariableFromToken(c, "username")
+// 	orgId := GetVariableFromToken(c, "orgId")
+// 	txtId := uuid.New().String()
+// 	var req model.FormByCasesubtype
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetFormByCaseSubType", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusBadRequest, response)
+// 		logger.Warn("Insert failed", zap.Error(err))
+// 		return
+// 	}
+// 	var wfId string
+// 	// username := GetVariableFromToken(c, "username")
+// 	query := `SELECT "wfId" FROM public.case_sub_types WHERE "orgId"=$1 AND "sTypeId"=$2`
+// 	logger.Debug(`Query`, zap.String("query", query),
+// 		zap.Any("Input", []any{
+// 			orgId, req.CaseSubType,
+// 		}))
+// 	err := conn.QueryRow(ctx, query, orgId, req.CaseSubType).Scan(&wfId)
+// 	if err != nil {
+// 		logger.Warn("Query failed", zap.Error(err))
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetFormByCaseSubType", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		return
+// 	}
 
-		var insertedID int64
-		query := `
+// 	query = `SELECT
+//     t2."section",
+//     t2."data",
+//     t2."nodeId",
+//     t1."versions"
+// FROM public.wf_definitions t1
+// INNER JOIN public.wf_nodes t2
+//     ON t1."wfId" = t2."wfId" AND t1."versions" = t2."versions"
+// WHERE t1."wfId" = $1
+//   AND t1."orgId" = $2
+//   AND LOWER(t2."type") = 'process'
+//   AND t2."data"->'data'->'config'->>'action' = 'S001'`
+// 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
+// 		wfId, orgId,
+// 	}))
+
+// 	var rows pgx.Rows
+// 	rows, err = conn.Query(ctx, query, wfId, orgId)
+// 	if err != nil {
+// 		logger.Warn("Query failed", zap.Error(err))
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetFormByCaseSubType", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		return
+// 	}
+// 	defer rows.Close()
+// 	var formId string
+// 	var nodeId string
+// 	var versions string
+// 	for rows.Next() {
+// 		var rawJSON []byte
+// 		var rowsType string
+// 		var tempNodeId, tempVersions string
+
+// 		err := rows.Scan(&rowsType, &rawJSON, &tempNodeId, &tempVersions)
+// 		if err != nil {
+// 			logger.Warn("Scan failed", zap.Error(err))
+// 			continue
+// 		}
+
+// 		// Only handle nodes
+// 		if rowsType != "nodes" {
+// 			continue
+// 		}
+
+// 		var nodeMap map[string]interface{}
+// 		if err := json.Unmarshal(rawJSON, &nodeMap); err != nil {
+// 			logger.Warn("Unmarshal failed", zap.Error(err))
+// 			continue
+// 		}
+
+// 		// Access data -> config -> formId if action = S002
+// 		if data, ok := nodeMap["data"].(map[string]interface{}); ok {
+// 			if config, ok := data["config"].(map[string]interface{}); ok {
+// 				if action, ok := config["action"].(string); ok && action == "S001" {
+// 					if formVal, ok := config["formId"].(string); ok {
+// 						formId = formVal
+// 						nodeId = tempNodeId
+// 						versions = tempVersions
+// 						break // found, exit loop
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	logger.Debug(formId)
+// 	rows.Close()
+// 	query = `SELECT t1."formId",t1."formName",t1."formColSpan",t2."eleData"
+// 	FROM public.form_builder t1
+// 	INNER JOIN public.form_elements t2
+// 	ON t1."formId"=t2."formId" AND t2."versions"=t1."versions"
+// 	WHERE t1."formId" = $1 AND t1."orgId"=$2 `
+
+// 	logger.Debug(`Query`, zap.String("query", query), zap.Any("Input", []any{
+// 		formId, orgId,
+// 	}))
+// 	rows, err = conn.Query(ctx, query, formId, orgId)
+// 	if err != nil {
+// 		logger.Warn("Query failed", zap.Error(err))
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failure",
+// 			Desc:   err.Error(),
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetFormByCaseSubType", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		return
+// 	}
+// 	defer rows.Close()
+// 	var formFields []model.IndividualFormField
+// 	var form model.FormAnswerRequest
+// 	found := false
+// 	for rows.Next() {
+// 		var rawJSON []byte
+// 		err := rows.Scan(&form.FormId, &form.FormName, &form.FormColSpan, &rawJSON)
+// 		if err != nil {
+// 			logger.Warn("Scan failed", zap.Error(err))
+// 			response := model.Response{
+// 				Status: "-1",
+// 				Msg:    "Failed",
+// 				Desc:   err.Error(),
+// 			}
+// 			//=======AUDIT_START=====//
+// 			_ = utils.InsertAuditLogs(
+// 				c, conn, orgId.(string), username.(string),
+// 				txtId, id, "Form", "GetFormByCaseSubType", "",
+// 				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 			)
+// 			//=======AUDIT_END=====//
+// 			c.JSON(http.StatusOK, response)
+// 			return
+// 		}
+
+// 		var field model.IndividualFormField
+// 		if err := json.Unmarshal(rawJSON, &field); err != nil {
+// 			logger.Warn("unmarshal field failed", zap.Error(err))
+// 			response := model.Response{
+// 				Status: "-1",
+// 				Msg:    "Failed",
+// 				Desc:   err.Error(),
+// 			}
+// 			//=======AUDIT_START=====//
+// 			_ = utils.InsertAuditLogs(
+// 				c, conn, orgId.(string), username.(string),
+// 				txtId, id, "Form", "GetFormByCaseSubType", "",
+// 				"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
+// 			)
+// 			//=======AUDIT_END=====//
+// 			c.JSON(http.StatusOK, response)
+// 			return
+// 		}
+
+// 		formFields = append(formFields, field)
+// 		form.FormFieldJson = formFields
+// 		found = true
+// 	}
+// 	if !found {
+// 		response := model.Response{
+// 			Status: "-1",
+// 			Msg:    "Failed",
+// 			Desc:   "No form data found",
+// 		}
+// 		//=======AUDIT_START=====//
+// 		_ = utils.InsertAuditLogs(
+// 			c, conn, orgId.(string), username.(string),
+// 			txtId, id, "Form", "GetFormByCaseSubType", "",
+// 			"search", -1, start_time, GetQueryParams(c), response, "Not Found.",
+// 		)
+// 		//=======AUDIT_END=====//
+// 		c.JSON(http.StatusInternalServerError, response)
+// 		return
+// 	}
+// 	form.NextNodeId = nodeId
+// 	form.Versions = versions
+// 	form.WfId = wfId
+// 	response := model.Response{
+// 		Status: "0",
+// 		Msg:    "Success",
+// 		Data:   form,
+// 		Desc:   "",
+// 	}
+// 	//=======AUDIT_START=====//
+// 	_ = utils.InsertAuditLogs(
+// 		c, conn, orgId.(string), username.(string),
+// 		txtId, id, "Form", "GetFormByCaseSubType", "",
+// 		"search", 0, start_time, GetQueryParams(c), response, "GetFormByCaseSubType Success.",
+// 	)
+// 	//=======AUDIT_END=====//
+// 	c.JSON(http.StatusOK, response)
+
+// }
+
+func InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
+
+	form := model.Form{
+		FormName:      &fa.FormName,
+		FormColSpan:   fa.FormColSpan,
+		FormFieldJson: fa.FormFieldJson,
+		FormId:        &fa.FormId,
+	}
+	var insertedID int64
+	query := `
 			INSERT INTO form_answers (
 				"orgId", "caseId", "formId", "versions",
-				"eleNumber", "eleData",
+				 "eleData",
 				"createdAt", "updatedAt", "createdBy", "updatedBy"
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 			RETURNING id
 		`
 
-		err = conn.QueryRow(ctx, query,
-			orgId,
-			caseId,
-			fa.FormId,
-			fa.Versions,
-			i+1,         // ✅ ตอนนี้ i เป็น int แล้ว ใช้ i+1 ได้
-			eleDataJSON, // eleData = JSON field
-			time.Now(),
-			time.Now(),
-			user,
-			user,
-		).Scan(&insertedID)
+	err := conn.QueryRow(ctx, query,
+		orgId,
+		caseId,
+		fa.FormId,
+		fa.Versions,
+		form,
+		time.Now(),
+		time.Now(),
+		user,
+		user,
+	).Scan(&insertedID)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
+
+// for old db stuct
+// func __InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
+// 	for i, field := range fa.FormFieldJson {
+// 		eleDataJSON, err := json.Marshal(field)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		var insertedID int64
+// 		query := `
+// 			INSERT INTO form_answers (
+// 				"orgId", "caseId", "formId", "versions",
+// 				"eleNumber", "eleData",
+// 				"createdAt", "updatedAt", "createdBy", "updatedBy"
+// 			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+// 			RETURNING id
+// 		`
+
+// 		err = conn.QueryRow(ctx, query,
+// 			orgId,
+// 			caseId,
+// 			fa.FormId,
+// 			fa.Versions,
+// 			i+1,
+// 			eleDataJSON,
+// 			time.Now(),
+// 			time.Now(),
+// 			user,
+// 			user,
+// 		).Scan(&insertedID)
+
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 func UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
 	oldform, err := GetFormAnswers(conn, ctx, orgId, caseId, fa.FormId, true)
@@ -2015,32 +2792,9 @@ func UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId 
 	if len(oldform.FormFieldJson) != len(fa.FormFieldJson) {
 		log.Fatal("form not match")
 	}
-	for i, field := range fa.FormFieldJson { // i = int, field = map[string]interface{}
-		eleDataJSON, err := json.Marshal(field)
-		if err != nil {
-			return err
-		}
-		if field.ID != oldform.FormFieldJson[i].ID {
-			return errors.New("form id does't not match")
-		}
 
-		oldEleDataJSON, err := json.Marshal(oldform.FormFieldJson[i])
-		if bytes.Equal(oldEleDataJSON, eleDataJSON) {
-			log.Printf("Skipping field - value unchanged ")
-			continue
-		}
-		if oldform.FormFieldJson[i].UID == nil {
-			log.Printf("⚠️ Skipping field because UID is empty at index %d", i)
-			return errors.New("no form UID")
-		}
-		var uid = *oldform.FormFieldJson[i].UID
-
-		if uid == "" {
-			return errors.New("no form UID")
-		}
-
-		query := `
-		UPDATE form_answers 
+	query := `
+		UPDATE form_answers
 		SET 
 			"eleData" = $1,
 			"updatedAt" = NOW(),
@@ -2049,12 +2803,115 @@ func UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId 
 			"id" = $3 
 			
 	`
+	var uid = *oldform.UID
 
-		_, err = conn.Exec(ctx, query, eleDataJSON, user, uid)
+	if uid == "" {
+		return errors.New("no form UID")
+	}
+	_, err = conn.Exec(ctx, query, fa, user, uid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//old db stuct
+// func __UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
+// 	oldform, err := GetFormAnswers(conn, ctx, orgId, caseId, fa.FormId, true)
+// 	if err != nil {
+// 		log.Fatal("query error:", err)
+// 	}
+// 	if len(oldform.FormFieldJson) != len(fa.FormFieldJson) {
+// 		log.Fatal("form not match")
+// 	}
+// 	for i, field := range fa.FormFieldJson { // i = int, field = map[string]interface{}
+// 		eleDataJSON, err := json.Marshal(field)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if field.ID != oldform.FormFieldJson[i].ID {
+// 			return errors.New("form id does't not match")
+// 		}
+
+// 		oldEleDataJSON, err := json.Marshal(oldform.FormFieldJson[i])
+// 		if bytes.Equal(oldEleDataJSON, eleDataJSON) {
+// 			log.Printf("Skipping field - value unchanged ")
+// 			continue
+// 		}
+// 		if oldform.FormFieldJson[i].UID == nil {
+// 			log.Printf("⚠️ Skipping field because UID is empty at index %d", i)
+// 			return errors.New("no form UID")
+// 		}
+// 		var uid = *oldform.FormFieldJson[i].UID
+
+// 		if uid == "" {
+// 			return errors.New("no form UID")
+// 		}
+
+// 		query := `
+// 		UPDATE form_answers
+// 		SET
+// 			"eleData" = $1,
+// 			"updatedAt" = NOW(),
+// 			"updatedBy" = $2
+// 		WHERE
+// 			"id" = $3
+
+// 	`
+
+// 		_, err = conn.Exec(ctx, query, eleDataJSON, user, uid)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
+
+func InsertFormElement(conn *pgx.Conn, ctx context.Context, req model.Form, orgId string, user string, versions string, formId string, createAt *time.Time, createBy *string) error {
+
+	now := time.Now()
+	var id int
+	form := model.Form{
+		FormName:      req.FormName,
+		FormColSpan:   req.FormColSpan,
+		FormFieldJson: req.FormFieldJson,
+		FormId:        &formId,
+	}
+
+	eleData, err := json.Marshal(form)
+	if err != nil {
+		return err
+	}
+	var query string
+	if versions == "1" {
+		query = `
+				INSERT INTO public.form_elements(
+				"orgId", "formId", versions, "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				RETURNING id ;
+				`
+
+		err = conn.QueryRow(ctx, query,
+			orgId, formId, versions, eleData, now, now, user, user).Scan(&id)
 		if err != nil {
 			return err
 		}
+	} else {
 
+		query = `
+				INSERT INTO public.form_elements(
+				"orgId", "formId", versions, "eleData", "createdAt", "updatedAt", "createdBy", "updatedBy")
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				RETURNING id ;
+				`
+
+		err = conn.QueryRow(ctx, query,
+			orgId, formId, versions, eleData, &createAt, now, &createBy, user).Scan(&id)
 		if err != nil {
 			return err
 		}
