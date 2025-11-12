@@ -96,8 +96,8 @@ type CaseInsert struct {
 	StatusID        string                   `json:"statusId"`
 	CaseLat         *string                  `json:"caseLat"`
 	CaseLon         *string                  `json:"caseLon"`
-	CaseLocAddr     *string                  `json:"caselocAddr"`
-	CaseLocAddrDecs *string                  `json:"caselocAddrDecs"`
+	CaseLocAddr     *string                  `json:"caseLocAddr"`
+	CaseLocAddrDecs *string                  `json:"caseLocAddrDecs"`
 	CountryID       string                   `json:"countryId"`
 	ProvID          string                   `json:"provId"`
 	DistID          string                   `json:"distId"`
@@ -138,8 +138,8 @@ type CaseUpdate struct {
 	StatusID        string             `json:"statusId"`
 	CaseLat         string             `json:"caseLat"`
 	CaseLon         string             `json:"caseLon"`
-	CaseLocAddr     string             `json:"caselocAddr"`
-	CaseLocAddrDecs string             `json:"caselocAddrDecs"`
+	CaseLocAddr     string             `json:"caseLocAddr"`
+	CaseLocAddrDecs string             `json:"caseLocAddrDecs"`
 	CountryID       string             `json:"countryId"`
 	ProvID          string             `json:"provId"`
 	DistID          string             `json:"distId"`

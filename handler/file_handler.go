@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"net/http"
@@ -88,14 +89,34 @@ func UploadFile(c *gin.Context) {
 
 	// ---------- ⚖️ Validate file size ----------
 	sizeKB := file.Size / 1024
+
 	var maxSizeKB int64
+	var envVal string
 
 	if group == "image" {
-		val, _ := strconv.ParseInt(os.Getenv("IMAGE_FILE_SIZE"), 10, 64)
-		maxSizeKB = val
-	} else {
-		val, _ := strconv.ParseInt(os.Getenv("DOC_FILE_SIZE"), 10, 64)
-		maxSizeKB = val
+		envVal = os.Getenv("IMAGE_FILE_SIZE")
+		if envVal == "" {
+			maxSizeKB = 3000 // default 3MB
+		} else {
+			val, err := strconv.ParseInt(envVal, 10, 64)
+			if err != nil {
+				maxSizeKB = 3000
+			} else {
+				maxSizeKB = val
+			}
+		}
+	} else { // doc
+		envVal = os.Getenv("DOC_FILE_SIZE")
+		if envVal == "" {
+			maxSizeKB = 10240 // default 10MB
+		} else {
+			val, err := strconv.ParseInt(envVal, 10, 64)
+			if err != nil {
+				maxSizeKB = 10240
+			} else {
+				maxSizeKB = val
+			}
+		}
 	}
 
 	if sizeKB > maxSizeKB {
@@ -227,6 +248,27 @@ func UploadFile(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
+
+		//ESB
+		//Get Units
+		UnitUser := ""
+		unitLists, count, err := GetUnitsWithDispatch(ctx, conn, orgId.(string), caseId, "S003", "")
+		if err != nil {
+			panic(err)
+		}
+		if count > 0 {
+			UnitUser = unitLists[0].Username
+			fmt.Println("First username:", username)
+		}
+		log.Print(unitLists, count)
+		//cusCase.UnitLists = unitLists
+		req_ := model.UpdateStageRequest{
+			CaseId:   caseId,
+			UnitUser: UnitUser, // หรือ set ค่า default
+		}
+		log.Print(req_)
+		UpdateBusKafka_WO(c, conn, req_)
+
 	}
 
 	// ✅ Success
@@ -432,4 +474,33 @@ func GetCaseAttachments(ctx context.Context, conn *pgx.Conn, orgId string, caseI
 	}
 
 	return attachments, nil
+}
+
+func GetCaseAttachments_(ctx context.Context, conn *pgx.Conn, orgId string, caseId string) ([]string, error) {
+	if orgId == "" || caseId == "" {
+		return nil, fmt.Errorf("orgId and caseId are required")
+	}
+
+	query := `
+		SELECT "attUrl"
+		FROM tix_case_attachments
+		WHERE "orgId" = $1 AND "caseId" = $2
+	`
+
+	rows, err := conn.Query(ctx, query, orgId, caseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var urls []string
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+
+	return urls, nil
 }

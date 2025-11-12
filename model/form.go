@@ -78,14 +78,15 @@ type IndividualFormFieldWithChildren struct {
 
 type FormsManager struct {
 	Form
-	Active    bool      `json:"active"`
-	Publish   bool      `json:"publish"`
-	Versions  string    `json:"versions"`
-	Locks     bool      `json:"locks"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	CreatedBy string    `json:"createdBy"`
-	UpdatedBy string    `json:"updatedBy"`
+	Active       bool      `json:"active"`
+	Publish      bool      `json:"publish"`
+	Versions     string    `json:"versions"`
+	Locks        bool      `json:"locks"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedBy    string    `json:"createdBy"`
+	UpdatedBy    string    `json:"updatedBy"`
+	VersionsList []string  `json:"versionsList"`
 }
 
 type FormBuilder struct {

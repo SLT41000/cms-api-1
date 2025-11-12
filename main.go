@@ -135,6 +135,7 @@ func main() {
 		v1.GET("/area/country_province_districts", handler.GetCountryProvinceDistricts)
 
 		v1.GET("/forms", handler.GetForm)
+		v1.GET("/forms/GetFormlinkWf", handler.GetFormlinkWf)
 		v1.GET("/forms/getAllForms", handler.GetAllForm)
 		v1.POST("/forms", handler.FormInsert)
 		v1.PATCH("/forms/:uuid", handler.FormUpdate)

@@ -860,46 +860,53 @@ func GetUnitsWithDispatch(ctx context.Context, conn *pgx.Conn, orgID string, cas
 func GetFormAnswers(conn *pgx.Conn, ctx context.Context, orgId, caseId, formId string, returnUid bool) (*model.FormAnswerRequest, error) {
 	query := `
 		SELECT 
-		fb."formName",
-		fb."versions" AS formVersion,
-		fa."eleData",
-		fa."id" AS uid
-	FROM form_builder fb
-	LEFT JOIN form_answers fa
-		ON fb."orgId" = fa."orgId"::uuid
-		AND fb."formId" = fa."formId"::uuid
-		AND fa."caseId" = $1
-	WHERE fb."orgId" = $2::uuid
-		AND fb."formId" = $3::uuid
+			fb."formName",
+			fb."versions" AS formVersion,
+			fa."eleData",
+			fa."id" AS uid
+		FROM form_builder fb
+		LEFT JOIN form_answers fa
+			ON fb."orgId" = fa."orgId"::uuid
+			AND fb."formId" = fa."formId"::uuid
+			AND fa."caseId" = $1
+		WHERE fb."orgId" = $2::uuid
+			AND fb."formId" = $3::uuid;
 	`
 
 	var (
 		formName    string
 		formVersion string
-		answersJSON model.Form
-		UID         *string
+		eleDataJSON *string
+		uid         *string
 	)
 
 	err := conn.QueryRow(ctx, query, caseId, orgId, formId).Scan(
 		&formName,
 		&formVersion,
-		&answersJSON,
-		&UID,
+		&eleDataJSON,
+		&uid,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	var formData model.Form
+	if eleDataJSON != nil {
+		if err := json.Unmarshal([]byte(*eleDataJSON), &formData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal eleData: %w", err)
+		}
 	}
 
 	response := model.FormAnswerRequest{
 		Versions:      formVersion,
 		FormId:        formId,
 		FormName:      formName,
-		FormFieldJson: answersJSON.FormFieldJson,
-		FormColSpan:   answersJSON.FormColSpan,
+		FormFieldJson: formData.FormFieldJson,
+		FormColSpan:   formData.FormColSpan,
 	}
 
 	if returnUid {
-		response.UID = UID
+		response.UID = uid
 	}
 
 	return &response, nil
@@ -1194,6 +1201,11 @@ func DispatchCancelUnit(c *gin.Context) {
 	log.Print(req)
 	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
 
+	req_ = model.UpdateStageRequest{
+		CaseId:   caseId,
+		Status:   new_,
+		UnitUser: "", // หรือ set ค่า default
+	}
 	// req_.UnitUser = ""
 	UpdateBusKafka_WO(c, conn, req_)
 
@@ -1503,22 +1515,22 @@ func DispatchCancelCase(c *gin.Context) {
 	// }
 
 	//[2] => Delete all Unit
-	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId.(string), caseId, "", "")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Delete Unit Fail ",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	if deletedCount > 0 {
-		log.Printf("Successfully deleted Current %d ", deletedCount)
-	} else {
-		log.Printf("No Current deleted (maybe not found or status skipped)")
-	}
+	// deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId.(string), caseId, "", "")
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, model.Response{
+	// 		Status: "-1",
+	// 		Msg:    "Delete Unit Fail ",
+	// 		Desc:   err.Error(),
+	// 	})
+	// 	return
+	// }
+	// if deletedCount > 0 {
+	// 	log.Printf("Successfully deleted Current %d ", deletedCount)
+	// } else {
+	// 	log.Printf("No Current deleted (maybe not found or status skipped)")
+	// }
 
-	err = UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, cancel_, username.(string))
+	err := UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, cancel_, username.(string))
 	if err != nil {
 		logger.Error("UpdateCancelCaseForUnit failed", zap.Error(err))
 	} else {

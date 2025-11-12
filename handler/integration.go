@@ -346,7 +346,7 @@ func IntegrateCaseCurrentStageInsert(username string, orgId string, conn *pgx.Co
 func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId string) (*model.Case, error) {
 	query := `
 	SELECT 
-		"caseId", "integration_ref_number", "distId"
+		"caseId", "integration_ref_number", "distId", "statusId", "caseSTypeId"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -359,6 +359,8 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 		&c.CaseID,
 		&c.IntegrationRefNumber,
 		&c.DistID,
+		&c.StatusID,
+		&c.CaseSTypeID,
 	)
 
 	// ✅ case not found
@@ -545,6 +547,11 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 		fmt.Println("Error:", err)
 	}
 
+	attachments, err := GetCaseAttachments_(ctx, conn, orgId.(string), *req.CaseId)
+	if err != nil {
+
+	}
+
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": integration_ref_number,
@@ -557,7 +564,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 				"latitude":  req.CaseLat,
 				"longitude": req.CaseLon,
 			},
-			"images": []interface{}{},
+			"images": attachments,
 		},
 		"user_metadata": map[string]interface{}{
 			"assigned_employee_code":  "",
@@ -610,7 +617,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	}
 	log.Print("=====areaDist===", areaDist.Th)
 
-	stName := mapStatus(req.Status)
+	stName := mapStatus(caseData.StatusID)
 	//---> REF Number
 	//---> user profile
 	// --- User assignment info
@@ -638,9 +645,22 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		}
 	}
 
+	// sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), caseData.CaseSTypeID)
+	// if err != nil {
+	// 	log.Printf("sType Error: %v", err)
+	// }
+
+	attachments, err := GetCaseAttachments_(ctx, conn, orgId.(string), req.CaseId)
+	if err != nil {
+
+	}
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": caseData.IntegrationRefNumber,
+		"work_order_metadata": map[string]interface{}{
+
+			"images": attachments,
+		},
 		"user_metadata": map[string]interface{}{
 			"assigned_employee_code":  uAssign,
 			"associate_employee_code": []string{},

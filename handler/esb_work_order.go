@@ -73,7 +73,7 @@ func ESB_WORK_ORDER_CREATE() error {
 	log.Println("Kafka ESB_WORK_ORDER_CREATE() started. Listening for messages...")
 
 	for msg := range partitionConsumer.Messages() {
-
+		log.Print(string(msg.Value))
 		go handleMessage_WO_Create(&gin.Context{}, msg.Value)
 	}
 
@@ -196,6 +196,7 @@ func ESB_WORK_ORDER_UPDATE() error {
 	log.Println("Kafka ESB_WORK_ORDER_UPDATE() started. Listening for messages...")
 
 	for msg := range partitionConsumer.Messages() {
+		log.Print(string(msg.Value))
 		go handleMessage_WO_Update(&gin.Context{}, msg.Value)
 	}
 
@@ -269,16 +270,16 @@ func CancelCaseCore(ctx *gin.Context, conn *pgx.Conn, orgId, username, caseId, r
 	cancelStatus := os.Getenv("CANCEL_CASE")
 
 	// Delete all unit
-	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId, caseId, "", "")
-	if err != nil {
-		return fmt.Errorf("delete unit failed: %w", err)
-	}
-	if deletedCount > 0 {
-		log.Printf("deleted %d current units", deletedCount)
-	}
+	// deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId, caseId, "", "")
+	// if err != nil {
+	// 	return fmt.Errorf("delete unit failed: %w", err)
+	// }
+	// if deletedCount > 0 {
+	// 	log.Printf("deleted %d current units", deletedCount)
+	// }
 
 	// Update cancel
-	err = UpdateCancelCaseForUnit(ctx, conn, orgId, caseId, resId, resDetail, cancelStatus, username)
+	err := UpdateCancelCaseForUnit(ctx, conn, orgId, caseId, resId, resDetail, cancelStatus, username)
 	if err != nil {
 		return fmt.Errorf("update cancel case failed: %w", err)
 	}
