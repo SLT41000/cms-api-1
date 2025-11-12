@@ -125,11 +125,15 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		lon = "0"
 	}
 	//workOrder.WorkOrderType
+	createBy := workOrder.CreatedBy
+	if workOrder.CreatedBy == "" {
+		createBy = username
+	}
 	err = conn.QueryRow(ctx, query,
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
 		lat, lon, countryId, provId, distId, // countryId, provId, distId (อาจ map จาก device location)
-		caseDuration, now, now, username, now, now, username, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
+		caseDuration, now, now, username, now, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
 
 	if err != nil {
 		return fmt.Errorf("insert case failed: %w", err)
@@ -513,7 +517,7 @@ WHERE
 	return nil
 }
 
-func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, sType *model.CaseSubType, integration_ref_number string, source string) error {
+func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, sType *model.CaseSubType, integration_ref_number string, source string, username string) error {
 	log.Print("=====CreateBusKafka_WO===")
 
 	if os.Getenv("INTEGRATION_SOURCE") == source {
@@ -578,6 +582,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 		"workspace":       os.Getenv("INTEGRATION_WORKSPACE"),
 		"namespace":       *areaDist.NameSpace,
 		"source":          os.Getenv("INTEGRATION_SOURCE"),
+		"created_by":      username,
 	}
 
 	jsonBytes, err := json.Marshal(data)

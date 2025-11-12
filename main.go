@@ -75,11 +75,11 @@ func main() {
 		}
 	}()
 
-	go func() {
-		if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
-			log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
+	// 		log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
+	// 	}
+	// }()
 
 	go func() {
 		if err := handler.ESB_USER_STATUS(); err != nil {
@@ -243,6 +243,7 @@ func main() {
 		v1.GET("/users_with_skills", handler.GetUserWithSkills)
 		v1.GET("/users_with_skills/:id", handler.GetUserWithSkillsById)
 		v1.GET("/users_with_skills/skillId/:skillId", handler.GetUserWithSkillsBySkillId)
+		v1.GET("/users_with_skills/username/:username", handler.GetUserWithSkillsByUsername)
 		v1.POST("/users_with_skills/add", handler.InsertUserWithSkills)
 		v1.PATCH("/users_with_skills/:id", handler.UpdateUserWithSkills)
 		v1.DELETE("/users_with_skills/:id", handler.DeleteUserWithSkills)

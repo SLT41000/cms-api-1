@@ -745,7 +745,8 @@ func InsertCase(c *gin.Context) {
 	req.CaseId = &caseId
 
 	if req.PhoneNo == nil || *req.PhoneNo != os.Getenv("FOR_LOAD_TEST") {
-		CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"))
+
+		CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"), username.(string))
 	}
 
 	fmt.Printf("=======CurrentStage========")

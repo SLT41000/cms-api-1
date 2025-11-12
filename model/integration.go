@@ -22,6 +22,7 @@ type WorkOrder struct {
 	Workspace             string        `json:"workspace"`
 	Namespace             string        `json:"namespace"`
 	Source                string        `json:"source"`
+	CreatedBy             string        `json:"created_by"`
 }
 
 type WorkOrderMeta struct {

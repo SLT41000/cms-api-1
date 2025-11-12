@@ -214,6 +214,7 @@ func GetForm(c *gin.Context) {
 // @security ApiKeyAuth
 // @id Form That link Wf
 // @accept json
+// @Param formId query string true "formId"
 // @produce json
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/forms/GetFormlinkWf [get]
@@ -231,7 +232,7 @@ func GetFormlinkWf(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-
+	formId := c.Query("formId")
 	if orgId == "" {
 		response := model.Response{
 			Status: "-1",
@@ -248,14 +249,20 @@ func GetFormlinkWf(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	query := `SELECT "wfId", "formId"
-	FROM public.wf_nodes
-	WHERE "formId" IS NOT NULL AND "orgId" = $1
-	ORDER BY "wfId" ASC;`
+	query := `SELECT DISTINCT
+    n."wfId",
+    n."formId",
+    d."title"
+	FROM public.wf_nodes AS n
+	INNER JOIN public.wf_definitions AS d 
+		ON n."wfId" = d."wfId"
+	WHERE n."formId" =$2 AND n."orgId" = $1
+	ORDER BY n."wfId" ASC;
+	`
 
 	logger.Debug("Query", zap.String("query", query))
 
-	rows, err := conn.Query(ctx, query, orgId)
+	rows, err := conn.Query(ctx, query, orgId, formId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		response := model.Response{
@@ -278,34 +285,18 @@ func GetFormlinkWf(c *gin.Context) {
 	type FormLink struct {
 		WfId   string `json:"wfId"`
 		FormId string `json:"formId"`
+		Title  string `json:"title"`
 	}
 
 	var formLinks []FormLink
 
 	for rows.Next() {
 		var fl FormLink
-		if err := rows.Scan(&fl.WfId, &fl.FormId); err != nil {
+		if err := rows.Scan(&fl.WfId, &fl.FormId, &fl.Title); err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			continue
 		}
 		formLinks = append(formLinks, fl)
-	}
-
-	if len(formLinks) == 0 {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "No data found",
-			Data:   nil,
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Form", "GetFormlinkWf", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusNotFound, response)
-		return
 	}
 
 	response := model.Response{

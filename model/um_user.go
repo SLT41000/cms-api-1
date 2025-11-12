@@ -208,6 +208,19 @@ type UserSkill struct {
 	UpdatedBy string    `json:"updatedBy"`
 }
 
+type UserSkillInfo struct {
+	OrgID     string    `json:"orgId"`
+	UserName  string    `json:"userName"`
+	SkillID   string    `json:"skillId"`
+	Th        *string   `json:"th"`
+	En        *string   `json:"en"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy string    `json:"createdBy"`
+	UpdatedBy string    `json:"updatedBy"`
+}
+
 type UserSocial struct {
 	OrgID      string    `json:"orgId"`
 	Username   string    `json:"username"`

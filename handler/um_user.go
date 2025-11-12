@@ -1224,6 +1224,110 @@ func GetUserWithSkillsBySkillId(c *gin.Context) {
 
 }
 
+// @summary Get User with skills by username or unitId
+// @tags User
+// @security ApiKeyAuth
+// @id Get User with skills by username
+// @Param username path string true "username"
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/users_with_skills/username/{username} [get]
+func GetUserWithSkillsByUsername(c *gin.Context) {
+	logger := utils.GetLog()
+	userName := c.Param("username")
+	id := c.Param("id")
+	now := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+	query := `SELECT t1."orgId", t1."userName", t1."skillId", t2."th", t2."en", t1.active, t1."createdAt", t1."updatedAt", t1."createdBy", t1."updatedBy" 
+		FROM public.um_user_with_skills t1 
+		JOIN public.um_skills t2 ON t1."skillId" = t2."skillId"
+		WHERE t1."userName" = $1 AND t1."orgId" = $2`
+
+	var rows pgx.Rows
+	logger.Debug(`Query`, zap.String("query", query))
+	rows, err := conn.Query(ctx, query, userName, orgId)
+	var userList []model.UserSkillInfo
+	var u model.UserSkillInfo
+	var errorMsg string
+	rowIndex := 0
+	for rows.Next() {
+		rowIndex++
+		err := rows.Scan(
+			&u.OrgID,
+			&u.UserName,
+			&u.SkillID,
+			&u.Th,
+			&u.En,
+			&u.Active,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+			&u.CreatedBy,
+			&u.UpdatedBy,
+		)
+
+		if err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			response := model.Response{
+				Status: "-1",
+				Msg:    "Failed",
+				Desc:   errorMsg,
+			}
+			//=======AUDIT_START=====//
+			_ = utils.InsertAuditLogs(
+				c, conn, orgId.(string), username.(string),
+				txtId, id, "um_user", "GetUserWithSkillsByUsername", "",
+				"search", -1, now, GetQueryParams(c), response, "Failed : " + err.Error(),
+			)
+			//=======AUDIT_END=====//
+			c.JSON(http.StatusInternalServerError, response)
+		}
+		userList = append(userList, u)
+	}
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, id, "um_user", "GetUserWithSkillsByUsername", "",
+			"search", -1, now, GetQueryParams(c), response, "Failed : " + err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	defer rows.Close()
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   userList,
+		Desc:   "",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "um_user", "GetUserWithSkillsByUsername", "",
+		"search", 0, now, GetQueryParams(c), response, "GetUserWithSkillsByUsername.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
+
+}
+
 // @summary Create User with skill
 // @id Create User with skill
 // @security ApiKeyAuth

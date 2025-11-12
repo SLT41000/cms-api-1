@@ -1035,12 +1035,14 @@ func GetSLA(ctx *gin.Context, conn *pgx.Conn, orgID string, caseID string, unitI
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/dispatch/cancel/unit [post]
 func DispatchCancelUnit(c *gin.Context) {
-	logger := utils.GetLog()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "DB connection failed",
+		})
 		return
 	}
-
 	defer cancel()
 	defer conn.Close(ctx)
 
@@ -1048,166 +1050,23 @@ func DispatchCancelUnit(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status: "-1",
-			Msg:    "Failure",
+			Msg:    "Invalid request",
 			Desc:   err.Error(),
 		})
 		return
 	}
 
-	orgId := GetVariableFromToken(c, "orgId")
-	username := GetVariableFromToken(c, "username")
-	caseId := req.CaseId
-	new_ := os.Getenv("NEW")
-	assign_ := os.Getenv("ASSIGNED")
-	cancel_ := os.Getenv("CANCEL")
+	orgId := fmt.Sprintf("%v", GetVariableFromToken(c, "orgId"))
+	username := fmt.Sprintf("%v", GetVariableFromToken(c, "username"))
 
-	// ✅ Console log all parameters
-	logger.Info("DispatchCancelUnit parameters",
-		zap.String("orgId", fmt.Sprintf("%v", orgId)),
-		zap.String("username", fmt.Sprintf("%v", username)),
-		zap.String("caseId", caseId),
-		zap.Any("request_body", req),
-		zap.String("NEW", new_),
-		zap.String("ASSIGNED", assign_),
-		zap.String("CANCEL", cancel_),
-	)
-	//[1] => Check Unit Status S003
-	unitLists, count, err := GetUnits(ctx, conn, orgId.(string), caseId, assign_, req.UnitId)
-	log.Print(unitLists)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+	if err := DispatchCancelUnitCore(c, conn, req, orgId, username); err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
-			Msg:    "Get unitLists Fail ",
+			Msg:    "Cancel unit failed",
 			Desc:   err.Error(),
 		})
 		return
 	}
-	logger.Debug("unitLists-1",
-		zap.Int("count", count),
-		zap.Any("units", unitLists),
-	)
-	if count == 0 {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Invalid Unit " + req.UnitId + " on CaseId " + req.CaseId,
-			Desc:   "Unit not found or not in assigned state (S003)",
-		})
-		return
-	}
-
-	//[2] Insert responder
-	// log.Print("--> 1. Insert responder")
-	// _, err = conn.Exec(ctx, `
-	// 	    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-	// 	    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-	// 	`, orgId, req.CaseId, req.UnitId, req.UnitUser, cancel_, username)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, model.Response{
-	// 		Status: "-1",
-	// 		Msg:    "Insert Responder Fail ",
-	// 		Desc:   err.Error(),
-	// 	})
-	// 	return
-	// }
-
-	//[3] => Delete Unit
-	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Delete Unit Fail ",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	if deletedCount > 0 {
-		log.Printf("Successfully deleted %d unit(s)", deletedCount)
-	} else {
-		log.Printf("No units deleted (maybe not found or status skipped)")
-	}
-
-	//[3.1] => Delete all Unit
-	deletedCount_, err := DeleteReponseUnit(ctx, conn, orgId.(string), caseId, "", req.UnitId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-1",
-			Msg:    "Delete Unit Fail ",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	if deletedCount_ > 0 {
-		log.Printf("Successfully deleted %d unit(s)", deletedCount_)
-	} else {
-		log.Printf("No units deleted (maybe not found or status skipped)")
-	}
-
-	//[4] => Check Unit Count && Update Case status S001
-	unitLists, count, err = GetUnitsWithDispatch(ctx, conn, orgId.(string), caseId, "", "")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status: "-2",
-			Msg:    "Get unitLists Fail ",
-			Desc:   err.Error(),
-		})
-		return
-	}
-	logger.Debug("unitLists-2",
-		zap.Int("count", count),
-		zap.Any("units", unitLists),
-	)
-	if count == 0 {
-		//Change Case Status S001
-		err := UpdateCancelCaseForUnit(ctx, conn, orgId.(string), caseId, req.ResId, req.ResDetail, new_, username.(string))
-		if err != nil {
-			logger.Error("UpdateCancelCase failed", zap.Error(err))
-		} else {
-			logger.Info("Case status updated successfully",
-				zap.String("caseId", caseId),
-				zap.String("newStatus", new_),
-			)
-			//Change Current Case Status =  S001
-			err := UpdateStageByAction(ctx, conn, orgId.(string), caseId, username.(string))
-			if err != nil {
-				c.JSON(http.StatusBadRequest, model.Response{
-					Status: "-1",
-					Msg:    "Update stage failed",
-					Desc:   err.Error(),
-				})
-				return
-			}
-
-			//Delete case response !=  S001
-			count_, err := DeleteReponseCase(ctx, conn, orgId.(string), caseId, "S001")
-			if err != nil {
-				c.JSON(http.StatusBadRequest, model.Response{
-					Status: "-1",
-					Msg:    "Update stage failed",
-					Desc:   err.Error(),
-				})
-				return
-			}
-			log.Print(count_)
-
-		}
-	}
-
-	//[5] => Alert & Event S013
-	req_ := model.UpdateStageRequest{
-		CaseId:   caseId,
-		Status:   cancel_,
-		UnitUser: "", // หรือ set ค่า default
-	}
-	log.Print(req)
-	GenerateNotiAndComment(c, conn, req_, orgId.(string), "0")
-
-	req_ = model.UpdateStageRequest{
-		CaseId:   caseId,
-		Status:   new_,
-		UnitUser: "", // หรือ set ค่า default
-	}
-	// req_.UnitUser = ""
-	UpdateBusKafka_WO(c, conn, req_)
 
 	c.JSON(http.StatusOK, model.Response{
 		Status: "0",
@@ -1555,4 +1414,91 @@ func DispatchCancelCase(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Case cancelled successfully",
 	})
+}
+
+// ✅ ฟังก์ชันใหม่: ใช้จากโค้ดอื่นโดยตรง (ไม่ต้องใช้ Gin)
+func DispatchCancelUnitCore(ctx *gin.Context, conn *pgx.Conn, req model.CancelUnitRequest, orgId, username string) error {
+	logger := utils.GetLog()
+
+	new_ := os.Getenv("NEW")
+	assign_ := os.Getenv("ASSIGNED")
+	cancel_ := os.Getenv("CANCEL")
+
+	logger.Info("DispatchCancelUnitCore parameters",
+		zap.String("orgId", orgId),
+		zap.String("username", username),
+		zap.String("caseId", req.CaseId),
+		zap.Any("request_body", req),
+		zap.String("NEW", new_),
+		zap.String("ASSIGNED", assign_),
+		zap.String("CANCEL", cancel_),
+	)
+
+	// [1] => Check Unit Status S003
+	log.Println("== STEP [1] => Check Unit Status S003")
+	unitLists, count, err := GetUnits(ctx, conn, orgId, req.CaseId, assign_, req.UnitId)
+	if err != nil {
+		return fmt.Errorf("get unitLists failed: %w", err)
+	}
+	logger.Debug("unitLists-1", zap.Int("count", count), zap.Any("units", unitLists))
+	if count == 0 {
+		return fmt.Errorf("invalid unit %s on CaseId %s (not assigned)", req.UnitId, req.CaseId)
+	}
+
+	// [2] => Delete Unit
+	log.Println("== STEP [2] => Delete Unit")
+	deletedCount, err := DeleteCurrentUnit(ctx, conn, orgId, req.CaseId, "", req.UnitId)
+	if err != nil {
+		return fmt.Errorf("delete current unit failed: %w", err)
+	}
+	log.Printf("Deleted current unit count = %d", deletedCount)
+
+	// [3] => Delete Response Unit
+	log.Println("== STEP [3] => Delete Response Unit")
+	deletedCount_, err := DeleteReponseUnit(ctx, conn, orgId, req.CaseId, "", req.UnitId)
+	if err != nil {
+		return fmt.Errorf("delete response unit failed: %w", err)
+	}
+	log.Printf("Deleted response unit count = %d", deletedCount_)
+
+	// [4] => Check remaining units
+	log.Println("== STEP [4] => Check remaining units")
+	unitLists, count, err = GetUnitsWithDispatch(ctx, conn, orgId, req.CaseId, "", "")
+	if err != nil {
+		return fmt.Errorf("get unitLists failed: %w", err)
+	}
+	logger.Debug("unitLists-2", zap.Int("count", count), zap.Any("units", unitLists))
+
+	// ไม่มี Unit เหลือ → ยกเลิกเคส
+	if count == 0 {
+		if err := UpdateCancelCaseForUnit(ctx, conn, orgId, req.CaseId, req.ResId, req.ResDetail, new_, username); err != nil {
+			return fmt.Errorf("update cancel case failed: %w", err)
+		}
+		if err := UpdateStageByAction(ctx, conn, orgId, req.CaseId, username); err != nil {
+			return fmt.Errorf("update stage failed: %w", err)
+		}
+		if _, err := DeleteReponseCase(ctx, conn, orgId, req.CaseId, "S001"); err != nil {
+			return fmt.Errorf("delete response case failed: %w", err)
+		}
+	}
+
+	// [5] => Noti & Event
+	log.Println("== STEP [5] => Noti & Event")
+	req_ := model.UpdateStageRequest{
+		CaseId:   req.CaseId,
+		Status:   cancel_,
+		UnitUser: req.UnitUser,
+	}
+	log.Println(req_)
+	GenerateNotiAndComment(ctx, conn, req_, orgId, "0")
+
+	log.Println("== STEP [6] => UpdateStageRequest")
+	req_ = model.UpdateStageRequest{
+		CaseId:   req.CaseId,
+		Status:   new_,
+		UnitUser: req.UnitUser,
+	}
+	UpdateBusKafka_WO(ctx, conn, req_)
+
+	return nil
 }

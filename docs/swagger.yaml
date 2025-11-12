@@ -5856,6 +5856,29 @@ paths:
       summary: Get User with skills by skill id
       tags:
       - User
+  /api/v1/users_with_skills/username/{username}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get User with skills by username or unitId
+      parameters:
+      - description: username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User with skills by username or unitId
+      tags:
+      - User
   /api/v1/users_with_socials:
     get:
       consumes:
