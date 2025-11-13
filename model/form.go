@@ -123,6 +123,11 @@ type FormPublish struct {
 	Publish bool   `json:"publish"`
 }
 
+type FormChangeVersion struct {
+	FormID  string `json:"formId"`
+	Version string `json:"version"`
+}
+
 type FormLock struct {
 	FormID string `json:"formId"`
 	Locks  bool   `json:"locks"`

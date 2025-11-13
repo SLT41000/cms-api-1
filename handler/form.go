@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
@@ -343,20 +344,25 @@ func GetAllForm(c *gin.Context) {
 			Msg:    "Invalid token",
 			Desc:   "orgId not found in token",
 		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Form", "GetAllForm", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Invalid Token",
-		)
-		//=======AUDIT_END=====//
+		_ = utils.InsertAuditLogs(c, conn, orgId.(string), username.(string), txtId, id, "Form", "GetAllForm", "", "search", -1, start_time, GetQueryParams(c), response, "Invalid Token")
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	query := `SELECT fb."formId", fe."versions", fb."active", fb."publish", fb."formName",
-    fb."locks", fe."eleData", fe."createdBy", fe."createdAt", fe."updatedAt", fe."updatedBy"
-	FROM public.form_builder AS fb 
-	INNER JOIN public.form_elements AS fe ON fb."formId" = fe."formId"
+
+	query := `
+	SELECT 
+		fb."formId",
+		fb."versions" AS fb_versions,
+		fe."versions" AS fe_versions,
+		fb."active",
+		fb."publish",
+		fb."formName",
+		fb."locks",
+		fe."eleData",fe."createdBy",fe."createdAt",fe."updatedAt",
+		fe."updatedBy"
+	FROM public.form_builder AS fb
+	INNER JOIN public.form_elements AS fe 
+		ON fb."formId" = fe."formId"
 	WHERE fb."orgId" = $1
 	ORDER BY fb."formId" ASC, CAST(fe."versions" AS INTEGER) DESC;`
 
@@ -365,18 +371,8 @@ func GetAllForm(c *gin.Context) {
 	rows, err := conn.Query(ctx, query, orgId)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Form", "GetAllForm", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
+		response := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+		_ = utils.InsertAuditLogs(c, conn, orgId.(string), username.(string), txtId, id, "Form", "GetAllForm", "", "search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error())
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -384,13 +380,16 @@ func GetAllForm(c *gin.Context) {
 
 	formsMap := make(map[string]*model.FormsManager)
 	var formOrder []string
+
 	for rows.Next() {
 		var rawJSON []byte
 		var form model.FormsManager
+		var elementFormVersion string
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			&form.FormId,
 			&form.Versions,
+			&elementFormVersion,
 			&form.Active,
 			&form.Publish,
 			&form.FormName,
@@ -400,28 +399,9 @@ func GetAllForm(c *gin.Context) {
 			&form.CreatedAt,
 			&form.UpdatedAt,
 			&form.UpdatedBy,
-		)
-
-		if err != nil {
+		); err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			continue
-		}
-
-		if existingForm, exists := formsMap[*form.FormId]; exists {
-			existingForm.VersionsList = append(existingForm.VersionsList, form.Versions)
-		} else {
-			var eleData model.Form
-			if err := json.Unmarshal(rawJSON, &eleData); err != nil {
-				logger.Warn("Unmarshal eleData failed", zap.Error(err))
-				continue
-			}
-
-			form.FormFieldJson = eleData.FormFieldJson
-			form.FormColSpan = eleData.FormColSpan
-			form.VersionsList = []string{form.Versions}
-
-			formsMap[*form.FormId] = &form
-			formOrder = append(formOrder, *form.FormId)
 		}
 
 		var eleData model.Form
@@ -430,25 +410,25 @@ func GetAllForm(c *gin.Context) {
 			continue
 		}
 
-		// logger.Debug("Row data", zap.Any("form", form))
+		if existingForm, exists := formsMap[*form.FormId]; exists {
+			existingForm.VersionsList = append(existingForm.VersionsList, elementFormVersion)
+		} else {
+			form.FormFieldJson = eleData.FormFieldJson
+			form.FormColSpan = eleData.FormColSpan
+			form.VersionsList = []string{elementFormVersion}
+			formsMap[*form.FormId] = &form
+			formOrder = append(formOrder, *form.FormId)
+		}
 	}
+
 	var forms []model.FormsManager
 	for _, formId := range formOrder {
 		forms = append(forms, *formsMap[formId])
 	}
+
 	if len(forms) == 0 {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "No data found",
-			Data:   nil,
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Form", "GetAllForm", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Not Found",
-		)
-		//=======AUDIT_END=====//
+		response := model.Response{Status: "-1", Msg: "No data found", Data: nil}
+		_ = utils.InsertAuditLogs(c, conn, orgId.(string), username.(string), txtId, id, "Form", "GetAllForm", "", "search", -1, start_time, GetQueryParams(c), response, "Not Found")
 		c.JSON(http.StatusNotFound, response)
 		return
 	}
@@ -458,13 +438,7 @@ func GetAllForm(c *gin.Context) {
 		Msg:    "Success",
 		Data:   forms,
 	}
-	//=======AUDIT_START=====//
-	_ = utils.InsertAuditLogs(
-		c, conn, orgId.(string), username.(string),
-		txtId, id, "Form", "GetAllForm", "",
-		"search", 0, start_time, GetQueryParams(c), response, "GetAllForm Success.",
-	)
-	//=======AUDIT_END=====//
+	_ = utils.InsertAuditLogs(c, conn, orgId.(string), username.(string), txtId, id, "Form", "GetAllForm", "", "search", 0, start_time, GetQueryParams(c), response, "GetAllForm Success.")
 	c.JSON(http.StatusOK, response)
 }
 
@@ -1374,6 +1348,119 @@ func FormPublish(c *gin.Context) {
 		"update", -1, start_time, GetQueryParams(c), response, "Update FormPublish Success.",
 	)
 	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
+}
+
+// @summary Update Form Versions
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Update Form Versions
+// @accept json
+// @produce json
+// @param Case body model.FormChangeVersion true "Update Data"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/forms/version [patch]
+func FormChangeVersion(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	var req model.FormChangeVersion
+	id := c.Param("id")
+	startTime := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		utils.InsertAuditLogs(c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormChangeVersion", "",
+			"update", -1, startTime, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	// Check if requested version exists in form_elements
+	println("version test1")
+	var exists bool
+	err := conn.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM public.form_elements
+			WHERE "formId" = $1 AND "orgId" = $2 AND "versions" = $3
+		)
+	`, req.FormID, orgId, req.Version).Scan(&exists)
+
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		utils.InsertAuditLogs(c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormChangeVersion", "",
+			"update", -1, startTime, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Check version existence failed", zap.Error(err))
+		return
+	}
+
+	// Version not found in form_elements
+	if !exists {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   fmt.Sprintf("Version %v not found for FormID %v", req.Version, req.FormID),
+		}
+		utils.InsertAuditLogs(c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormChangeVersion", "",
+			"update", -1, startTime, GetQueryParams(c), response, "Version not found.",
+		)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	// Proceed with updating form_builder
+	query := `
+		UPDATE public.form_builder
+		SET "versions" = $3
+		WHERE "formId" = $1 AND "orgId" = $2;
+	`
+	_, err = conn.Exec(ctx, query, req.FormID, orgId, req.Version)
+	if err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		utils.InsertAuditLogs(c, conn, orgId.(string), username.(string),
+			txtId, id, "Form", "FormChangeVersion", "",
+			"update", -1, startTime, GetQueryParams(c), response, "Update failed.",
+		)
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Update form_builder failed", zap.Error(err))
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Version updated successfully",
+	}
+	utils.InsertAuditLogs(c, conn, orgId.(string), username.(string),
+		txtId, id, "Form", "FormChangeVersion", "",
+		"update", 0, startTime, GetQueryParams(c), response, "Update Form Version Success.",
+	)
 	c.JSON(http.StatusOK, response)
 }
 

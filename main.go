@@ -113,6 +113,8 @@ func main() {
 			"https://welcome-service-stg.metthier.ai:65000",
 			"https://welcome-cms-stg.metthier.ai:65000",
 			"https://mettlink-workorder-service",
+			"https://welcome-service-qa.metthier.ai:55000",
+			"https://welcome-cms-qa.metthier.ai:55000",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
@@ -142,6 +144,7 @@ func main() {
 		v1.PATCH("/forms/active", handler.FormActive)
 		v1.PATCH("/forms/lock", handler.FormLock)
 		v1.PATCH("/forms/publish", handler.FormPublish)
+		v1.PATCH("/forms/version", handler.FormChangeVersion)
 		v1.POST("/forms/casesubtype", handler.GetFormByCaseSubType)
 		v1.GET("/workflows", handler.GetWorkFlowList)
 		v1.GET("/workflows/:id", handler.GetWorkFlow)
