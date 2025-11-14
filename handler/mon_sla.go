@@ -17,7 +17,7 @@ import (
 
 func SlaMonitor(c *gin.Context) error {
 	counter := 0
-	MONITOR_NAME := os.Getenv("MONITOR_NAME")
+	MONITOR_NAME := os.Getenv("MONITOR_SLA_NAME")
 	orgId := os.Getenv("INTEGRATION_ORG_ID")
 
 	hostname, err := os.Hostname()
@@ -82,6 +82,13 @@ func SlaMonitor(c *gin.Context) error {
 				if delay > 2 {
 					delay = 2
 				}
+				conn, ctx, cancel := utils.ConnectDB()
+				if conn == nil {
+					log.Printf("DB connection is nil")
+					return nil
+				}
+				defer cancel()
+				defer conn.Close(ctx)
 				GenerateNotiAndComment(c, conn, req, orgId, strconv.Itoa(delay))
 				err = UpdateCaseSLAPlus(ctx, conn, orgId, caseId, true, time.Now())
 				if err != nil {

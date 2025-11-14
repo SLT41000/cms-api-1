@@ -2,6 +2,7 @@ package handler
 
 import (
 	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"log"
 	"mainPackage/model"
@@ -437,12 +438,13 @@ FROM public.um_users u
 LEFT JOIN public.um_user_with_area_response a
     ON a."username" = u.username AND a."orgId" = u."orgId"
 WHERE u.username = $1
+  AND u."orgId" = $2
   AND u.active = TRUE;
 `
 	logger.Debug(`Query`, zap.String("query", query))
 	logger.Debug(`request input`, zap.Any("username", username))
 	var UserOpt model.Um_User_Login
-	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
+	err = conn.QueryRow(ctx, query, username, id).Scan(&UserOpt.ID,
 		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
 		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
 		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
@@ -566,6 +568,14 @@ WHERE u.username = $1
 			"login", 0, start_time, GetQueryParams(c), response, "Successfully",
 		)
 		//=======AUDIT_END=====//
+
+		userJSON, err := json.Marshal(UserOpt)
+		if err != nil {
+			log.Printf("Failed to marshal user data: %v", err)
+			return
+		}
+		utils.UserPermissionSet(username, string(userJSON))
+
 		c.JSON(http.StatusOK, response)
 		return
 	} else {
