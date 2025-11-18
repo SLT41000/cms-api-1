@@ -344,6 +344,7 @@ WHERE u.username = $1
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [post]
 func UserLoginPost(c *gin.Context) {
+	log.Print("----------xxxx------x---x-")
 	logger := utils.GetLog()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
@@ -482,8 +483,9 @@ WHERE u.username = $1
 		//=======AUDIT_END=====//
 		return
 	}
-	// logger.Debug(UserOpt.Password)
-	// logger.Debug(dec)
+	log.Print("====Password===")
+	log.Print(UserOpt.Password)
+	log.Print(dec)
 	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
 		tokenString, refreshtoken, err := CreateToken(username, id)
 		if err != nil {

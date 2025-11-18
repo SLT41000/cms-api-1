@@ -218,6 +218,7 @@ func main() {
 		v1.GET("/customer", handler.CustomerList)
 		v1.POST("/customer/add", handler.CustomerAdd)
 		v1.GET("/customer/:id", handler.CustomerById)
+		v1.GET("/customer/byPhoneNo/:phoneNo", handler.CustomerByPhoneNo)
 		v1.PATCH("/customer/:id", handler.CustomerUpdate)
 		v1.DELETE("/customer/:id", handler.CustomerDelete)
 

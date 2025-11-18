@@ -213,7 +213,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		fmt.Println(string(b))
 
 		log.Print("====Dispatch on Create===")
-		results, err := UpdateCurrentStageCore(ctx, conn, data)
+		results, err := UpdateCurrentStageCore(ctx, conn, data, false)
 		if err != nil {
 			return fmt.Errorf("UpdateCurrentStageCore failed: %w", err)
 		}
@@ -350,7 +350,7 @@ func IntegrateCaseCurrentStageInsert(username string, orgId string, conn *pgx.Co
 func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId string) (*model.Case, error) {
 	query := `
 	SELECT 
-		"caseId", "integration_ref_number", "distId", "statusId", "caseSTypeId"
+		"caseId", "integration_ref_number", "distId", "statusId", "caseSTypeId", "priority", "caseLat", "caseLon", "caseDetail", "deviceMetaData"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -365,6 +365,11 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 		&c.DistID,
 		&c.StatusID,
 		&c.CaseSTypeID,
+		&c.Priority,
+		&c.CaseLat,
+		&c.CaseLon,
+		&c.CaseDetail,
+		&c.DeviceMetaData,
 	)
 
 	// ✅ case not found
@@ -485,7 +490,7 @@ WHERE
 
 	log.Print("====8===")
 
-	if strings.TrimSpace(data.NodeId) == "" && data.Status == "S003" {
+	if strings.TrimSpace(data.NodeId) == "" {
 		log.Print("====8.11111===")
 		_, _, _, dispatchNode, err := GetWorkflowAndCurrentNode(ctx, orgId, caseId, "")
 		if err != nil {
@@ -508,7 +513,7 @@ WHERE
 	b, _ = json.MarshalIndent(data, "", "  ")
 	fmt.Println(string(b))
 
-	results, err := UpdateCurrentStageCore(ctx, conn, data)
+	results, err := UpdateCurrentStageCore(ctx, conn, data, false)
 	if err != nil {
 		return fmt.Errorf("UpdateCurrentStageCore failed: %w", err)
 	}
@@ -650,10 +655,10 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		}
 	}
 
-	// sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), caseData.CaseSTypeID)
-	// if err != nil {
-	// 	log.Printf("sType Error: %v", err)
-	// }
+	sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), caseData.CaseSTypeID)
+	if err != nil {
+		log.Printf("sType Error: %v", err)
+	}
 
 	attachments, err := GetCaseAttachments_(ctx, conn, orgId.(string), req.CaseId)
 	if err != nil {
@@ -663,20 +668,27 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": caseData.IntegrationRefNumber,
 		"work_order_metadata": map[string]interface{}{
-
+			"title":       sType.TH,
+			"description": caseData.CaseDetail,
+			"severity":    GetPriorityName_TXT(caseData.Priority), // CRITICAL, HIGH, MEDIUM, LOW
+			"location": map[string]interface{}{
+				"latitude":  caseData.CaseLat,
+				"longitude": caseData.CaseLon,
+			},
 			"images": attachments,
 		},
 		"user_metadata": map[string]interface{}{
 			"assigned_employee_code":  uAssign,
 			"associate_employee_code": []string{},
 		},
-		"sop_metadata": map[string]interface{}{},
-		"status":       stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
-		"state":        state,
-		"work_date":    currentDate,
-		"workspace":    os.Getenv("INTEGRATION_WORKSPACE"),
-		"namespace":    *areaDist.NameSpace,
-		"source":       os.Getenv("INTEGRATION_SOURCE"),
+		"device_metadata": caseData.DeviceMetaData,
+		//"sop_metadata": caseData.DeviceMetaData,
+		"status":    stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
+		"state":     state,
+		"work_date": currentDate,
+		"workspace": os.Getenv("INTEGRATION_WORKSPACE"),
+		"namespace": *areaDist.NameSpace,
+		"source":    os.Getenv("INTEGRATION_SOURCE"),
 	}
 
 	jsonBytes, err := json.Marshal(data)

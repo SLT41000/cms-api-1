@@ -147,11 +147,11 @@ func GetSOP(c *gin.Context) {
 	formId := *currentNode.FormId // จาก JSON
 	log.Print("====formId==")
 	log.Print(formId)
-	answers, err := GetFormAnswers(conn, ctx, orgId.(string), caseId, formId, false)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "get Form answer Error " + err.Error()})
-		return
-	}
+	answers, _ := GetFormAnswers(conn, ctx, orgId.(string), caseId, formId, false)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "get Form answer Error " + err.Error()})
+	// 	return
+	// }
 	cusCase.FormAnswer = answers
 	//Get SLA
 	slaTimelines, err := GetSLA(c, conn, orgId.(string), caseId, "case")
@@ -348,7 +348,7 @@ func GetUnit(c *gin.Context) {
 	caseId := c.Param("caseId")
 
 	//--Get Skill All
-	Skills, err_ := GetUserSkills(ctx, conn, orgId.(string))
+	Skills, err_ := utils.GetUserSkills(ctx, conn, orgId.(string))
 	log.Print("---Skills---")
 	if err_ != nil {
 		panic(err_)
@@ -357,13 +357,117 @@ func GetUnit(c *gin.Context) {
 	log.Print(Skills)
 
 	//--Get Property All
-	Props, err_ := GetUnitProp(ctx, conn, orgId.(string))
+	Props, err_ := utils.GetUnitProp(ctx, conn, orgId.(string))
 	log.Print("---Props---")
 	if err_ != nil {
 		panic(err_)
 	}
 
 	log.Print(Props)
+
+	// 	query := `
+	//   WITH case_info AS (
+	//   SELECT
+	//     c."caseSTypeId",
+	//     c."countryId",
+	//     c."provId",
+	//     c."distId",
+	//     s."unitPropLists",
+	//     s."userSkillList"
+	//   FROM "tix_cases" c
+	//   JOIN "case_sub_types" s ON c."caseSTypeId" = s."sTypeId"
+	//   WHERE c."caseId" = $1
+	//     AND s."active" = TRUE
+	// ),
+	// unit_with_props AS (
+	//   SELECT
+	//     "unitId",
+	//     array_agg("propId") AS props
+	//   FROM "mdm_unit_with_properties"
+	//   WHERE "active" = TRUE
+	//   GROUP BY "unitId"
+	// ),
+	// units_matched AS (
+	//   SELECT u."unitId", u."unitName", p.props
+	//   FROM "mdm_units" u
+	//   JOIN unit_with_props p ON u."unitId" = p."unitId"
+	//   CROSS JOIN case_info c
+	//   WHERE u."active" = TRUE
+	//     AND (
+	//       SELECT COUNT(DISTINCT prop_uuid)
+	//       FROM (
+	//         SELECT (jsonb_array_elements_text(c."unitPropLists"::jsonb))::uuid AS prop_uuid
+	//       ) AS required_props
+	//       WHERE prop_uuid = ANY(p.props)
+	//     ) = (SELECT jsonb_array_length(c."unitPropLists"::jsonb))
+	// ),
+	// users_on_units AS (
+	//   SELECT u."unitId", mdm."username"
+	//   FROM units_matched u
+	//   JOIN "mdm_units" mdm ON mdm."unitId" = u."unitId" AND mdm."active" = TRUE
+	//   JOIN "um_users" um ON um."username" = mdm."username" AND um."active" = TRUE
+	// ),
+	// users_with_skill AS (
+	//   SELECT DISTINCT "userName"
+	//   FROM "um_user_with_skills"
+	//   WHERE "skillId" IN (
+	//     SELECT (jsonb_array_elements_text(ci."userSkillList"::jsonb))::uuid
+	//     FROM case_info ci
+	//   )
+	//   AND "active" = TRUE
+	// ),
+	// users_in_area AS (
+	//   SELECT "username"
+	//   FROM "um_user_with_area_response" ua
+	//   CROSS JOIN case_info c
+	//   WHERE ua."orgId" = $2
+	//     AND EXISTS (
+	//       SELECT 1
+	//       FROM jsonb_array_elements_text(ua."distIdLists") AS distId
+	//       WHERE distId.value = c."distId"
+	//     )
+	// )
+	// SELECT mu."orgId",
+	//        mu."unitId",
+	//        mu."unitName",
+	//        mu."unitSourceId",
+	//        mu."unitTypeId",
+	//        mu."priority",
+	//        mu."compId",
+	//        mu."deptId",
+	//        mu."commId",
+	//        mu."stnId",
+	//        mu."plateNo",
+	//        mu."provinceCode",
+	//        mu."active",
+	//        mu."username",
+	//        mu."isLogin",
+	//        mu."isFreeze",
+	//        mu."isOutArea",
+	//        mu."locLat",
+	//        mu."locLon",
+	//        mu."locAlt",
+	//        mu."locBearing",
+	//        mu."locSpeed",
+	//        mu."locProvider",
+	//        mu."locGpsTime",
+	//        mu."locSatellites",
+	//        mu."locAccuracy",
+	//        mu."locLastUpdateTime",
+	//        mu."breakDuration",
+	//        mu."healthChk",
+	//        mu."healthChkTime",
+	//        mu."sttId",
+	//        mu."createdBy",
+	//        mu."updatedBy",
+	//        ci."unitPropLists",
+	//        ci."userSkillList"
+	// FROM users_on_units u
+	// JOIN users_with_skill us ON u."username" = us."userName"
+	// JOIN users_in_area ua ON u."username" = ua."username"
+	// JOIN "mdm_units" mu ON mu."unitId" = u."unitId"
+	// CROSS JOIN case_info ci;
+	// `
 
 	query := `
   WITH case_info AS (
@@ -378,7 +482,9 @@ func GetUnit(c *gin.Context) {
   JOIN "case_sub_types" s ON c."caseSTypeId" = s."sTypeId"
   WHERE c."caseId" = $1
     AND s."active" = TRUE
+  LIMIT 1
 ),
+
 unit_with_props AS (
   SELECT 
     "unitId", 
@@ -387,6 +493,7 @@ unit_with_props AS (
   WHERE "active" = TRUE
   GROUP BY "unitId"
 ),
+
 units_matched AS (
   SELECT u."unitId", u."unitName", p.props
   FROM "mdm_units" u
@@ -417,7 +524,7 @@ users_with_skill AS (
   AND "active" = TRUE
 ),
 users_in_area AS (
-  SELECT "username"
+  SELECT DISTINCT "username"
   FROM "um_user_with_area_response" ua
   CROSS JOIN case_info c
   WHERE ua."orgId" = $2
@@ -427,7 +534,9 @@ users_in_area AS (
       WHERE distId.value = c."distId"
     )
 )
-SELECT mu."orgId",
+
+SELECT DISTINCT ON (mu."unitId")
+       mu."orgId",
        mu."unitId",
        mu."unitName",
        mu."unitSourceId",
@@ -440,7 +549,7 @@ SELECT mu."orgId",
        mu."plateNo",
        mu."provinceCode",
        mu."active",
-       mu."username",
+       u."username",
        mu."isLogin",
        mu."isFreeze",
        mu."isOutArea",
@@ -468,6 +577,7 @@ JOIN users_in_area ua ON u."username" = ua."username"
 JOIN "mdm_units" mu ON mu."unitId" = u."unitId"
 CROSS JOIN case_info ci;
 `
+
 	logger.Debug(`Query`, zap.String("query", query))
 	rows, err := conn.Query(context.Background(), query, caseId, orgId)
 	if err != nil {
@@ -550,7 +660,7 @@ func UpdateCurrentStage(c *gin.Context) {
 	// username := GetVariableFromToken(c, "username")
 	// orgId := GetVariableFromToken(c, "orgId")
 
-	results, err := UpdateCurrentStageCore(c, conn, req)
+	results, err := UpdateCurrentStageCore(c, conn, req, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -1496,7 +1606,7 @@ func DispatchCancelUnitCore(ctx *gin.Context, conn *pgx.Conn, req model.CancelUn
 	req_ = model.UpdateStageRequest{
 		CaseId:   req.CaseId,
 		Status:   new_,
-		UnitUser: req.UnitUser,
+		UnitUser: "",
 	}
 	UpdateBusKafka_WO(ctx, conn, req_)
 

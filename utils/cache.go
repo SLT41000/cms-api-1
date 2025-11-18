@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
@@ -303,4 +304,150 @@ func GroupTypeGetOrLoad(conn *pgx.Conn) ([]model.CaseGroupType, error) {
 	log.Println("💾 GroupType cached in Redis")
 
 	return result, nil
+}
+
+func GetUserSkills(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetSkills, error) {
+	query := `
+		SELECT "skillId", "en", "th"
+		FROM public.um_skills
+		WHERE "orgId" = $1 AND "active" = true
+		ORDER BY id ASC;
+	`
+
+	rows, err := conn.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var skills []model.GetSkills
+	for rows.Next() {
+		var s model.GetSkills
+		if err := rows.Scan(&s.SkillID, &s.En, &s.Th); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		skills = append(skills, s)
+	}
+
+	// If no records, return empty slice instead of nil
+	if skills == nil {
+		return []model.GetSkills{}, nil
+	}
+
+	return skills, nil
+}
+
+func GetUnitProp(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetUnisProp, error) {
+	query := `
+		SELECT "propId", "en", "th"
+		FROM public.mdm_properties
+		WHERE "orgId" = $1 AND "active" = true
+		ORDER BY id ASC;
+	`
+
+	rows, err := conn.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var props []model.GetUnisProp
+	for rows.Next() {
+		var s model.GetUnisProp
+		if err := rows.Scan(&s.PropId, &s.En, &s.Th); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		props = append(props, s)
+	}
+
+	// If no records, return empty slice instead of nil
+	if props == nil {
+		return []model.GetUnisProp{}, nil
+	}
+
+	return props, nil
+}
+
+// ---------- Query User Profile ----------
+
+func GetUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username string) (*model.UserConnectionInfo, error) {
+	log.Printf("Database: Querying for user '%s' in organization '%s'", username, orgId)
+
+	var userProfile model.UserConnectionInfo
+	var roleID string
+	var distIdListsJSON []byte
+	var GrpID []string
+
+	// 1) ลองอ่านจาก user_connections ก่อน (เก็บ grpId เป็น array อยู่แล้ว)
+	connectionQuery := `
+        SELECT "empId", "username", "orgId", "deptId", "commId", "stnId", "roleId", "grpId", "distIdLists", COALESCE("ip", '') as ip
+        FROM user_connections
+        WHERE "orgId" = $1 AND "username" = $2
+        LIMIT 1;
+    `
+	err := dbConn.QueryRow(ctx, connectionQuery, orgId, username).Scan(
+		&userProfile.ID, &userProfile.Username, &userProfile.OrgID,
+		&userProfile.DeptID, &userProfile.CommID, &userProfile.StnID,
+		&roleID, &GrpID, &userProfile.DistIdLists, &userProfile.Ip, // scan array -> []string
+	)
+	if err == nil {
+		userProfile.RoleID = roleID
+		userProfile.GrpID = GrpID
+		log.Printf("Database: Found existing connection for '%s'", username)
+		return &userProfile, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		log.Printf("ERROR: Failed to query user connections for '%s': %v", username, err)
+		return nil, err
+	}
+
+	// 2) ไม่เจอใน user_connections -> ไปอ่านจาก um_users + um_user_with_groups
+	//    รวมหลายแถวของ grpId ให้เป็น array ด้วย array_agg(DISTINCT ...)
+	query := `
+        SELECT 
+          COALESCE(u."empId"::text, '')  AS "empId",
+          u."username",
+          COALESCE(u."orgId"::text, '')  AS "orgId",
+          COALESCE(u."deptId"::text, '') AS "deptId",
+          COALESCE(u."commId"::text, '') AS "commId",
+          COALESCE(u."stnId"::text, '')  AS "stnId",
+          COALESCE(u."roleId"::text, '') AS "roleId",
+          COALESCE(array_agg(DISTINCT ug."grpId"::text) FILTER (WHERE ug."grpId" IS NOT NULL), '{}') AS "grpIds",
+          COALESCE(uar."distIdLists", '[]'::jsonb) AS "distIdLists"
+        FROM um_users u
+        LEFT JOIN um_user_with_groups ug 
+               ON u."username" = ug."username"
+        LEFT JOIN um_user_with_area_response uar 
+               ON u."username" = uar."username"
+        WHERE u."orgId"::text = $1 
+          AND u."username" = $2 
+          AND u."active" = true
+        GROUP BY u."empId", u."username", u."orgId", u."deptId", u."commId", u."stnId", u."roleId", uar."distIdLists"
+        LIMIT 1;
+    `
+	err = dbConn.QueryRow(ctx, query, orgId, username).Scan(
+		&userProfile.ID, &userProfile.Username, &userProfile.OrgID,
+		&userProfile.DeptID, &userProfile.CommID, &userProfile.StnID,
+		&roleID, &GrpID, &distIdListsJSON,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("user not found or is not active")
+		}
+		log.Printf("ERROR: Failed to query user profile for '%s': %v", username, err)
+		return nil, err
+	}
+
+	userProfile.RoleID = roleID
+	userProfile.GrpID = GrpID
+
+	// distIdLists จากตาราง uar เป็น jsonb -> unmarshal เป็น []string
+	if len(distIdListsJSON) > 0 {
+		if err := json.Unmarshal(distIdListsJSON, &userProfile.DistIdLists); err != nil {
+			log.Printf("WARNING: Failed to parse distIdLists for user '%s': %v", username, err)
+			userProfile.DistIdLists = []string{}
+		}
+	}
+
+	return &userProfile, nil
 }

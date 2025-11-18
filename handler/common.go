@@ -232,7 +232,7 @@ func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context,
 }
 
 // UpdateCurrentStage replaces fn_dispatch_unit_stage
-func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest) (model.Response, error) {
+func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest, esb bool) (model.Response, error) {
 	var result model.Response
 	logger := utils.GetLog()
 	username := GetVariableFromToken(ctx, "username")
@@ -348,6 +348,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	config := data2["config"].(map[string]interface{})
 	log.Print("======dataMaps==")
 	log.Print(config["action"])
+	log.Print(req)
 
 	//Check Close Case
 	if req.ResID != "" {
@@ -369,7 +370,12 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			}
 			GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0", &req.ResDetail)
 			//-->New Function for close
-			UpdateBusKafka_WO(ctx, conn, req)
+			log.Print("--> 1.1 CalDashboardSLA")
+			if esb {
+				UpdateBusKafka_WO(ctx, conn, req)
+			}
+			log.Print("--> 1.2 CalDashboardSLA")
+			CalDashboardSLA(ctx, conn, orgId.(string), username.(string), req.CaseId)
 			return Result, err
 		} else {
 			log.Println("Status worng number-1 :", err)
@@ -389,7 +395,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			return result, err
 		}
 	} else {
-		log.Println("Status worng number-2 :", err)
+		log.Printf("Status worng number-2 : %s , %s ", config["action"], req.Status)
 		return model.Response{Status: "-2", Msg: "Failure.3", Desc: "Status worng number!"}, err
 	}
 
@@ -397,6 +403,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	// 🔹 Step 4:  Update data
 	if unitCount == 0 && CaseNextNode.Type == "dispatch" { //--First Unit for case
 		//--Update current stage :  case
+		log.Print("--> 1--Update current stage :  case")
 		Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
 		if err != nil {
 			return Result, err
@@ -416,11 +423,15 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			log.Println("Case status updated successfully-2")
 		}
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
-		UpdateBusKafka_WO(ctx, conn, req)
+
+		if esb {
+			UpdateBusKafka_WO(ctx, conn, req)
+		}
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
 		//--Update current stage :  case
+		log.Print("--> 2--Update current stage :  case")
 		Result, err := UpdateCaseCurrentStage(ctx, conn, req, CaseNextNode, "case", username.(string))
 		if err != nil {
 			return Result, err
@@ -441,7 +452,12 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
-		UpdateBusKafka_WO(ctx, conn, req)
+		if esb {
+			UpdateBusKafka_WO(ctx, conn, req)
+		}
+		log.Print("--> 2.1 --Update current stage :  case")
+
+		CalDashboardSLA(ctx, conn, orgId.(string), username.(string), req.CaseId)
 
 		return Result, err
 
@@ -455,7 +471,9 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
-		UpdateBusKafka_WO(ctx, conn, req)
+		if esb {
+			UpdateBusKafka_WO(ctx, conn, req)
+		}
 		return Result, err
 
 	} else if unitCount == 0 { //--Second Unit - First dispatch
@@ -468,7 +486,9 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		GenerateNotiAndComment(ctx, conn, req, orgId.(string), "0")
-		UpdateBusKafka_WO(ctx, conn, req)
+		if esb {
+			UpdateBusKafka_WO(ctx, conn, req)
+		}
 		return Result, err
 	}
 
@@ -898,37 +918,6 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchUpdateCaseStatus-" + req.CaseId}, nil
 }
 
-func GetUserSkills(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetSkills, error) {
-	query := `
-		SELECT "skillId", "en", "th"
-		FROM public.um_skills
-		WHERE "orgId" = $1 AND "active" = true
-		ORDER BY id ASC;
-	`
-
-	rows, err := conn.Query(ctx, query, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
-	}
-	defer rows.Close()
-
-	var skills []model.GetSkills
-	for rows.Next() {
-		var s model.GetSkills
-		if err := rows.Scan(&s.SkillID, &s.En, &s.Th); err != nil {
-			return nil, fmt.Errorf("scan failed: %w", err)
-		}
-		skills = append(skills, s)
-	}
-
-	// If no records, return empty slice instead of nil
-	if skills == nil {
-		return []model.GetSkills{}, nil
-	}
-
-	return skills, nil
-}
-
 // ConvertSkills returns only the skills whose SkillId exists in data
 func ConvertSkills(skills []model.GetSkills, data []string) []model.GetSkills {
 	result := []model.GetSkills{}
@@ -945,37 +934,6 @@ func ConvertSkills(skills []model.GetSkills, data []string) []model.GetSkills {
 		}
 	}
 	return result
-}
-
-func GetUnitProp(ctx context.Context, conn *pgx.Conn, orgID string) ([]model.GetUnisProp, error) {
-	query := `
-		SELECT "propId", "en", "th"
-		FROM public.mdm_properties
-		WHERE "orgId" = $1 AND "active" = true
-		ORDER BY id ASC;
-	`
-
-	rows, err := conn.Query(ctx, query, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
-	}
-	defer rows.Close()
-
-	var props []model.GetUnisProp
-	for rows.Next() {
-		var s model.GetUnisProp
-		if err := rows.Scan(&s.PropId, &s.En, &s.Th); err != nil {
-			return nil, fmt.Errorf("scan failed: %w", err)
-		}
-		props = append(props, s)
-	}
-
-	// If no records, return empty slice instead of nil
-	if props == nil {
-		return []model.GetUnisProp{}, nil
-	}
-
-	return props, nil
 }
 
 // ConvertProps returns only the skills whose PropId exists in data
@@ -1132,167 +1090,4 @@ func InsertCaseHistoryEvent(ctx context.Context, conn *pgx.Conn, evt model.CaseH
 	)
 
 	return err
-}
-
-func CalDashboardCaseSummary(ctx context.Context, conn *pgx.Conn, orgId string, recipients []model.Recipient, username, groupTypeId, countryId, provId, distId string) error {
-	now := time.Now()
-	currentDate := now.Format("2006/01/02")
-	currentHour := now.Hour()
-	currentTime := fmt.Sprintf("%02d:00:00", currentHour) // e.g., "01:00:00"
-
-	// ✅ โหลดข้อมูล groupType จาก Redis หรือ DB
-	groupTypes, err := utils.GroupTypeGetOrLoad(conn)
-	if err != nil {
-		return fmt.Errorf("cannot load group types: %v", err)
-	}
-
-	// ✅ ตรวจสอบ groupTypeId ภายใน field groupTypeLists
-	found := false
-	for _, g := range groupTypes {
-		for _, id := range g.GroupTypeLists {
-			if id == groupTypeId {
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("groupTypeId not found in any groupTypeLists: %s", groupTypeId)
-	}
-
-	// ✅ UPSERT (เพิ่ม +1 ถ้ามีอยู่แล้ว)
-	query := `
-		INSERT INTO d_case_summary 
-			("orgId", date, time, "groupTypeId", "countryId", "provId", "distId", total)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, '1')
-		ON CONFLICT ("orgId", date, time, "groupTypeId", "countryId", "provId", "distId")
-		DO UPDATE SET total = (d_case_summary.total::int + 1)::varchar;
-	`
-
-	_, err = conn.Exec(context.Background(), query, orgId, currentDate, currentTime, groupTypeId, countryId, provId, distId)
-	if err != nil {
-		return fmt.Errorf("failed to upsert summary: %v", err)
-	}
-
-	err = SendDashboardSummaryFromCaseSummary(ctx, conn, orgId, username, recipients)
-	if err != nil {
-		log.Printf("Dashboard notification error: %v", err)
-	}
-
-	log.Printf("✅ Upsert summary success for groupTypeId=%s, countryId=%s, provId=%s, distId=%s", groupTypeId, countryId, provId, distId)
-	return nil
-}
-
-func SendDashboardSummaryFromCaseSummary(
-	c context.Context,
-	conn *pgx.Conn,
-	orgId string,
-	username string,
-	recipients []model.Recipient,
-) error {
-	// ✅ โหลด group type ทั้งหมด
-	groupTypes, err := utils.GroupTypeGetOrLoad(conn)
-	if err != nil {
-		return fmt.Errorf("cannot load group types: %v", err)
-	}
-
-	groupMap := make(map[string]struct {
-		Prefix string
-		En     string
-		Th     string
-	})
-	for _, g := range groupTypes {
-		groupMap[g.GroupTypeId] = struct {
-			Prefix string
-			En     string
-			Th     string
-		}{
-			Prefix: g.Prefix,
-			En:     g.En,
-			Th:     g.Th,
-		}
-	}
-
-	// ✅ ดึงข้อมูลจาก d_case_summary
-	query := `
-		SELECT s."groupTypeId", COALESCE(SUM(CAST(s.total AS INT)), 0) AS total
-		FROM d_case_summary s
-		WHERE s."orgId" = $1
-		  AND s.date = TO_CHAR(CURRENT_DATE, 'YYYY/MM/DD')
-		GROUP BY s."groupTypeId"
-	`
-	rows, err := conn.Query(c, query, orgId)
-	if err != nil {
-		return fmt.Errorf("query dashboard summary failed: %w", err)
-	}
-	defer rows.Close()
-
-	type SummaryData struct {
-		GroupTypeId string
-		Val         int
-	}
-	summaryMap := make(map[string]int)
-	totalSum := 0
-
-	for rows.Next() {
-		var item SummaryData
-		if err := rows.Scan(&item.GroupTypeId, &item.Val); err != nil {
-			return fmt.Errorf("scan dashboard summary failed: %w", err)
-		}
-		summaryMap[item.GroupTypeId] = item.Val
-		totalSum += item.Val
-	}
-
-	// ✅ เตรียมผลลัพธ์ JSON
-	data := []interface{}{
-		map[string]interface{}{
-			"total_en": "Total",
-			"total_th": "ทั้งหมด",
-			"val":      totalSum,
-		},
-	}
-
-	// ✅ รวม group ทั้งหมด (แม้ไม่มีข้อมูล ก็ให้ val = 0)
-	for _, g := range groupTypes {
-		val := 0
-		if v, ok := summaryMap[g.GroupTypeId]; ok {
-			val = v
-		}
-
-		data = append(data, map[string]interface{}{
-			fmt.Sprintf("%s_en", g.Prefix): g.En,
-			fmt.Sprintf("%s_th", g.Prefix): g.Th,
-			"val":                          val,
-		})
-	}
-
-	// ✅ สร้าง payload
-	summary := model.DashboardSummary{
-		Type:    "CASE-SUMMARY",
-		TitleEn: "Work Order Summary",
-		TitleTh: "สรุปใบสั่งงาน",
-		Data:    data,
-	}
-
-	jsonBytes, err := json.Marshal(summary)
-	if err != nil {
-		return fmt.Errorf("marshal dashboard summary failed: %w", err)
-	}
-	raw := json.RawMessage(jsonBytes)
-
-	// ✅ ส่ง Notification
-	err = genNotiCustom(
-		c, conn, orgId, username, username, "",
-		"hidden", nil, "", recipients, "", "User", "DASHBOARD", &raw,
-	)
-	if err != nil {
-		return fmt.Errorf("send dashboard notification failed: %w", err)
-	}
-
-	log.Printf("✅ Dashboard summary sent successfully: total=%d groups=%d", totalSum, len(groupTypes))
-	return nil
 }

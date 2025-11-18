@@ -245,6 +245,91 @@ func CustomerById(c *gin.Context) {
 
 }
 
+// @summary Get Customer by PhoneNo
+// @tags Customer
+// @security ApiKeyAuth
+// @id Get Customer by PhoneNo
+// @accept json
+// @produce json
+// @Param phoneNo path string true "phoneNo"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/customer/byPhoneNo/{phoneNo} [get]
+func CustomerByPhoneNo(c *gin.Context) {
+	logger := utils.GetLog()
+	phoneNo := c.Param("phoneNo")
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	orgId := GetVariableFromToken(c, "orgId")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	txtId := uuid.New().String()
+	defer cancel()
+	defer conn.Close(ctx)
+	query := `SELECT id, "orgId", "displayName", title, "firstName", "middleName", "lastName", "citizenId", dob, blood, gender, "mobileNo", address, photo, email, usertype, active, "createdAt", "updatedAt", "createdBy", "updatedBy"
+		FROM public.cust_customers WHERE "mobileNo"=$1 AND "orgId"=$2`
+
+	var u model.Customer
+	logger.Debug(`Query`, zap.String("query", query))
+	err := conn.QueryRow(ctx, query, phoneNo, orgId).Scan(
+		&u.ID,
+		&u.OrgID,
+		&u.DisplayName,
+		&u.Title,
+		&u.FirstName,
+		&u.MiddleName,
+		&u.LastName,
+		&u.CitizenID,
+		&u.DOB,
+		&u.Blood,
+		&u.Gender,
+		&u.MobileNo,
+		&u.Address,
+		&u.Photo,
+		&u.Email,
+		&u.UserType,
+		&u.Active,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+		&u.CreatedBy,
+		&u.UpdatedBy,
+	)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, "", "Customer", "CustomerByPhoneNo", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   u,
+		Desc:   "",
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Customer", "CustomerByPhoneNo", "",
+		"search", 0, start_time, GetQueryParams(c), response, "GetCustomerByPhoneNo Success.",
+	)
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
+
+}
+
 // @summary Create Customer
 // @tags Customer
 // @security ApiKeyAuth

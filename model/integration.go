@@ -16,7 +16,7 @@ type WorkOrder struct {
 	WorkOrderMetadata     WorkOrderMeta `json:"work_order_metadata"`
 	UserMetadata          UserMeta      `json:"user_metadata"`
 	DeviceMetadata        DeviceMeta    `json:"device_metadata"`
-	SopMetadata           SopMeta       `json:"sop_metadata"`
+	SopMetadata           interface{}   `json:"sop_metadata"`
 	Status                string        `json:"status"`
 	WorkDate              string        `json:"work_date"`
 	Workspace             string        `json:"workspace"`

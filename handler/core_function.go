@@ -72,6 +72,9 @@ func getEnvList(key string) []string {
 }
 
 func mapStatus(code string) string {
+	if contains(getEnvList("CONV_SCHEDULE"), code) {
+		return "NEW"
+	}
 	if contains(getEnvList("CONV_NEW"), code) {
 		return "NEW"
 	}
@@ -549,4 +552,32 @@ func StructToMap(data interface{}) (map[string]interface{}, error) {
 	}
 	err = json.Unmarshal(tmp, &result)
 	return result, err
+}
+
+func ConvertDate(dateStr string) (string, error) {
+	t, err := time.Parse(time.RFC3339, dateStr)
+	if err != nil {
+		return "", err
+	}
+	return t.Format("2006-01-02"), nil
+}
+
+func ConvertDateSafe(dateStr string) string {
+	if dateStr == "" {
+		return ""
+	}
+
+	// Try RFC3339 format: 2025-11-11T05:20:00.000Z
+	if t, err := time.Parse(time.RFC3339, dateStr); err == nil {
+		return t.Format("2006-01-02")
+	}
+
+	// Try Go default time format: 2025-11-11 05:20:00 +0000 UTC
+	layout := "2006-01-02 15:04:05 -0700 MST"
+	if t, err := time.Parse(layout, dateStr); err == nil {
+		return t.Format("2006-01-02")
+	}
+
+	// Return empty string if all parsing fails
+	return ""
 }

@@ -140,6 +140,26 @@ func handleMessage_WO_Create(c *gin.Context, message []byte) {
 }
 
 func ESB_WORK_ORDER_UPDATE() error {
+
+	// Check owner -- Start
+	// hostname, err := os.Hostname()
+	// if err != nil {
+	// 	log.Println("Hostname error:", err)
+	// 	hostname = "unknown"
+	// }
+	// log.Printf("Recheck ESB Update WO on host: %s\n", hostname)
+	// if val == "" || val == hostname {
+	// 	err = utils.EsbCreateSet(wo.WorkOrderNumber, hostname)
+	// 	if err != nil {
+	// 		log.Println("Redis SET error:", err)
+	// 		return
+	// 	}
+	// } else {
+	// 	log.Printf("Skip Connection Not allow Owner : %s\n", hostname)
+	// 	return
+	// }
+	// Check owner -- End
+
 	maxRetryStr := os.Getenv("KAFKA_RETRY")
 	intervalStr := os.Getenv("KAFKA_INTERVAL")
 	maxRetryInt, err_ := strconv.Atoi(maxRetryStr)
@@ -206,6 +226,7 @@ func ESB_WORK_ORDER_UPDATE() error {
 func handleMessage_WO_Update(c *gin.Context, message []byte) {
 	source := os.Getenv("INTEGRATION_SOURCE")
 	log.Printf("Update :: Raw message: %s", string(message))
+
 	var wo model.WorkOrder
 	if err := json.Unmarshal(message, &wo); err != nil {
 		log.Printf("Error unmarshalling message: %v", err)
@@ -257,6 +278,78 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 		return
 	}
 
+	if wo.Status == "ASSIGNED" {
+
+		UserEmployeeCode := wo.UserMetadata.AssignedEmployeeCode.UserEmployeeCode
+		if UserEmployeeCode != "" {
+
+			unitLists, count, err := GetUnitsWithDispatch(ctx, conn, orgId, wo.WorkOrderNumber, "S003", "")
+			if err != nil {
+				panic(err)
+			}
+
+			log.Printf(" %s - Total Units: %d", wo.WorkOrderNumber, count)
+			log.Print(unitLists)
+
+			// ตรวจสอบว่ามีข้อมูลหรือไม่
+			if len(unitLists) > 0 {
+				firstUnit := unitLists[0]
+				log.Printf("First Unit: %+v", firstUnit)
+
+				// ตัวอย่างเช็คค่าเฉพาะ field
+				log.Printf("First Unit ID: %s", firstUnit.UnitID)
+				log.Printf("First Unit Username: %s", firstUnit.Username)
+
+				req := model.CancelUnitRequest{
+					CaseId:    wo.WorkOrderNumber,
+					ResDetail: "Cancelled unit by integration",
+					ResId:     "",
+					UnitId:    firstUnit.UnitID,
+					UnitUser:  firstUnit.Username,
+				}
+
+				err := DispatchCancelUnitCore(c, conn, req, os.Getenv("INTEGRATION_ORG_ID"), os.Getenv("INTEGRATION_USR"))
+				if err != nil {
+					log.Printf("❌ Cancel Unit failed: %v", err)
+				} else {
+					log.Print("✅ Unit cancelled successfully")
+				}
+
+			} else {
+				log.Print("No units found.")
+			}
+
+			// user, err := utils.GetUserByUsername(ctx, conn, orgId, UserEmployeeCode)
+			// if err != nil {
+			// 	log.Printf("Error getting user: %v", err)
+			// } else if user != nil {
+
+			// 	log.Printf("-->ASSIGNED : %s , %s", user.EmpID, UserEmployeeCode)
+			// 	if user.EmpID != UserEmployeeCode {
+
+			// 		//Cancel Unit
+			// 		req := model.CancelUnitRequest{
+			// 			CaseId:    wo.WorkOrderNumber,
+			// 			ResDetail: "Cancelled unit by integration",
+			// 			ResId:     "",
+			// 			UnitId:    UserEmployeeCode,
+			// 			UnitUser:  UserEmployeeCode,
+			// 		}
+
+			// 		err := DispatchCancelUnitCore(c, conn, req, os.Getenv("INTEGRATION_ORG_ID"), os.Getenv("INTEGRATION_USR"))
+			// 		if err != nil {
+			// 			log.Printf("❌ Cancel Unit failed: %v", err)
+			// 		} else {
+			// 			log.Print("✅ Unit cancelled successfully")
+			// 		}
+
+			// 	}
+
+			// }
+		}
+
+	}
+
 	log.Print("====1===")
 
 	if err := IntegrateUpdateCaseFromWorkOrder(c, conn, wo, username, orgId); err != nil {
@@ -290,7 +383,7 @@ func CancelCaseCore(ctx *gin.Context, conn *pgx.Conn, orgId, username, caseId, r
 		Status: cancelStatus,
 	}
 	GenerateNotiAndComment(ctx, conn, req, orgId, "0")
-	UpdateBusKafka_WO(ctx, conn, req)
+	//UpdateBusKafka_WO(ctx, conn, req)
 
 	logger.Info("case cancelled successfully", zap.String("caseId", caseId))
 	return nil
