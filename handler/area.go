@@ -8,8 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 // @summary Get Country Province Districts
@@ -21,99 +19,47 @@ import (
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/area/country_province_districts [get]
 func GetCountryProvinceDistricts(c *gin.Context) {
-	logger := utils.GetLog()
+	//logger := utils.GetLog()
+	startTime := time.Now()
 
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   "Database connection failed",
+		})
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
 
-	start_time := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
 
-	query := `SELECT t1.id, t1."orgId", t1."countryId", t1."provId", t1."distId",
-	 	t1.en, t1.th, t1.active,
-	  	t2.en, t2.th, t2.active,
-	  	t3.en, t3.th, t3.active
-		FROM public.area_districts t1
-		FULL JOIN public.area_provinces t2 ON t1."provId" = t2."provId"
-		FULL JOIN public.area_countries t3 ON t2."countryId" = t3."countryId"
-	WHERE (t1."orgId" = $1 OR t1."orgId" IS NULL) ORDER by t1."countryId"  NULLS LAST;`
-
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query), zap.Any("orgId", orgId))
-	rows, err := conn.Query(ctx, query, orgId)
+	result, err := utils.GetCountryProvinceDistrictsOrLoad(ctx, conn, orgId.(string))
 	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Status: "-1",
-			Msg:    "Failure",
+			Msg:    "Failed",
 			Desc:   err.Error(),
 		})
 		return
 	}
-	defer rows.Close()
-	var errorMsg string
-	var Area model.AreaDistrictWithDetails
-	var AreaList []model.AreaDistrictWithDetails
-	found := false
-	for rows.Next() {
-		err := rows.Scan(&Area.ID, &Area.OrgID, &Area.CountryID, &Area.ProvID, &Area.DistID,
-			&Area.DistrictEn, &Area.DistrictTh, &Area.DistrictActive,
-			&Area.ProvinceEn, &Area.ProvinceTh, &Area.ProvinceActive,
-			&Area.CountryEn, &Area.CountryTh, &Area.CountryActive)
-		if err != nil {
-			logger.Warn("Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
-			c.JSON(http.StatusInternalServerError, response)
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, orgId.(string), username.(string),
-				txtId, "", "Area", "GetCountryProvinceDistricts", "",
-				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			return
-		}
-		AreaList = append(AreaList, Area)
-		found = true
+
+	// Success
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   result,
 	}
-	if !found {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   "Not found",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, "", "Area", "GetCountryProvinceDistricts", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Not Found = "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   AreaList,
-			Desc:   "",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, "", "Area", "GetCountryProvinceDistricts", "",
-			"search", 0, start_time, GetQueryParams(c), response, "Get successfully",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusOK, response)
-	}
+
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Area", "GetCountryProvinceDistricts", "",
+		"search", 0, startTime, GetQueryParams(c), response, "Get successfully",
+	)
+
+	c.JSON(http.StatusOK, response)
 }

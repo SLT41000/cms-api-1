@@ -451,3 +451,202 @@ func GetUserProfileFromDB(ctx context.Context, dbConn *pgx.Conn, orgId, username
 
 	return &userProfile, nil
 }
+
+func GetAreaByUsernameOrLoad(ctx context.Context, dbConn *pgx.Conn, orgId string, username string) (*model.Um_User_Login, error) {
+
+	// ==== LOAD FROM CACHE ====
+	cacheData, err := UserPermissionGet(username)
+	if err == nil && cacheData != "" {
+		var cached model.Um_User_Login
+		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
+			log.Println("✅ Loaded UserPermission from Redis cache")
+			return &cached, nil
+		}
+	}
+
+	log.Print("=====GetAreaByUsernameOrLoad=====")
+
+	sql := `
+        SELECT
+            u.id,
+            u."orgId",
+            u.username,
+            u."displayName",
+            u."firstName",
+            u."lastName",
+            u.email,
+            u."mobileNo",
+            u.photo, 
+            ar."distIdLists"
+        FROM um_users u
+        LEFT JOIN um_user_with_area_response ar
+            ON ar.username = u.username
+            AND ar."orgId" = u."orgId"
+        WHERE u.username = $1
+          AND u."orgId" = $2
+        LIMIT 1;
+    `
+
+	row := dbConn.QueryRow(ctx, sql, username, orgId)
+
+	var ua model.Um_User_Login
+	var distIDLists []byte
+
+	err = row.Scan(
+		&ua.ID,
+		&ua.OrgID,
+		&ua.Username,
+		&ua.DisplayName,
+		&ua.FirstName,
+		&ua.LastName,
+		&ua.Email,
+		&ua.MobileNo,
+		&ua.Photo,
+		&distIDLists,
+	)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	if distIDLists != nil {
+		json.Unmarshal(distIDLists, &ua.DistIdLists)
+	}
+
+	// ==== SAVE TO CACHE ====
+	jsonData, _ := json.Marshal(ua)
+	UserPermissionSet(username, string(jsonData))
+
+	log.Println("Saved to cache:", string(jsonData))
+
+	return &ua, nil
+}
+
+func GetCountryProvinceDistrictsOrLoad(ctx context.Context, conn *pgx.Conn, orgId string) ([]model.AreaDistrictWithDetails, error) {
+
+	// ==== LOAD FROM CACHE ====
+	cacheData, err := OwnerDistGet(orgId)
+	if err == nil && cacheData != "" {
+		var cached []model.AreaDistrictWithDetails
+
+		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
+			log.Println("✅ Loaded UserPermission from Redis cache")
+			return cached, nil
+		}
+	}
+
+	query := `
+	SELECT 
+	    t1.id, t1."orgId", t1."countryId", t1."provId", t1."distId",
+	    t1.en AS dist_en, t1.th AS dist_th, t1.active AS dist_active,
+	    t2.en AS prov_en, t2.th AS prov_th, t2.active AS prov_active,
+	    t3.en AS country_en, t3.th AS country_th, t3.active AS country_active
+	FROM area_districts t1
+	LEFT JOIN area_provinces t2 
+	    ON t1."provId" = t2."provId" 
+	    AND t1."countryId" = t2."countryId"
+	    AND t2."orgId" = t1."orgId"
+	LEFT JOIN area_countries t3 
+	    ON t1."countryId" = t3."countryId"
+	    AND t3."orgId" = t1."orgId"
+	WHERE t1."orgId" = $1
+	ORDER BY t1."countryId";
+	`
+
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.AreaDistrictWithDetails
+
+	for rows.Next() {
+		var a model.AreaDistrictWithDetails
+
+		err := rows.Scan(
+			&a.ID, &a.OrgID, &a.CountryID, &a.ProvID, &a.DistID,
+			&a.DistrictEn, &a.DistrictTh, &a.DistrictActive,
+			&a.ProvinceEn, &a.ProvinceTh, &a.ProvinceActive,
+			&a.CountryEn, &a.CountryTh, &a.CountryActive,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, a)
+	}
+
+	// ==== SAVE TO CACHE ====
+	jsonData, _ := json.Marshal(list)
+	OwnerDistSet(orgId, string(jsonData))
+
+	//log.Println("Saved to cache:", string(jsonData))
+
+	return list, nil
+}
+
+func GetDepartmentCommandStationOrLoad(ctx context.Context, conn *pgx.Conn, orgId string) ([]model.StationWithCommandDept, error) {
+	// ==== LOAD FROM CACHE ====
+	cacheData, err := OwnerStationGet(orgId)
+	if err == nil && cacheData != "" {
+		var cached []model.StationWithCommandDept
+
+		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
+			log.Println("✅ Loaded UserPermission from Redis cache")
+			return cached, nil
+		}
+	}
+
+	query := `SELECT
+	    s."id",
+	    s."orgId",
+	    s."deptId",
+	    s."commId",
+	    s."stnId",
+	    s.en AS stn_en,
+	    s.th AS stn_th,
+	    s.active AS stn_active,
+	    
+	    c.en AS comm_en,
+	    c.th AS comm_th,
+	    c.active AS comm_active,
+	    
+	    d.en AS dept_en,
+	    d.th AS dept_th,
+	    d.active AS dept_active
+	FROM public.sec_departments d
+	JOIN public.sec_commands c
+	    ON c."deptId" = d."deptId"
+	JOIN public.sec_stations s
+	    ON s."commId" = c."commId"
+	WHERE d."orgId"=$1
+	ORDER BY d."deptId", c."commId", s."stnId";`
+
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stationList []model.StationWithCommandDept
+	for rows.Next() {
+		var station model.StationWithCommandDept
+		err := rows.Scan(
+			&station.ID, &station.OrgId, &station.DeptId, &station.CommId, &station.StnId,
+			&station.StationEn, &station.StationTh, &station.StationActive,
+			&station.CommandEn, &station.CommandTh, &station.CommandActive,
+			&station.DeptEn, &station.DeptTh, &station.DeptActive,
+		)
+		if err != nil {
+			return nil, err
+		}
+		stationList = append(stationList, station)
+	}
+
+	// ==== SAVE TO CACHE ====
+	jsonData, _ := json.Marshal(stationList)
+	OwnerStationSet(orgId, string(jsonData))
+
+	return stationList, nil
+}

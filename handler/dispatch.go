@@ -484,7 +484,6 @@ func GetUnit(c *gin.Context) {
     AND s."active" = TRUE
   LIMIT 1
 ),
-
 unit_with_props AS (
   SELECT 
     "unitId", 
@@ -493,7 +492,6 @@ unit_with_props AS (
   WHERE "active" = TRUE
   GROUP BY "unitId"
 ),
-
 units_matched AS (
   SELECT u."unitId", u."unitName", p.props
   FROM "mdm_units" u
@@ -534,7 +532,6 @@ users_in_area AS (
       WHERE distId.value = c."distId"
     )
 )
-
 SELECT DISTINCT ON (mu."unitId")
        mu."orgId",
        mu."unitId",
@@ -1590,6 +1587,7 @@ func DispatchCancelUnitCore(ctx *gin.Context, conn *pgx.Conn, req model.CancelUn
 		if _, err := DeleteReponseCase(ctx, conn, orgId, req.CaseId, "S001"); err != nil {
 			return fmt.Errorf("delete response case failed: %w", err)
 		}
+		CalDashboardStatus(ctx, conn, orgId, username, req.CaseId, "cancel")
 	}
 
 	// [5] => Noti & Event

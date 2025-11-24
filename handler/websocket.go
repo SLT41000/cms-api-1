@@ -277,8 +277,58 @@ func WebSocketHandler(c *gin.Context) {
 
 	// keep-alive: รอจน connection ปิด
 	for {
-		if _, _, err := wsConn.ReadMessage(); err != nil {
-			break
+		// if _, _, err := wsConn.ReadMessage(); err != nil {
+		// 	break
+		// }
+		for {
+			_, msg, err := wsConn.ReadMessage()
+			if err != nil {
+				log.Printf("Connection closed for user %s: %v", regMsg.Username, err)
+				break
+			}
+
+			var event map[string]interface{}
+			if err := json.Unmarshal(msg, &event); err != nil {
+				log.Println("Invalid message format:", err)
+				continue
+			}
+
+			evt, ok := event["EVENT"].(string)
+			if !ok {
+				log.Println("Message missing EVENT field")
+				continue
+			}
+
+			switch evt {
+			case "DASHBOARD":
+				orgID, _ := event["orgId"].(string)
+				username, _ := event["username"].(string)
+
+				log.Printf("Received DASHBOARD event from %s/%s", orgID, username)
+
+				dbConn, ctx, cancel := utils.ConnectDB()
+				if dbConn == nil {
+					_ = wsConn.WriteJSON(gin.H{"error": "could not connect to the database"})
+					wsConn.WriteJSON(subscribeFailureResponse)
+					return
+				}
+
+				recipients := []model.Recipient{
+					{Type: "username", Value: username},
+				}
+				err = CoreDashboard(ctx, dbConn, orgID, username, recipients, true, true, true)
+				if err != nil {
+					log.Printf("Dashboard notification error: %v", err)
+				}
+
+				dbConn.Close(ctx)
+				cancel()
+
+			case "OTHER_EVENT":
+				// handle event อื่น ๆ
+			default:
+				log.Println("Unknown event:", evt)
+			}
 		}
 	}
 }

@@ -207,8 +207,8 @@ func UsernameDel(key string) error {
 func UserPermissionSet(key string, value string) error {
 	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USER_PERMISSION"), key)
 	log.Print(name)
-	//expiration := getExpire()
-	return Rdb.Set(context.Background(), name, value, 0).Err()
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
 }
 
 func UserPermissionGet(key string) (string, error) {
@@ -235,8 +235,65 @@ func OwnerScheduleGet() (string, error) {
 	return RedisGet(name)
 }
 
-func OwnerScheduleDel(key string) error {
+func OwnerScheduleDel() error {
 	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_SCHEDULE"))
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Report Monitoring=====
+func OwnerReportSet(value string) error {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_REPORT"))
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func OwnerReportGet() (string, error) {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_REPORT"))
+	return RedisGet(name)
+}
+
+func OwnerReportDel(key string) error {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_REPORT"))
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Report Monitoring=====
+func OwnerDistSet(key, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_AREA"), key)
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func OwnerDistGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_AREA"), key)
+	return RedisGet(name)
+}
+
+func OwnerDistDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_AREA"), key)
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Stations=====
+func OwnerStationSet(key, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_STATION"), key)
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func OwnerStationGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_STATION"), key)
+	return RedisGet(name)
+}
+
+func OwnerStationDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_STATION"), key)
 	log.Print("Deleting:", name)
 	return Rdb.Del(context.Background(), name).Err()
 }

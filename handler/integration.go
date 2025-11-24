@@ -42,8 +42,8 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	  usercreate,  "createdAt", "updatedAt", "createdBy", "updatedBy", "integration_ref_number", "caseSla", "phoneNoHide", "deviceMetaData")
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-		$21, $22, $23, $24, $25, $26, $27, $28, $29
+		$11, $12, $13, $14, $15, $16, $17, $18, CURRENT_TIMESTAMP, $19, $20,
+		$21, $22, $23, $24, $25, $26, $27, $28
 	) RETURNING id ;
 	`
 
@@ -133,7 +133,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
 		lat, lon, countryId, provId, distId, // countryId, provId, distId (อาจ map จาก device location)
-		caseDuration, now, now, username, now, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
+		caseDuration, now, username, now, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
 
 	if err != nil {
 		return fmt.Errorf("insert case failed: %w", err)
@@ -263,6 +263,12 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		log.Fatalf("Insert failed: %v", err)
 	}
 
+	// For Dashboard
+	err = CalDashboardCaseSummary(ctx, conn, orgId, recipients, username, caseTypeId, *countryId, *provId, *distId)
+	if err != nil {
+		log.Print("AddOrUpdateCaseSummary failed", zap.Error(err))
+	}
+
 	return nil
 }
 
@@ -350,7 +356,8 @@ func IntegrateCaseCurrentStageInsert(username string, orgId string, conn *pgx.Co
 func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId string) (*model.Case, error) {
 	query := `
 	SELECT 
-		"caseId", "integration_ref_number", "distId", "statusId", "caseSTypeId", "priority", "caseLat", "caseLon", "caseDetail", "deviceMetaData"
+		"caseId", "integration_ref_number", "distId", "statusId", "caseTypeId", "caseSTypeId", "priority", "caseLat", "caseLon", "caseDetail", "deviceMetaData", "wfId",
+		"countryId", "provId", "distId", "createdDate"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -364,12 +371,18 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 		&c.IntegrationRefNumber,
 		&c.DistID,
 		&c.StatusID,
+		&c.CaseTypeID,
 		&c.CaseSTypeID,
 		&c.Priority,
 		&c.CaseLat,
 		&c.CaseLon,
 		&c.CaseDetail,
 		&c.DeviceMetaData,
+		&c.WfID,
+		&c.CountryID,
+		&c.ProvID,
+		&c.DistID,
+		&c.CreatedDate,
 	)
 
 	// ✅ case not found
@@ -405,7 +418,9 @@ func IntegrateUpdateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	log.Print("====4===")
 	statusMap := GetCaseStatusMap()
 	statusId := statusMap[workOrder.Status]
-
+	if workOrder.State == "CLOSED" {
+		statusId = statusMap[workOrder.State]
+	}
 	// Priority จาก ENV mapping
 	priorityMap := GetPriorityMap()
 	Priority := priorityMap[strings.ToUpper(workOrder.WorkOrderMetadata.Severity)]
@@ -636,9 +651,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		state = stName
 		stName = "DONE"
 	}
-	if stName == "CANCEL" {
-		state = "CLOSED"
-	}
+
 	var uAssign interface{} = "" // default empty string
 	if req.UnitUser != "" {
 		user, err := utils.GetUserByUsername(ctx, conn, orgId.(string), req.UnitUser)
@@ -653,6 +666,11 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 				"user_phone":         user.MobileNo,
 			}
 		}
+	}
+
+	if stName == "CANCEL" {
+		state = "CLOSED"
+		uAssign = ""
 	}
 
 	sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), caseData.CaseSTypeID)

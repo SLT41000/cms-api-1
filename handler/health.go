@@ -45,10 +45,9 @@ func Ratelimit(c *gin.Context) {
 		return
 	}
 
-	key := "global:rate" // or c.ClientIP()
-
-	// Consume 1 token
-	limiterContext, err := RateLimiterInstance.Get(context.TODO(), key)
+	key := "global:rate"                                      // or c.ClientIP() for per-IP
+	ctx := context.TODO()                                     // do not pass nil
+	limiterContext, err := RateLimiterInstance.Peek(ctx, key) // Peek does NOT decrement
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -76,17 +76,39 @@ type IndividualFormFieldWithChildren struct {
 	FormRule            *FormRule     `json:"formRule,omitempty"`
 }
 
+type VersionInfo struct {
+	Version string `json:"version"`
+	Publish bool   `json:"publish"`
+}
+
 type FormsManager struct {
 	Form
-	Active       bool      `json:"active"`
-	Publish      bool      `json:"publish"`
-	Versions     string    `json:"versions"`
-	Locks        bool      `json:"locks"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	CreatedBy    string    `json:"createdBy"`
-	UpdatedBy    string    `json:"updatedBy"`
-	VersionsList []string  `json:"versionsList"`
+	Active           bool          `json:"active"`
+	Publish          bool          `json:"publish"`
+	Versions         string        `json:"versions"`
+	Locks            bool          `json:"locks"`
+	CreatedAt        time.Time     `json:"createdAt"`
+	UpdatedAt        time.Time     `json:"updatedAt"`
+	CreatedBy        string        `json:"createdBy"`
+	UpdatedBy        string        `json:"updatedBy"`
+	VersionsInfoList []VersionInfo `json:"versionsInfoList"`
+}
+
+type FormsManagerShotModel struct {
+	FormId           *string       `json:"formId"`
+	FormName         *string       `json:"formName"`
+	Publish          bool          `json:"publish"`
+	Versions         string        `json:"versions"`
+	CreatedAt        time.Time     `json:"createdAt"`
+	CreatedBy        string        `json:"createdBy"`
+	VersionsInfoList []VersionInfo `json:"versionsInfoList"`
+}
+
+type FormsModel struct {
+	FormId   *string `json:"formId"`
+	FormName *string `json:"formName"`
+	Publish  bool    `json:"publish"`
+	Versions string  `json:"versions"`
 }
 
 type FormBuilder struct {

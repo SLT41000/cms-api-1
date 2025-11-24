@@ -2,7 +2,6 @@ package handler
 
 import (
 	"crypto/subtle"
-	"encoding/json"
 	"fmt"
 	"log"
 	"mainPackage/model"
@@ -571,12 +570,7 @@ WHERE u.username = $1
 		)
 		//=======AUDIT_END=====//
 
-		userJSON, err := json.Marshal(UserOpt)
-		if err != nil {
-			log.Printf("Failed to marshal user data: %v", err)
-			return
-		}
-		utils.UserPermissionSet(username, string(userJSON))
+		utils.GetAreaByUsernameOrLoad(ctx, conn, UserOpt.OrgID, username)
 
 		c.JSON(http.StatusOK, response)
 		return

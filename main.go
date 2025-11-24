@@ -75,11 +75,11 @@ func main() {
 		}
 	}()
 
-	// go func() {
-	// 	if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
-	// 		log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
+			log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
+		}
+	}()
 
 	go func() {
 		if err := handler.ESB_USER_STATUS(); err != nil {
@@ -98,6 +98,20 @@ func main() {
 			log.Printf("SlaMonitor error: %v", err)
 		}
 	}()
+
+	// go func() {
+	// 	if err := handler.ScheduleMonitor(&gin.Context{}); err != nil {
+	// 		log.Printf("ScheduleMonitor error: %v", err)
+	// 	}
+	// }()
+
+	go func() {
+		if err := handler.ReportProcess(&gin.Context{}); err != nil {
+			log.Printf("ReportProcess error: %v", err)
+		}
+	}()
+	
+	
 
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
@@ -137,6 +151,7 @@ func main() {
 		v1.GET("/area/country_province_districts", handler.GetCountryProvinceDistricts)
 
 		v1.GET("/forms", handler.GetForm)
+		v1.GET("/forms/:formId", handler.GetFormById)
 		v1.GET("/forms/GetFormlinkWf", handler.GetFormlinkWf)
 		v1.GET("/forms/getAllForms", handler.GetAllForm)
 		v1.POST("/forms", handler.FormInsert)

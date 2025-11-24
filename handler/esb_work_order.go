@@ -73,7 +73,7 @@ func ESB_WORK_ORDER_CREATE() error {
 	log.Println("Kafka ESB_WORK_ORDER_CREATE() started. Listening for messages...")
 
 	for msg := range partitionConsumer.Messages() {
-		log.Print(string(msg.Value))
+		log.Print("ESB_WORK_ORDER_CREATE --> ", string(msg.Value))
 		go handleMessage_WO_Create(&gin.Context{}, msg.Value)
 	}
 
@@ -216,7 +216,7 @@ func ESB_WORK_ORDER_UPDATE() error {
 	log.Println("Kafka ESB_WORK_ORDER_UPDATE() started. Listening for messages...")
 
 	for msg := range partitionConsumer.Messages() {
-		log.Print(string(msg.Value))
+		log.Print("ESB_WORK_ORDER_UPDATE --> ", string(msg.Value))
 		go handleMessage_WO_Update(&gin.Context{}, msg.Value)
 	}
 

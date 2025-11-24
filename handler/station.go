@@ -169,9 +169,10 @@ func GetStation(c *gin.Context) {
 func GetDepartmentCommandStation(c *gin.Context) {
 	txtId := uuid.New().String()
 	start_time := time.Now()
-	logger := utils.GetLog()
+	//logger := utils.GetLog()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -179,115 +180,49 @@ func GetDepartmentCommandStation(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
-	query := `SELECT t1."id",t1."orgId", t1."deptId", t1."commId", t1."stnId",
-        t1.en, t1.th, t1.active,
-        t2.en, t2.th, t2.active,
-        t3.en, t3.th, t3.active
-        FROM public.sec_stations t1
-        join public.sec_commands t2 ON t1."commId" = t2."commId"
-        join public.sec_departments t3 ON t1."deptId" = t2."deptId"
-    WHERE t1."orgId"=$1 ORDER by t1."stnId"`
-
-	var rows pgx.Rows
-	logger.Debug(`GetDepartmentCommandStation : Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, orgId)
+	// เรียก service layer
+	stations, err := utils.GetDepartmentCommandStationOrLoad(ctx, conn, orgId.(string))
 	if err != nil {
-		//logger.Warn("GetDepartmentCommandStation : Query failed", zap.Error(err))
 		utils.WriteConsole("error", "GetDepartmentCommandStation", "Query failed", zap.Error(err))
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
 			Desc:   err.Error(),
 		}
-
-		//=======AUDIT_START=====//
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			txtId, "", "Station", "GetDepartmentCommandStation", "",
 			"search", -1, start_time, GetQueryParams(c), response, "Query failed = "+err.Error(),
 		)
-		//=======AUDIT_END=====//
-
 		c.JSON(http.StatusInternalServerError, response)
 		return
-
 	}
-	defer rows.Close()
-	var errorMsg string
-	var Station model.StationWithCommandDept
-	var StationList []model.StationWithCommandDept
-	rowIndex := 0
-	for rows.Next() {
-		rowIndex++
-		err := rows.Scan(&Station.ID, &Station.OrgId, &Station.DeptId, &Station.CommId, &Station.StnId,
-			&Station.StationEn, &Station.StationTh, &Station.StationActive,
-			&Station.CommandEn, &Station.CommandTh, &Station.CommandActive,
-			&Station.DeptEn, &Station.DeptTh, &Station.DeptActive)
-		if err != nil {
-			//logger.Warn("GetDepartmentCommandStation : Scan failed", zap.Error(err))
-			utils.WriteConsole("error", "GetDepartmentCommandStation", "Scan failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failed",
-				Desc:   errorMsg,
-			}
 
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, orgId.(string), username.(string),
-				txtId, "", "Station", "GetDepartmentCommandStation", "",
-				"search", -1, start_time, GetQueryParams(c), response, "Scan failed = "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-		StationList = append(StationList, Station)
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   stations,
+		Desc:   "",
 	}
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
 
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   StationList,
-			Desc:   "",
-		}
-		response_2 := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   len(StationList),
-			Desc:   "",
-		}
-
-		//=======AUDIT_START=====//
-		responseJSON, err := json.Marshal(response)
-		if err != nil {
-			//logger.Error("GetDepartmentCommandStation : Failed to marshal response", zap.Error(err))
-			utils.WriteConsole("error", "GetDepartmentCommandStation", "Failed fairesponseled", zap.Error(err))
-		} else {
-			//logger.Info("GetDepartmentCommandStation : Success", zap.String("response", string(responseJSON)))
-			utils.WriteConsole("Info", "GetDepartmentCommandStation", "Success", zap.String("response", string(responseJSON)))
-		}
-
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, "", "Station", "GetDepartmentCommandStation", "",
-			"search", 0, start_time, GetQueryParams(c), response_2, "Get Department, Command, Station list successfully",
-		)
-		//=======AUDIT_END=====//
-
-		c.JSON(http.StatusOK, response)
-		return
+	response_2 := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data:   len(stations),
+		Desc:   "",
 	}
+
+	_, err = json.Marshal(response)
+	if err != nil {
+		utils.WriteConsole("error", "GetDepartmentCommandStation", "Failed marshal response", zap.Error(err))
+	}
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, "", "Station", "GetDepartmentCommandStation", "",
+		"search", 0, start_time, GetQueryParams(c), response_2, "Get Department, Command, Station list successfully",
+	)
+
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Get Stations by id

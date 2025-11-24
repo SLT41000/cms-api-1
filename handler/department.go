@@ -149,88 +149,92 @@ func GetDepartmentbyId(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
+
 	id := c.Param("id")
 	start_time := time.Now()
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-	query := `SELECT id,"deptId", "orgId", en, th, active, "createdAt", "updatedAt", "createdBy", "updatedBy" 
-	FROM public.sec_departments WHERE "deptId" = $1 AND "orgId"=$2`
 
-	var rows pgx.Rows
-	logger.Debug(`Query`, zap.String("query", query))
-	rows, err := conn.Query(ctx, query, id, orgId)
-	if err != nil {
-		logger.Warn("Query failed", zap.Error(err))
+	query := `
+	SELECT id, "deptId", "orgId", en, th, active, 
+	       "createdAt", "updatedAt", "createdBy", "updatedBy"
+	FROM public.sec_departments 
+	WHERE "deptId" = $1 AND "orgId" = $2`
+	logger.Debug("Query", zap.String("query", query))
+
+	var Department model.Department
+
+	// ใช้ QueryRow (ง่ายสุด ปลอดภัยสุด)
+	err := conn.QueryRow(ctx, query, id, orgId).Scan(
+		&Department.ID,
+		&Department.DeptID,
+		&Department.OrgID,
+		&Department.En,
+		&Department.Th,
+		&Department.Active,
+		&Department.CreatedAt,
+		&Department.UpdatedAt,
+		&Department.CreatedBy,
+		&Department.UpdatedBy,
+	)
+
+	// ---------- NOT FOUND ----------
+	if err == pgx.ErrNoRows {
 		response := model.Response{
 			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
+			Msg:    "Not Found",
+			Desc:   "Department not found",
 		}
-		//=======AUDIT_START=====//
+
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			txtId, id, "Department", "GetDepartmentbyId", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Query failed : "+err.Error(),
+			"search", -1, start_time, GetQueryParams(c),
+			response, "Department not found",
 		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, response)
+
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
-	defer rows.Close()
-	var errorMsg string
-	var Department model.Department
-	err = rows.Scan(&Department.ID, &Department.DeptID, &Department.OrgID, &Department.En, &Department.Th,
-		&Department.Active, &Department.CreatedAt, &Department.UpdatedAt, &Department.CreatedBy, &Department.UpdatedBy)
+
+	// ---------- OTHER ERROR ----------
 	if err != nil {
 		logger.Warn("Scan failed", zap.Error(err))
-		errorMsg = err.Error()
+
 		response := model.Response{
 			Status: "-1",
 			Msg:    "Failed",
-			Desc:   errorMsg,
+			Desc:   err.Error(),
 		}
-		//=======AUDIT_START=====//
+
 		_ = utils.InsertAuditLogs(
 			c, conn, orgId.(string), username.(string),
 			txtId, id, "Department", "GetDepartmentbyId", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
+			"search", -1, start_time, GetQueryParams(c),
+			response, "Scan failed: "+err.Error(),
 		)
-		//=======AUDIT_END=====//
+
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	if errorMsg != "" {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   errorMsg,
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Department", "GetDepartmentbyId", "",
-			"search", -1, start_time, GetQueryParams(c), response, "Failed : "+errorMsg,
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusInternalServerError, response)
-	} else {
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Data:   Department,
-			Desc:   "",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, orgId.(string), username.(string),
-			txtId, id, "Department", "GetDepartmentbyId", "",
-			"search", 0, start_time, GetQueryParams(c), response, "GetDepartmentbyId Success.",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusOK, response)
+	// ---------- SUCCESS ----------
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "",
+		Data:   Department,
 	}
+
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, id, "Department", "GetDepartmentbyId", "",
+		"search", 0, start_time, GetQueryParams(c),
+		response, "GetDepartmentbyId Success",
+	)
+
+	c.JSON(http.StatusOK, response)
 }
 
 // @summary Create Department
@@ -250,7 +254,6 @@ func InsertDepartment(c *gin.Context) {
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
 
 	var req model.DepartmentInsert
 	start_time := time.Now()
@@ -318,7 +321,7 @@ func InsertDepartment(c *gin.Context) {
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
 		txtId, strconv.Itoa(id), "Department", "InsertDepartment", "",
-		"create", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
+		"create", -1, start_time, GetQueryParams(c), response, "InsertDepartment Success.",
 	)
 	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)

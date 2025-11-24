@@ -394,6 +394,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if err != nil {
 			return result, err
 		}
+
 	} else {
 		log.Printf("Status worng number-2 : %s , %s ", config["action"], req.Status)
 		return model.Response{Status: "-2", Msg: "Failure.3", Desc: "Status worng number!"}, err
@@ -427,6 +428,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		if esb {
 			UpdateBusKafka_WO(ctx, conn, req)
 		}
+		CalDashboardStatus(ctx, conn, orgId.(string), username.(string), req.CaseId, "inprogress")
 		return Result, err
 
 	} else if unitCount == caseCount { //-- Unit relate Case
@@ -457,8 +459,9 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 		log.Print("--> 2.1 --Update current stage :  case")
 
-		CalDashboardSLA(ctx, conn, orgId.(string), username.(string), req.CaseId)
-
+		if req.Status == os.Getenv("REQUESTCLOSE") {
+			CalDashboardSLA(ctx, conn, orgId.(string), username.(string), req.CaseId)
+		}
 		return Result, err
 
 	} else if unitCount > 0 && unitCount < caseCount { //--Second Unit follow SOP
@@ -745,6 +748,16 @@ func UpdateCaseCurrentStage(
 	username string,
 ) (model.Response, error) {
 
+	log.Print("==UpdateCaseCurrentStage==")
+
+	orgId := GetVariableFromToken(ctx, "orgId")
+	log.Print(orgId.(string), req.CaseId)
+	caseData, err := GetCaseByID(ctx, conn, orgId.(string), req.CaseId)
+	if err != nil {
+		log.Print(err)
+		return model.Response{Status: "-1", Msg: "Failure.UpdateCaseCurrentStage.0-" + req.CaseId, Desc: err.Error()}, err
+	}
+	log.Print(caseData)
 	var node model.WfNode
 	nodeQuery := `
 		SELECT n."orgId", n."wfId", n."nodeId", d."versions", n."type", n."section", 
@@ -753,11 +766,12 @@ func UpdateCaseCurrentStage(
 		JOIN public."wf_definitions" d 
 		ON n."wfId" = d."wfId"
 		AND n."versions" = d."versions"
-		WHERE n."nodeId" = $1  
+		WHERE n."nodeId" = $1
+		AND d."wfId" = $2
 	`
 	log.Print("-----SELECT-NODE--")
 	log.Print(nextStage.NodeId)
-	err := conn.QueryRow(ctx, nodeQuery, nextStage.NodeId).Scan(
+	err = conn.QueryRow(ctx, nodeQuery, nextStage.NodeId, caseData.WfID).Scan(
 		&node.OrgID, &node.WfID, &nextStage.NodeId, &node.Versions, &node.Type,
 		&node.Section, &node.FormID, &node.Pic, &node.Group,
 	)

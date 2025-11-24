@@ -107,6 +107,7 @@ func GetCaseStatusMap() map[string]string {
 		"INPROGRESS":  os.Getenv("INPROGRESS"),
 		"DONE":        os.Getenv("DONE"),
 		"CANCEL":      os.Getenv("CANCEL"),
+		"CLOSED":      os.Getenv("REQUESTCLOSE"),
 	}
 }
 
