@@ -69,23 +69,59 @@ func main() {
 	utils.InitRedis()
 	utils.InitMinio()
 
-	go func() {
-		if err := handler.ESB_WORK_ORDER_CREATE(); err != nil {
-			log.Printf("Kafka ESB_WORK_ORDER_CREATE error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.ESB_WORK_ORDER_CREATE(); err != nil {
+	// 		log.Printf("Kafka ESB_WORK_ORDER_CREATE error: %v", err)
+	// 	}
+	// }()
 
-	go func() {
-		if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
-			log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.ESB_WORK_ORDER_UPDATE(); err != nil {
+	// 		log.Printf("Kafka ESB_WORK_ORDER_UPDATE error: %v", err)
+	// 	}
+	// }()
 
 	go func() {
 		if err := handler.ESB_USER_STATUS(); err != nil {
 			log.Printf("Kafka ESB_USER_STATUS error: %v", err)
 		}
 	}()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_CREATE("USER"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_CREATE - USER error: %v", err)
+	// 	}
+	// }()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_UPDATE("USER"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_UPDATE - USER error: %v", err)
+	// 	}
+	// }()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_DELETE("USER"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_STAFF_DELETE error: %v", err)
+	// 	}
+	// }()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_CREATE("ADMIN"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_CREATE - ADMIN error: %v", err)
+	// 	}
+	// }()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_UPDATE("ADMIN"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_UPDATE - ADMIN error: %v", err)
+	// 	}
+	// }()
+
+	// go func() {
+	// 	if err := handler.ESB_USER_DELETE("ADMIN"); err != nil {
+	// 		log.Printf("Kafka ESB_USER_DELETE - ADMIN error: %v", err)
+	// 	}
+	// }()
 
 	go func() {
 		if err := handler.ESB_NOTIFICATIONS(); err != nil {
