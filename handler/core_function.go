@@ -11,6 +11,7 @@ import (
 	"mainPackage/utils"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -581,4 +582,56 @@ func ConvertDateSafe(dateStr string) string {
 
 	// Return empty string if all parsing fails
 	return ""
+}
+
+func callAPI_2(baseURL string, method string, queryParams map[string]string, data map[string]interface{}) (string, error) {
+	var reqBody io.Reader
+	log.Print(baseURL)
+	// Encode body as JSON if method is not GET
+	if data != nil && method != "GET" {
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal data: %w", err)
+		}
+		reqBody = bytes.NewBuffer(jsonData)
+	}
+
+	// Build URL with query parameters (for GET and others)
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+	if queryParams != nil {
+		q := u.Query()
+		for k, v := range queryParams {
+			q.Set(k, v)
+		}
+		u.RawQuery = q.Encode()
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest(method, u.String(), reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("METTLINK_TOKEN"))
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	return string(respBody), nil
 }

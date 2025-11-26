@@ -43,7 +43,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, CURRENT_TIMESTAMP, $19, $20,
-		$21, $22, $23, $24, $25, $26, $27, $28
+		CURRENT_TIMESTAMP, $21, $22, $23, $24, $25, $26, $27
 	) RETURNING id ;
 	`
 
@@ -133,7 +133,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
 		lat, lon, countryId, provId, distId, // countryId, provId, distId (อาจ map จาก device location)
-		caseDuration, now, username, now, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
+		caseDuration, now, username, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
 
 	if err != nil {
 		return fmt.Errorf("insert case failed: %w", err)

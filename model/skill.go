@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Skill struct {
 	ID        string    `json:"id"`
@@ -25,4 +27,20 @@ type SkillUpdate struct {
 	En     string `json:"en" db:"en"`
 	Th     string `json:"th" db:"th"`
 	Active bool   `json:"active" db:"active"`
+}
+
+type APISkill struct {
+	SkillSlug  string `json:"skill_slug"`
+	DeviceType string `json:"device_type"`
+}
+
+type APISkillResponse struct {
+	Status int `json:"status"`
+	Data   struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Payload struct {
+			Skills []APISkill `json:"skills"`
+		} `json:"payload"`
+	} `json:"data"`
 }

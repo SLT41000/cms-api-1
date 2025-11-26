@@ -43,7 +43,7 @@ type UnitUser struct {
 	DeptID            string      `json:"deptId"`
 	CommID            string      `json:"commId"`
 	StnID             string      `json:"stnId"`
-	PlateNo           string      `json:"plateNo"`
+	PlateNo           *string     `json:"plateNo"`
 	ProvinceCode      *string     `json:"provinceCode"`
 	Active            bool        `json:"active"`
 	Username          string      `json:"username"`

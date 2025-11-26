@@ -81,59 +81,59 @@ func main() {
 	// 	}
 	// }()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_STATUS(); err != nil {
-	// 		log.Printf("Kafka ESB_USER_STATUS error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_STATUS(); err != nil {
+			log.Printf("Kafka ESB_USER_STATUS error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_CREATE("USER"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_CREATE - USER error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_CREATE("USER"); err != nil {
+			log.Printf("Kafka ESB_USER_CREATE - USER error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_UPDATE("USER"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_UPDATE - USER error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_UPDATE("USER"); err != nil {
+			log.Printf("Kafka ESB_USER_UPDATE - USER error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_DELETE("USER"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_STAFF_DELETE error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_DELETE("USER"); err != nil {
+			log.Printf("Kafka ESB_USER_STAFF_DELETE error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_CREATE("ADMIN"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_CREATE - ADMIN error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_CREATE("ADMIN"); err != nil {
+			log.Printf("Kafka ESB_USER_CREATE - ADMIN error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_UPDATE("ADMIN"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_UPDATE - ADMIN error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_UPDATE("ADMIN"); err != nil {
+			log.Printf("Kafka ESB_USER_UPDATE - ADMIN error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_USER_DELETE("ADMIN"); err != nil {
-	// 		log.Printf("Kafka ESB_USER_DELETE - ADMIN error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_USER_DELETE("ADMIN"); err != nil {
+			log.Printf("Kafka ESB_USER_DELETE - ADMIN error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.ESB_NOTIFICATIONS(); err != nil {
-	// 		log.Printf("Kafka ESB_NOTIFICATIONS error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.ESB_NOTIFICATIONS(); err != nil {
+			log.Printf("Kafka ESB_NOTIFICATIONS error: %v", err)
+		}
+	}()
 
-	// go func() {
-	// 	if err := handler.SlaMonitor(&gin.Context{}); err != nil {
-	// 		log.Printf("SlaMonitor error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.SlaMonitor(&gin.Context{}); err != nil {
+			log.Printf("SlaMonitor error: %v", err)
+		}
+	}()
 
 	// go func() {
 	// 	if err := handler.ScheduleMonitor(&gin.Context{}); err != nil {
@@ -146,12 +146,12 @@ func main() {
 			log.Printf("ReportProcess error: %v", err)
 		}
 	}()
-	
-	
 
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
 	handler.RateLimiterInstance = instance
+	handler.RateLimit = int64(rateLimitInt)
+	handler.RatePeriod = time.Duration(rateTimeMin) * time.Minute
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	// router.Use(cors.Default())
@@ -188,7 +188,9 @@ func main() {
 
 		v1.GET("/forms", handler.GetForm)
 		v1.GET("/forms/:formId", handler.GetFormById)
+		v1.DELETE("/forms/:formId", handler.DeleteForm)
 		v1.GET("/forms/GetFormlinkWf", handler.GetFormlinkWf)
+		v1.GET("/forms/getAllFormslinkWf", handler.GetAllFormlinkWf)
 		v1.GET("/forms/getAllForms", handler.GetAllForm)
 		v1.POST("/forms", handler.FormInsert)
 		v1.PATCH("/forms/:uuid", handler.FormUpdate)

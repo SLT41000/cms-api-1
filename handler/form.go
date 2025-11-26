@@ -564,24 +564,23 @@ func GetAllForm(c *gin.Context) {
 					fe."createdBy",fe."createdAt",fe."updatedAt",fe."updatedBy",
 					ROW_NUMBER() OVER (
 						PARTITION BY fe."formId"
-						ORDER BY CAST(fe."versions" AS INTEGER) DESC
+						ORDER BY NULLIF(regexp_replace(fe."versions", '\D', '', 'g'), '')::INT DESC
 					) AS rn
 				FROM public.form_elements AS fe
 			),
 				all_versions AS (
 					SELECT 
-						fe."formId",fe."versions",fe."publish"
+						fe."formId",fe."versions" 
 					FROM public.form_elements fe
 				)
 				SELECT fb."formId",fb."versions" AS fb_versions,lfe."fe_versions",
-					fb."publish",fb."formName",
+					fb."formName",
 					lfe."createdBy",lfe."createdAt",
 					JSONB_AGG(
 							jsonb_build_object(
-								'version', av."versions",
-								'publish', av."publish"
+								'version', av."versions" 
 							)
-							ORDER BY CAST(av."versions" AS INTEGER) DESC
+							ORDER BY NULLIF(regexp_replace(av."versions", '\D', '', 'g'), '')::INT DESC
 						) AS versions_list
 				FROM public.form_builder fb
 				INNER JOIN latest_form_elements lfe
@@ -603,7 +602,7 @@ func GetAllForm(c *gin.Context) {
 	query += fmt.Sprintf(` 
 			GROUP BY 
 				fb."formId", fb."versions", lfe."fe_versions",
-				fb."publish", fb."formName",
+				fb."formName",
 				lfe."createdBy", lfe."createdAt"
 			ORDER BY fb."formId" ASC
 			LIMIT $%d OFFSET $%d`, argCounter, argCounter+1)
@@ -635,7 +634,6 @@ func GetAllForm(c *gin.Context) {
 			&form.FormId,
 			&form.Versions,
 			&elementFormVersion,
-			&form.Publish,
 			&form.FormName,
 			&form.CreatedBy,
 			&form.CreatedAt,
@@ -702,6 +700,264 @@ func GetAllForm(c *gin.Context) {
 	}
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllForm", "", "search", 0, start_time, GetQueryParams(c), response, "GetAllForm Success.")
+	//=======AUDIT_END=====//
+	c.JSON(http.StatusOK, response)
+}
+
+// @summary Get All Form
+// @tags Form and Workflow
+// @security ApiKeyAuth
+// @id Get All Form
+// @accept json
+// @produce json
+// @Param start query int false "start" default(0)
+// @Param length query int false "length" default(10)
+// @Param search query string false "search keyword"
+// @response 200 {object} model.ResponseDataFormList
+// @Router /api/v1/forms/getAllFormslinkWf [get]
+func GetAllFormlinkWf(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	id := c.Param("id")
+	start_time := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+	start, _ := strconv.Atoi(c.DefaultQuery("start", "0"))
+	length, _ := strconv.Atoi(c.DefaultQuery("length", "100"))
+	search := c.DefaultQuery("search", "")
+
+	if length > 1000 {
+		length = 1000
+	}
+
+	orgIdStr, ok := orgId.(string)
+	if !ok || orgIdStr == "" {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Invalid token",
+			Desc:   "orgId not found in token",
+		}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(
+			c, conn, orgIdStr, username.(string),
+			txtId, id, "Form", "GetAllFormlinkWf", "",
+			"search", -1, start_time, GetQueryParams(c), response, "Invalid Token",
+		)
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	usernameStr, _ := username.(string)
+
+	// Count query
+	countQuery := `
+		SELECT COUNT(*)
+		FROM public.form_builder AS fb
+		WHERE fb."orgId" = $1`
+	countQueryArgs := []interface{}{orgIdStr}
+
+	if search != "" {
+		countQuery += ` AND (fb."formName" ILIKE $2 OR fb."createdBy" ILIKE $2 OR fb."updatedBy" ILIKE $2)`
+		countQueryArgs = append(countQueryArgs, "%"+search+"%")
+	}
+
+	var totalCount int
+	err := conn.QueryRow(ctx, countQuery, countQueryArgs...).Scan(&totalCount)
+	if err != nil {
+		logger.Warn("Count query failed", zap.Error(err))
+		response := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllFormlinkWf", "", "search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error())
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	// Main query with workflow links
+	query := `
+		WITH latest_form_elements AS (
+			SELECT
+				fe."formId", fe."versions" AS fe_versions, fe."eleData",
+				fe."createdBy", fe."createdAt", fe."updatedAt", fe."updatedBy",
+				ROW_NUMBER() OVER (
+					PARTITION BY fe."formId"
+					ORDER BY CAST(fe."versions" AS INTEGER) DESC
+				) AS rn
+			FROM public.form_elements AS fe
+		),
+		all_versions AS (
+			SELECT 
+				fe."formId", fe."versions", fe."publish"
+			FROM public.form_elements fe
+		),
+		workflow_links AS (
+		SELECT 
+			"formId",
+			JSONB_AGG(
+				jsonb_build_object(
+					'wfId', "wfId",
+					'title', title
+				) ORDER BY "wfId" ASC
+			) AS workflows
+		FROM (
+			SELECT DISTINCT
+				n."formId",
+				n."wfId",
+				d."title"
+			FROM public.wf_nodes AS n
+			INNER JOIN public.wf_definitions AS d 
+				ON n."wfId" = d."wfId"
+			WHERE n."orgId" = $1
+		) distinct_workflows
+		GROUP BY "formId"
+	)
+		SELECT 
+			fb."formId", fb."versions" AS fb_versions, lfe."fe_versions",
+			fb."publish", fb."formName",
+			lfe."createdBy", lfe."createdAt",
+			JSONB_AGG(
+				jsonb_build_object(
+					'version', av."versions",
+					'publish', av."publish"
+				)
+				ORDER BY CAST(av."versions" AS INTEGER) DESC
+			) AS versions_list,
+			COALESCE(wl.workflows, '[]'::jsonb) AS workflows
+		FROM public.form_builder fb
+		INNER JOIN latest_form_elements lfe
+			ON fb."formId" = lfe."formId" AND lfe.rn = 1
+		LEFT JOIN all_versions av
+			ON fb."formId" = av."formId"
+		LEFT JOIN workflow_links wl
+			ON fb."formId" = wl."formId"
+		WHERE fb."orgId" = $1`
+
+	dataQueryArgs := []interface{}{orgIdStr}
+	argCounter := 2
+
+	if search != "" {
+		query += fmt.Sprintf(` AND (fb."formName" ILIKE $%d OR fb."createdBy" ILIKE $%d OR fb."updatedBy" ILIKE $%d)`,
+			argCounter, argCounter, argCounter)
+		dataQueryArgs = append(dataQueryArgs, "%"+search+"%")
+		argCounter++
+	}
+
+	query += fmt.Sprintf(` 
+		GROUP BY 
+			fb."formId", fb."versions", lfe."fe_versions",
+			fb."publish", fb."formName",
+			lfe."createdBy", lfe."createdAt", wl.workflows
+		ORDER BY fb."formId" ASC
+		LIMIT $%d OFFSET $%d`, argCounter, argCounter+1)
+
+	dataQueryArgs = append(dataQueryArgs, length, start)
+
+	rows, err := conn.Query(ctx, query, dataQueryArgs...)
+	if err != nil {
+		logger.Warn("Query failed", zap.Error(err))
+		response := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllFormlinkWf", "", "search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error())
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	defer rows.Close()
+
+	type WorkflowLink struct {
+		WfId  string `json:"wfId"`
+		Title string `json:"title"`
+	}
+
+	type FormWithWorkflows struct {
+		model.FormsManagerShotModel
+		Workflows []WorkflowLink `json:"workflows"`
+	}
+
+	formsMap := make(map[string]*FormWithWorkflows)
+	var formOrder []string
+
+	for rows.Next() {
+		var form FormWithWorkflows
+		var elementFormVersion string
+		var versionsInfoList []model.VersionInfo
+		var workflowsJSON []WorkflowLink
+
+		if err := rows.Scan(
+			&form.FormId,
+			&form.Versions,
+			&elementFormVersion,
+			&form.Publish,
+			&form.FormName,
+			&form.CreatedBy,
+			&form.CreatedAt,
+			&versionsInfoList,
+			&workflowsJSON,
+		); err != nil {
+			logger.Warn("Scan failed", zap.Error(err))
+			continue
+		}
+
+		if _, exists := formsMap[*form.FormId]; !exists {
+			form.VersionsInfoList = versionsInfoList
+			form.Workflows = workflowsJSON
+			formsMap[*form.FormId] = &form
+			formOrder = append(formOrder, *form.FormId)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.Warn("Rows iteration error", zap.Error(err))
+		response := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllFormlinkWf", "", "search", -1, start_time, GetQueryParams(c), response, "Failed : "+err.Error())
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	var forms []FormWithWorkflows
+	for _, formId := range formOrder {
+		forms = append(forms, *formsMap[formId])
+	}
+
+	currentPage := 1
+	if length > 0 {
+		currentPage = (start / length) + 1
+	}
+
+	totalPage := 1
+	if length > 0 && totalCount > 0 {
+		totalPage = int(math.Ceil(float64(totalCount) / float64(length)))
+	}
+
+	if len(forms) == 0 {
+		response := model.Response{Status: "-1", Msg: "No data found", Data: nil}
+		//=======AUDIT_START=====//
+		_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllFormlinkWf", "", "search", -1, start_time, GetQueryParams(c), response, "Not Found")
+		//=======AUDIT_END=====//
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
+
+	response := gin.H{
+		"status":       "0",
+		"msg":          "Success",
+		"data":         forms,
+		"currentPage":  currentPage,
+		"totalPage":    totalPage,
+		"totalRecords": totalCount,
+	}
+	//=======AUDIT_START=====//
+	_ = utils.InsertAuditLogs(c, conn, orgIdStr, usernameStr, txtId, id, "Form", "GetAllFormlinkWf", "", "search", 0, start_time, GetQueryParams(c), response, "GetAllFormlinkWf Success.")
 	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 }
@@ -1654,13 +1910,21 @@ func FormPublish(c *gin.Context) {
 		Msg:    "Success",
 		Desc:   "Update successfully",
 	}
+	var funcStr string
+	if req.Publish {
+		funcStr = "FormPubilsh"
+	} else {
+		funcStr = "FormUnPubilsh"
+	}
+
 	//=======AUDIT_START=====//
 	_ = utils.InsertAuditLogs(
 		c, conn, orgId.(string), username.(string),
-		txtId, id, "Form", "FormPubilsh", "",
+		txtId, id, "Form", funcStr, "",
 		"update", -1, start_time, GetQueryParams(c), response, "Update FormPublish Success.",
 	)
 	//=======AUDIT_END=====//
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -1960,10 +2224,113 @@ func FormActive(c *gin.Context) {
 // @accept json
 // @tags Form and Workflow
 // @produce json
-// @Param id path int true "id"
+// @Param formId path int true "formId"
 // @response 200 {object} model.Response "OK - Request successful"
-// @Router /api/v1/forms/{id} [delete]
-func DeleteForm(c *gin.Context) {}
+// @Router /api/v1/forms/{formId} [delete]
+func DeleteForm(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	formId := c.Param("formId")
+	startTime := time.Now()
+	username := GetVariableFromToken(c, "username")
+	orgId := GetVariableFromToken(c, "orgId")
+	txtId := uuid.New().String()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		})
+		return
+	}
+
+	_, err = tx.Exec(ctx,
+		`DELETE FROM public.form_elements WHERE "formId"=$1 AND "orgId"=$2`,
+		formId, orgId,
+	)
+	if err != nil {
+		tx.Rollback(ctx)
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, formId, "Form", "FormDelete", "",
+			"delete", -1, startTime, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Delete failed", zap.Error(err))
+		return
+	}
+
+	_, err = tx.Exec(ctx,
+		`DELETE FROM public.form_builder WHERE "formId"=$1 AND "orgId"=$2`,
+		formId, orgId,
+	)
+	if err != nil {
+		tx.Rollback(ctx)
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, formId, "Form", "FormDelete", "",
+			"delete", -1, startTime, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Delete failed", zap.Error(err))
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		response := model.Response{
+			Status: "-1",
+			Msg:    "Failure",
+			Desc:   err.Error(),
+		}
+
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId.(string), username.(string),
+			txtId, formId, "Form", "FormDelete", "",
+			"delete", -1, startTime, GetQueryParams(c), response, "Failed : "+err.Error(),
+		)
+
+		c.JSON(http.StatusInternalServerError, response)
+		logger.Warn("Delete failed", zap.Error(err))
+		return
+	}
+
+	response := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Desc:   "Delete successfully",
+	}
+
+	// AUDIT
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId.(string), username.(string),
+		txtId, formId, "Form", "FormDelete", "",
+		"delete", 0, startTime, GetQueryParams(c), response, "Delete Form Success.",
+	)
+
+	c.JSON(http.StatusOK, response)
+}
 
 // @summary Get Workflow
 // @tags Form and Workflow

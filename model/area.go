@@ -19,6 +19,7 @@ type AreaDistrictWithDetails struct {
 	CountryEn     *string `json:"countryEn"`
 	CountryTh     *string `json:"countryTh"`
 	CountryActive *bool   `json:"countryActive"`
+	NameSpace     *string `json:"nameSpace"`
 }
 
 type AreaDistrict struct {

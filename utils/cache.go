@@ -540,7 +540,8 @@ func GetCountryProvinceDistrictsOrLoad(ctx context.Context, conn *pgx.Conn, orgI
 	    t1.id, t1."orgId", t1."countryId", t1."provId", t1."distId",
 	    t1.en AS dist_en, t1.th AS dist_th, t1.active AS dist_active,
 	    t2.en AS prov_en, t2.th AS prov_th, t2.active AS prov_active,
-	    t3.en AS country_en, t3.th AS country_th, t3.active AS country_active
+	    t3.en AS country_en, t3.th AS country_th, t3.active AS country_active,
+		t1."nameSpace"
 	FROM area_districts t1
 	LEFT JOIN area_provinces t2 
 	    ON t1."provId" = t2."provId" 
@@ -558,25 +559,27 @@ func GetCountryProvinceDistrictsOrLoad(ctx context.Context, conn *pgx.Conn, orgI
 		return nil, err
 	}
 	defer rows.Close()
-
+	// log.Println("err --> ", err)
+	// log.Println("data --> ", rows)
 	var list []model.AreaDistrictWithDetails
 
 	for rows.Next() {
 		var a model.AreaDistrictWithDetails
-
 		err := rows.Scan(
 			&a.ID, &a.OrgID, &a.CountryID, &a.ProvID, &a.DistID,
 			&a.DistrictEn, &a.DistrictTh, &a.DistrictActive,
 			&a.ProvinceEn, &a.ProvinceTh, &a.ProvinceActive,
 			&a.CountryEn, &a.CountryTh, &a.CountryActive,
+			&a.NameSpace,
 		)
 		if err != nil {
+			log.Println("Scan error:", err)
 			return nil, err
 		}
-
+		//log.Printf("Row: %+v\n", a) // <-- debug
 		list = append(list, a)
 	}
-
+	//log.Println("Total rows:", len(list))
 	// ==== SAVE TO CACHE ====
 	jsonData, _ := json.Marshal(list)
 	OwnerDistSet(orgId, string(jsonData))
@@ -649,4 +652,67 @@ func GetDepartmentCommandStationOrLoad(ctx context.Context, conn *pgx.Conn, orgI
 	OwnerStationSet(orgId, string(jsonData))
 
 	return stationList, nil
+}
+
+func GetUserSkillsOrLoad(ctx context.Context, conn *pgx.Conn, orgId string) ([]model.Skill, error) {
+	// ==== LOAD FROM CACHE ====
+	cacheData, err := OwnerUserSkillsGet(orgId)
+	if err == nil && cacheData != "" {
+		var cached []model.Skill
+		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
+			log.Println("✅ Loaded UserSkills from Redis cache")
+			return cached, nil
+		}
+	}
+
+	// ==== QUERY FROM DATABASE ====
+	query := `
+		SELECT 
+		    id,
+		    "orgId",
+		    "skillId",
+		    en,
+		    th,
+		    active,
+		    "createdAt",
+		    "updatedAt",
+		    "createdBy",
+		    "updatedBy"
+		FROM public.um_skills
+		WHERE "orgId" = $1
+		ORDER BY en ASC;
+	`
+
+	rows, err := conn.Query(ctx, query, orgId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var skills []model.Skill
+	for rows.Next() {
+		var skill model.Skill
+		err := rows.Scan(
+			&skill.ID,
+			&skill.OrgID,
+			&skill.SkillID,
+			&skill.En,
+			&skill.Th,
+			&skill.Active,
+			&skill.CreatedAt,
+			&skill.UpdatedAt,
+			&skill.CreatedBy,
+			&skill.UpdatedBy,
+		)
+		if err != nil {
+			return nil, err
+		}
+		skills = append(skills, skill)
+	}
+
+	// ==== SAVE TO CACHE ====
+	jsonData, _ := json.Marshal(skills)
+	OwnerUserSkillsSet(orgId, string(jsonData))
+
+	return skills, nil
 }

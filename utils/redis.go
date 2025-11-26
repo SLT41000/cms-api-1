@@ -64,7 +64,7 @@ func RedisGet(key string) (string, error) {
 		return "", err
 	}
 
-	log.Printf("Fetched key '%s' = %s\n", name, val)
+	//log.Printf("Fetched key '%s' = %s\n", name, val)
 	return val, nil
 }
 
@@ -294,6 +294,25 @@ func OwnerStationGet(key string) (string, error) {
 
 func OwnerStationDel(key string) error {
 	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_STATION"), key)
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Stations=====
+func OwnerUserSkillsSet(key, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USER_SKILL"), key)
+	log.Print(name)
+	expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, expiration).Err()
+}
+
+func OwnerUserSkillsGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USER_SKILL"), key)
+	return RedisGet(name)
+}
+
+func OwnerUserSkillsDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USER_SKILL"), key)
 	log.Print("Deleting:", name)
 	return Rdb.Del(context.Background(), name).Err()
 }

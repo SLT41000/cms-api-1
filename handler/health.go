@@ -12,6 +12,8 @@ import (
 )
 
 var RateLimiterInstance *limiter.Limiter
+var RateLimit int64
+var RatePeriod time.Duration
 
 // @summary AS Health
 // @tags AS Health
@@ -45,22 +47,36 @@ func Ratelimit(c *gin.Context) {
 		return
 	}
 
-	key := "global:rate"                                      // or c.ClientIP() for per-IP
-	ctx := context.TODO()                                     // do not pass nil
-	limiterContext, err := RateLimiterInstance.Peek(ctx, key) // Peek does NOT decrement
+	ctx := context.Background()
+
+	// Global rate (decrement)
+	globalStatus, err := RateLimiterInstance.Get(ctx, "global:rate")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	globalReset := time.Unix(globalStatus.Reset, 0).UTC()
 
-	resetTime := time.Unix(limiterContext.Reset, 0).UTC()
-
-	resp := map[string]interface{}{
-		"limit":     limiterContext.Limit,
-		"remaining": limiterContext.Remaining,
-		"reset":     resetTime.Format(time.RFC3339),
-		"reached":   limiterContext.Reached,
+	// Per-IP rate (decrement)
+	ip := c.ClientIP()
+	ipStatus, err := RateLimiterInstance.Get(ctx, fmt.Sprintf("ip:%s", ip))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
+	ipReset := time.Unix(ipStatus.Reset, 0).UTC()
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, gin.H{
+		"limit":     RateLimit, // from config
+		"remaining": globalStatus.Remaining,
+		"reset":     globalReset.Format(time.RFC3339),
+		"reached":   globalStatus.Reached,
+		"per_ip": map[string]interface{}{
+			"ip":        ip,
+			"limit":     RateLimit,
+			"remaining": ipStatus.Remaining,
+			"reset":     ipReset.Format(time.RFC3339),
+			"reached":   ipStatus.Reached,
+		},
+	})
 }
