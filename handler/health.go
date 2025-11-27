@@ -42,40 +42,33 @@ func Health(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /rate_limit [get]
 func Ratelimit(c *gin.Context) {
-	if RateLimiterInstance == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "rate limiter not initialized"})
-		return
-	}
-
 	ctx := context.Background()
 
-	// Global rate (decrement)
-	globalStatus, err := RateLimiterInstance.Get(ctx, "global:rate")
+	// 👇 ดูค่าแต่ไม่ลด
+	globalStatus, err := RateLimiterInstance.Peek(ctx, "global:rate")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	globalReset := time.Unix(globalStatus.Reset, 0).UTC()
 
-	// Per-IP rate (decrement)
+	// 👇 ลดเฉพาะของ IP
 	ip := c.ClientIP()
 	ipStatus, err := RateLimiterInstance.Get(ctx, fmt.Sprintf("ip:%s", ip))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	ipReset := time.Unix(ipStatus.Reset, 0).UTC()
 
-	c.JSON(http.StatusOK, gin.H{
-		"limit":     RateLimit, // from config
+	c.JSON(200, gin.H{
+		"limit":     RateLimit,
 		"remaining": globalStatus.Remaining,
-		"reset":     globalReset.Format(time.RFC3339),
+		"reset":     time.Unix(globalStatus.Reset, 0).UTC(),
 		"reached":   globalStatus.Reached,
 		"per_ip": map[string]interface{}{
 			"ip":        ip,
 			"limit":     RateLimit,
 			"remaining": ipStatus.Remaining,
-			"reset":     ipReset.Format(time.RFC3339),
+			"reset":     time.Unix(ipStatus.Reset, 0).UTC(),
 			"reached":   ipStatus.Reached,
 		},
 	})

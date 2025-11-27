@@ -155,6 +155,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	// router.Use(cors.Default())
+	router.Use(ginlimiter.NewMiddleware(instance))
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:5173",             // dev

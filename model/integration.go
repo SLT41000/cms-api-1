@@ -47,6 +47,7 @@ type DeviceMeta struct {
 	DeviceModel        string      `json:"device_model"`
 	DeviceBrand        string      `json:"device_brand"`
 	DeviceLocation     GeoLocation `json:"device_location"`
+	DeviceTypeName     string      `json:"device_type_name"`
 }
 
 type SopMeta struct {

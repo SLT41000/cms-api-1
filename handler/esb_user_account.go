@@ -618,7 +618,7 @@ func DeleteUnitProperty(ctx context.Context, conn *pgx.Conn, orgId, unitId strin
 func CheckArea(ctx context.Context, conn *pgx.Conn, orgId string, payload model.ESBUserStaffPayload, username string) error {
 	log.Printf("CheckArea employee for empId=%s in orgId=%s", payload.UserCode, orgId)
 	empId := payload.UserCode
-	empId = "CDC005"
+	//empId = "CDC005"
 	res, err := callAPI_2(os.Getenv("METTLINK_SERVER")+"/openapi/v1/work_order/employee/info?workspace=bma&user_employee_code="+empId, "GET", nil, nil)
 	if err != nil {
 		log.Printf("❌ employee : %v", err)
