@@ -1753,6 +1753,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/customer/byPhoneNo/{phoneNo}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get Customer by PhoneNo",
+                "operationId": "Get Customer by PhoneNo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "phoneNo",
+                        "name": "phoneNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/customer/{id}": {
             "get": {
                 "security": [
@@ -2870,18 +2907,10 @@ const docTemplate = `{
                 "operationId": "Get Form",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "version",
-                        "name": "version",
-                        "in": "query",
-                        "required": true
+                        "type": "boolean",
+                        "description": "publish filter (optional)",
+                        "name": "publish",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2897,15 +2926,21 @@ const docTemplate = `{
                 "security": [
                     {
                         "ApiKeyAuth": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "consumes": [
+                    "application/json",
                     "application/json"
                 ],
                 "produces": [
+                    "application/json",
                     "application/json"
                 ],
                 "tags": [
+                    "Form and Workflow",
                     "Form and Workflow"
                 ],
                 "summary": "Create Form",
@@ -2919,6 +2954,52 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.FormInsert"
                         }
+                    },
+                    {
+                        "description": "Created Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/GetFormlinkWf": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Form That link Wf",
+                "operationId": "Form That link Wf",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "formId",
+                        "name": "formId",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3027,6 +3108,78 @@ const docTemplate = `{
                 ],
                 "summary": "Get All Form",
                 "operationId": "Get All Form",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ResponseDataFormList"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/getAllFormslinkWf": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Get All Form link wf",
+                "operationId": "Get All Form link Wf",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "length",
+                        "name": "length",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3115,7 +3268,88 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/forms/{id}": {
+        "/api/v1/forms/version": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Update Form Versions",
+                "operationId": "Update Form Versions",
+                "parameters": [
+                    {
+                        "description": "Update Data",
+                        "name": "Case",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.FormChangeVersion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/{formId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Form and Workflow"
+                ],
+                "summary": "Get Form By formId",
+                "operationId": "Get Form By formId",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "formId",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version",
+                        "name": "version",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -3136,8 +3370,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "id",
-                        "name": "id",
+                        "description": "formId",
+                        "name": "formId",
                         "in": "path",
                         "required": true
                     }
@@ -6673,7 +6907,7 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "Get User with skills by username or unitId",
-                "operationId": "Get User with skills by username or unitId",
+                "operationId": "Get User with skills by username",
                 "parameters": [
                     {
                         "type": "string",
@@ -7360,6 +7594,12 @@ const docTemplate = `{
                 "caseLat": {
                     "type": "string"
                 },
+                "caseLocAddr": {
+                    "type": "string"
+                },
+                "caseLocAddrDecs": {
+                    "type": "string"
+                },
                 "caseLon": {
                     "type": "string"
                 },
@@ -7370,12 +7610,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "caseVersion": {
-                    "type": "string"
-                },
-                "caselocAddr": {
-                    "type": "string"
-                },
-                "caselocAddrDecs": {
                     "type": "string"
                 },
                 "closedDate": {
@@ -7641,6 +7875,12 @@ const docTemplate = `{
                 "caseLat": {
                     "type": "string"
                 },
+                "caseLocAddr": {
+                    "type": "string"
+                },
+                "caseLocAddrDecs": {
+                    "type": "string"
+                },
                 "caseLon": {
                     "type": "string"
                 },
@@ -7651,12 +7891,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "caseVersion": {
-                    "type": "string"
-                },
-                "caselocAddr": {
-                    "type": "string"
-                },
-                "caselocAddrDecs": {
                     "type": "string"
                 },
                 "closedDate": {
@@ -8079,6 +8313,9 @@ const docTemplate = `{
                 "nextNodeId": {
                     "type": "string"
                 },
+                "uid": {
+                    "type": "string"
+                },
                 "versions": {
                     "type": "string"
                 },
@@ -8091,6 +8328,17 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "caseSubType": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.FormChangeVersion": {
+            "type": "object",
+            "properties": {
+                "formId": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }
@@ -8238,8 +8486,7 @@ const docTemplate = `{
                 "formFieldJson": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "additionalProperties": true
+                        "$ref": "#/definitions/model.IndividualFormField"
                     }
                 },
                 "formName": {
@@ -8294,6 +8541,12 @@ const docTemplate = `{
                 },
                 "versions": {
                     "type": "string"
+                },
+                "versionsInfoList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.VersionInfo"
+                    }
                 }
             }
         },
@@ -9582,6 +9835,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.VersionInfo": {
+            "type": "object",
+            "properties": {
+                "publish": {
+                    "type": "boolean"
+                },
+                "version": {
                     "type": "string"
                 }
             }

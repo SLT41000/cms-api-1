@@ -63,6 +63,10 @@ definitions:
         type: string
       caseLat:
         type: string
+      caseLocAddr:
+        type: string
+      caseLocAddrDecs:
+        type: string
       caseLon:
         type: string
       caseSTypeId:
@@ -70,10 +74,6 @@ definitions:
       caseTypeId:
         type: string
       caseVersion:
-        type: string
-      caselocAddr:
-        type: string
-      caselocAddrDecs:
         type: string
       closedDate:
         type: string
@@ -250,6 +250,10 @@ definitions:
         type: string
       caseLat:
         type: string
+      caseLocAddr:
+        type: string
+      caseLocAddrDecs:
+        type: string
       caseLon:
         type: string
       caseSTypeId:
@@ -257,10 +261,6 @@ definitions:
       caseTypeId:
         type: string
       caseVersion:
-        type: string
-      caselocAddr:
-        type: string
-      caselocAddrDecs:
         type: string
       closedDate:
         type: string
@@ -545,6 +545,8 @@ definitions:
         type: string
       nextNodeId:
         type: string
+      uid:
+        type: string
       versions:
         type: string
       wfId:
@@ -553,6 +555,13 @@ definitions:
   model.FormByCasesubtype:
     properties:
       caseSubType:
+        type: string
+    type: object
+  model.FormChangeVersion:
+    properties:
+      formId:
+        type: string
+      version:
         type: string
     type: object
   model.FormInsert:
@@ -649,8 +658,7 @@ definitions:
         type: integer
       formFieldJson:
         items:
-          additionalProperties: true
-          type: object
+          $ref: '#/definitions/model.IndividualFormField'
         type: array
       formName:
         type: string
@@ -687,6 +695,10 @@ definitions:
         type: string
       versions:
         type: string
+      versionsInfoList:
+        items:
+          $ref: '#/definitions/model.VersionInfo'
+        type: array
     type: object
   model.IndividualFormField:
     properties:
@@ -1540,6 +1552,13 @@ definitions:
       userType:
         type: integer
       username:
+        type: string
+    type: object
+  model.VersionInfo:
+    properties:
+      publish:
+        type: boolean
+      version:
         type: string
     type: object
   model.WorkFlowConnection:
@@ -2769,6 +2788,29 @@ paths:
       summary: Create Customer
       tags:
       - Customer
+  /api/v1/customer/byPhoneNo/{phoneNo}:
+    get:
+      consumes:
+      - application/json
+      operationId: Get Customer by PhoneNo
+      parameters:
+      - description: phoneNo
+        in: path
+        name: phoneNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Customer by PhoneNo
+      tags:
+      - Customer
   /api/v1/customer_contacts:
     get:
       consumes:
@@ -3390,9 +3432,86 @@ paths:
       - application/json
       operationId: Get Form
       parameters:
-      - description: id
+      - description: publish filter (optional)
         in: query
-        name: id
+        name: publish
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Form
+      tags:
+      - Form and Workflow
+    post:
+      consumes:
+      - application/json
+      - application/json
+      operationId: Create Form
+      parameters:
+      - description: Created Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormInsert'
+      - description: Created Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormInsert'
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth: []
+      summary: Create Form
+      tags:
+      - Form and Workflow
+      - Form and Workflow
+  /api/v1/forms/{formId}:
+    delete:
+      consumes:
+      - application/json
+      operationId: Delete Form
+      parameters:
+      - description: formId
+        in: path
+        name: formId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Form
+      tags:
+      - Form and Workflow
+    get:
+      consumes:
+      - application/json
+      operationId: Get Form By formId
+      parameters:
+      - description: formId
+        in: path
+        name: formId
         required: true
         type: string
       - description: version
@@ -3409,53 +3528,7 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - ApiKeyAuth: []
-      summary: Get Form
-      tags:
-      - Form and Workflow
-    post:
-      consumes:
-      - application/json
-      operationId: Create Form
-      parameters:
-      - description: Created Data
-        in: body
-        name: Case
-        required: true
-        schema:
-          $ref: '#/definitions/model.FormInsert'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Create Form
-      tags:
-      - Form and Workflow
-  /api/v1/forms/{id}:
-    delete:
-      consumes:
-      - application/json
-      operationId: Delete Form
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK - Request successful
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Delete Form
+      summary: Get Form By formId
       tags:
       - Form and Workflow
   /api/v1/forms/{uuid}:
@@ -3485,6 +3558,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update Form
+      tags:
+      - Form and Workflow
+  /api/v1/forms/GetFormlinkWf:
+    get:
+      consumes:
+      - application/json
+      operationId: Form That link Wf
+      parameters:
+      - description: formId
+        in: query
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Form That link Wf
       tags:
       - Form and Workflow
   /api/v1/forms/active:
@@ -3540,6 +3636,21 @@ paths:
       consumes:
       - application/json
       operationId: Get All Form
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: search keyword
+        in: query
+        name: search
+        type: string
       produces:
       - application/json
       responses:
@@ -3550,6 +3661,38 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get All Form
+      tags:
+      - Form and Workflow
+  /api/v1/forms/getAllFormslinkWf:
+    get:
+      consumes:
+      - application/json
+      operationId: Get All Form link Wf
+      parameters:
+      - default: 0
+        description: start
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: length
+        in: query
+        name: length
+        type: integer
+      - description: search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ResponseDataFormList'
+      security:
+      - ApiKeyAuth: []
+      summary: Get All Form link wf
       tags:
       - Form and Workflow
   /api/v1/forms/lock:
@@ -3598,6 +3741,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update Form Publish
+      tags:
+      - Form and Workflow
+  /api/v1/forms/version:
+    patch:
+      consumes:
+      - application/json
+      operationId: Update Form Versions
+      parameters:
+      - description: Update Data
+        in: body
+        name: Case
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormChangeVersion'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Form Versions
       tags:
       - Form and Workflow
   /api/v1/generate_caseid:
@@ -5860,7 +6027,7 @@ paths:
     get:
       consumes:
       - application/json
-      operationId: Get User with skills by username or unitId
+      operationId: Get User with skills by username
       parameters:
       - description: username
         in: path

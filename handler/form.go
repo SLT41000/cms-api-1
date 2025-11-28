@@ -704,10 +704,10 @@ func GetAllForm(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// @summary Get All Form
+// @summary Get All Form link wf
 // @tags Form and Workflow
 // @security ApiKeyAuth
-// @id Get All Form
+// @id Get All Form link Wf
 // @accept json
 // @produce json
 // @Param start query int false "start" default(0)
