@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"mainPackage/model"
 	"mainPackage/utils"
 	"math"
@@ -3761,10 +3760,10 @@ func InsertFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId 
 func UpdateFormAnswer(conn *pgx.Conn, ctx context.Context, orgId string, caseId string, fa model.FormAnswerRequest, user string) error {
 	oldform, err := GetFormAnswers(conn, ctx, orgId, caseId, fa.FormId, true)
 	if err != nil {
-		log.Fatal("query error:", err)
+		return err
 	}
 	if len(oldform.FormFieldJson) != len(fa.FormFieldJson) {
-		log.Fatal("form not match")
+		return errors.New("form not match")
 	}
 
 	query := `

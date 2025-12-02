@@ -977,9 +977,9 @@ func UpdateCase(c *gin.Context) {
 
 	} else {
 		err = UpdateFormAnswer(conn, ctx, orgId.(string), *req.CaseId, *req.FormData, username.(string))
-		if err != nil {
-			log.Fatal("Update Form error:", err)
-		}
+		// if err != nil {
+		// 	log.Fatal("Update Form error:", err)
+		// }
 		if err != nil {
 			response := model.Response{
 				Status: "-1",
