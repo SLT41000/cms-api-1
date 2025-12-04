@@ -21,7 +21,8 @@ import (
 
 func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
 	log.Printf("====IntegrateCreateCaseFromWorkOrder===")
-	now := time.Now()
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	now := time.Now().In(loc)
 	caseId := workOrder.WorkOrderNumber
 	var id int
 	caseData, err := GetCaseByID(ctx, conn, orgId, caseId)
@@ -35,16 +36,43 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		return nil
 	}
 
+	// default = CURRENT
+	useCurrent := true
+	var scheduleTime time.Time
+	scheduleFlag := false
+	wd := strings.TrimSpace(workOrder.WorkDate)
+	if wd != "" {
+		// parse work_date at 00:00:00
+		t, err := time.ParseInLocation("2006-01-02", wd, loc)
+		if err == nil {
+			// ถ้า work_date > ปัจจุบัน → ใช้ t
+			if t.After(now) {
+				scheduleTime = t
+				useCurrent = false
+				scheduleFlag = true
+			}
+		}
+	}
+
+	if useCurrent {
+		scheduleTime = now
+	}
+
+	// convert ไป UTC (ดีที่สุดสำหรับเก็บลง DB)
+	scheduleUTC := scheduleTime.UTC()
+
 	query := `
-	INSERT INTO public."tix_cases"(
-	"orgId", "caseId", "caseVersion" , "caseTypeId", "caseSTypeId", priority, "wfId", "versions",source, "deviceId",
-	"caseDetail", "statusId", "caseLat", "caseLon", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
-	  usercreate,  "createdAt", "updatedAt", "createdBy", "updatedBy", "integration_ref_number", "caseSla", "phoneNoHide", "deviceMetaData")
+		INSERT INTO public."tix_cases"(
+		"orgId", "caseId", "caseVersion", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId",
+		"caseDetail", "statusId", "caseLat", "caseLon", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
+		usercreate, "createdAt", "updatedAt", "createdBy", "updatedBy", "integration_ref_number", "caseSla", "phoneNoHide", "deviceMetaData", "scheduleFlag"
+	)
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-		$11, $12, $13, $14, $15, $16, $17, $18, CURRENT_TIMESTAMP, $19, $20,
-		CURRENT_TIMESTAMP, $21, $22, $23, $24, $25, $26, $27
-	) RETURNING id ;
+		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+		$21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $22, $23, $24, $25, $26, $27, $28
+	)
+	RETURNING id;
 	`
 
 	//Mapping get Subtype and Workflow SOP
@@ -132,8 +160,10 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	err = conn.QueryRow(ctx, query,
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
-		lat, lon, countryId, provId, distId, // countryId, provId, distId (อาจ map จาก device location)
-		caseDuration, now, username, now, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON)).Scan(&id)
+		lat, lon, countryId, provId, distId, caseDuration,
+		scheduleUTC, scheduleUTC, // createdDate, startedDate
+		username, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON), scheduleFlag,
+	).Scan(&id)
 
 	if err != nil {
 		return fmt.Errorf("insert case failed: %w", err)
@@ -151,6 +181,15 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	err_ := IntegrateCaseCurrentStageInsert(Provider, orgId, conn, ctx, data)
 	if err_ != nil {
 		log.Fatalf("IntegrateCaseCurrentStageInsert : %v", err_)
+	}
+
+	// X. Insert responder
+	_, err = conn.Exec(ctx, `
+	    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+	    VALUES ($1,$2,$3,$4,$5,$6,$7)
+	`, orgId, caseId, "case", username, statusId, scheduleUTC, username)
+	if err != nil {
+		return err
 	}
 
 	// === Attachments from WorkOrder images ===
@@ -357,7 +396,7 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 	query := `
 	SELECT 
 		"caseId", "integration_ref_number", "distId", "statusId", "caseTypeId", "caseSTypeId", "priority", "caseLat", "caseLon", "caseDetail", "deviceMetaData", "wfId",
-		"countryId", "provId", "distId", "createdDate"
+		"countryId", "provId", "distId", "createdDate", "scheduleFlag", "scheduleDate"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -383,6 +422,8 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 		&c.ProvID,
 		&c.DistID,
 		&c.CreatedDate,
+		&c.ScheduleFlag,
+		&c.ScheduleDate,
 	)
 
 	// ✅ case not found
@@ -565,6 +606,13 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 	}
 	log.Print("=====areaDist===", areaDist.Th)
 	currentDate := time.Now().Format("2006-01-02")
+	if *req.ScheduleFlag {
+		log.Print("=====ScheduleDate===", req.ScheduleDate.String())
+		currentDate = ConvertDateSafe(req.ScheduleDate.String())
+		if req.StatusID == os.Getenv("SCHEDULE") {
+			req.StatusID = os.Getenv("NEW")
+		}
+	}
 
 	num, err := strconv.Atoi(sType.Priority)
 	if err != nil {
@@ -671,6 +719,27 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	if stName == "CANCEL" {
 		state = "CLOSED"
 		uAssign = ""
+		assign_ := os.Getenv("ASSIGNED")
+		unitLists, count, err := GetUnits(ctx, conn, orgId.(string), req.CaseId, assign_, "")
+		if err != nil {
+			return fmt.Errorf("get unitLists failed: %w", err)
+		}
+		if count > 0 {
+			firstUnitId := unitLists[0].UnitID
+			user, err := utils.GetUserByUsername(ctx, conn, orgId.(string), firstUnitId)
+			if err != nil {
+				log.Printf("Error getting user: %v", err)
+			} else if user != nil {
+				uAssign = map[string]interface{}{
+					"user_employee_code": user.EmpID,
+					"user_firstname":     user.FirstName,
+					"user_lastname":      user.LastName,
+					"user_avatar":        user.Photo,
+					"user_phone":         user.MobileNo,
+				}
+			}
+		}
+
 	}
 
 	sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId.(string), caseData.CaseSTypeID)

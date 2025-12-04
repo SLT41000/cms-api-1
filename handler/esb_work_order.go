@@ -120,6 +120,7 @@ func handleMessage_WO_Create(c *gin.Context, message []byte) {
 		log.Printf("Skip Message From Original Source : %s\n", source)
 		return
 	}
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		log.Printf("DB connection is nil")

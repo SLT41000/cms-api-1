@@ -9,14 +9,14 @@ type Um_User_Login struct {
 	OrgID                 string     `json:"orgId"`
 	OrgName               string     `json:"orgName"`
 	DisplayName           string     `json:"displayName"`
-	Title                 string     `json:"title"`
+	Title                 *string    `json:"title"`
 	FirstName             string     `json:"firstName"`
 	MiddleName            *string    `json:"middleName"`
 	LastName              string     `json:"lastName"`
-	CitizenID             string     `json:"citizenId"`
-	Bod                   time.Time  `json:"bod"`
-	Blood                 string     `json:"blood"`
-	Gender                string     `json:"gender"`
+	CitizenID             *string    `json:"citizenId"`
+	Bod                   *time.Time `json:"bod"`
+	Blood                 *string    `json:"blood"`
+	Gender                *string    `json:"gender"`
 	MobileNo              *string    `json:"mobileNo"`
 	Address               *string    `json:"address"`
 	Photo                 *string    `json:"photo"`

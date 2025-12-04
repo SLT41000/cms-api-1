@@ -1,5 +1,5 @@
 // @title CMS API
-// @version 1.0
+// @version 0.0.1
 // @termsOfService http://somewhere.com/
 // @BasePath /
 // @contact.name API Support
@@ -46,6 +46,8 @@ func init() {
 	}
 	//os.Setenv("TZ", os.Getenv("TIME_ZONE"))
 	//time.Local, _ = time.LoadLocation(os.Getenv("TIME_ZONE"))
+	time.Local = time.UTC
+	os.Setenv("TZ", "UTC")
 }
 func main() {
 	rateTimeStr := os.Getenv("RATE_TIME")   // e.g., "1" (minutes)
@@ -142,8 +144,14 @@ func main() {
 	// }()
 
 	go func() {
-		if err := handler.ReportProcess(&gin.Context{}); err != nil {
-			log.Printf("ReportProcess error: %v", err)
+		if err := handler.SummaryReport(&gin.Context{}); err != nil {
+			log.Printf("SummaryReport error: %v", err)
+		}
+	}()
+
+	go func() {
+		if err := handler.CaseHistory(&gin.Context{}); err != nil {
+			log.Printf("CaseHistory error: %v", err)
 		}
 	}()
 

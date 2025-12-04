@@ -698,31 +698,132 @@ func InsertCase(c *gin.Context) {
 		caseSLA = sType.CaseSLA
 	}
 
+	var scheduleDate any = nil
+
+	if req.ScheduleFlag != nil && *req.ScheduleFlag {
+		if req.ScheduleDate != nil {
+			loc, _ := time.LoadLocation("Asia/Bangkok")
+			t := *req.ScheduleDate
+			tmp := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc)
+			scheduleDate = &tmp
+			//req.StatusID = "SCH" // set schedule
+		}
+	}
+	log.Print("====ScheduleFlag=")
+	log.Print(req.ScheduleFlag)
+	log.Print(req.StatusID)
+	log.Print(scheduleDate)
+	// Convert ISO string to time.Time (UTC)
+
 	log.Print("====sType=")
 	log.Print(caseSLA)
-	query := `
-	INSERT INTO public."tix_cases"(
-	"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions",source, "deviceId",
-	"phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr",
-	"caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
-	"commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive,
-	userarrive, userclose, "resId", "resDetail", "scheduleFlag", "scheduleDate", "createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla" , "integration_ref_number")
-	VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-		$21, $22, $23, $24, CURRENT_TIMESTAMP, $25, $26, $27, $28, $29, $30,
-		$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40, $41, $42, $43, $44
-	) RETURNING id ;
-	`
 
-	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
-	err = conn.QueryRow(ctx, query,
-		orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority, req.WfID, req.WfVersions,
-		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
-		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
-		req.CaseDuration, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
-		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
-		req.ResDetail, req.ScheduleFlag, req.ScheduleDate, now, now, username, username, caseSLA, uuid).Scan(&id)
+	// query := `
+	// 		INSERT INTO public."tix_cases"(
+	// 		"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions",source,
+	// 		"deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+	// 		"countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate",
+	// 		usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "scheduleFlag", "scheduleDate", "createdAt",
+	// 		"updatedAt", "createdBy", "updatedBy", "caseSla" , "integration_ref_number")
+	// 		VALUES (
+	// 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+	// 			$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+	// 			$21, $22, $23, $24, CURRENT_TIMESTAMP, $25, $26, $27, $28, $29, $30,
+	// 			$31, $32, $33, $34, $35, $36, $37, $38, $39 , $40,
+	// 			$41, $42, $43, $44
+	// 		) RETURNING id ;
+	// 		`
+	// logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
+	// err = conn.QueryRow(ctx, query,
+	// 	orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority, req.WfID, req.WfVersions,
+	// 	req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
+	// 	req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
+	// 	req.CaseDuration, req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+	// 	req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
+	// 	req.ResDetail, req.ScheduleFlag, scheduleDate, now, now, username, username, caseSLA, uuid).Scan(&id)
+
+	scheduleSQL := `
+		INSERT INTO public."tix_cases" (
+			"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId",
+			priority, "wfId", "versions", source,
+			"deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive",
+			"statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+			"countryId", "provId", "distId", "caseDuration",
+			"createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate",
+			usercreate, usercommand, userreceive, userarrive, userclose,
+			"resId", "resDetail", "scheduleFlag", "scheduleDate",
+			"createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla", "integration_ref_number"
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,
+			$7,$8,$9,$10,
+			$11,$12,$13,$14,$15,
+			$16,$17,$18,$19,$20,
+			$21,$22,$23,$24,
+			$25,$26,$27,$28,$29,$30,
+			$31,$32,$33,$34,$35,
+			$36,$37,$38,$39,
+			$40,$41,$42,$43,$44,$45
+		) RETURNING id;
+		`
+
+	normalSQL := `
+		INSERT INTO public."tix_cases" (
+			"orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId",
+			priority, "wfId", "versions", source,
+			"deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive",
+			"statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs",
+			"countryId", "provId", "distId", "caseDuration",
+			"createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate",
+			usercreate, usercommand, userreceive, userarrive, userclose,
+			"resId", "resDetail", "scheduleFlag", "scheduleDate",
+			"createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla", "integration_ref_number"
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,
+			$7,$8,$9,$10,
+			$11,$12,$13,$14,$15,
+			$16,$17,$18,$19,$20,
+			$21,$22,$23,$24,
+			CURRENT_TIMESTAMP, $25,$26,$27,$28,$29,
+			$30,$31,$32,$33,$34,
+			$35,$36,$37,NULL,
+			$38,$39,$40,$41,$42,$43
+		) RETURNING id;
+		`
+	var query string
+	// var paramCreatedDate interface{}
+	// var paramScheduleDate interface{}
+
+	var args []interface{}
+	if scheduleDate != nil {
+		log.Print("scheduleDate --> ", scheduleDate)
+		query = scheduleSQL
+		args = []interface{}{
+			orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID,
+			req.Priority, req.WfID, req.WfVersions, req.Source,
+			req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive,
+			req.StatusID, req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs,
+			req.CountryID, req.ProvID, req.DistID, req.CaseDuration,
+			scheduleDate, scheduleDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+			req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose,
+			req.ResID, req.ResDetail, req.ScheduleFlag, req.ScheduleDate,
+			now, now, username, username, caseSLA, uuid,
+		}
+	} else {
+		query = normalSQL
+		args = []interface{}{
+			orgId, caseId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID,
+			req.Priority, req.WfID, req.WfVersions, req.Source,
+			req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive,
+			req.StatusID, req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs,
+			req.CountryID, req.ProvID, req.DistID, req.CaseDuration,
+			req.StartedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate, req.ClosedDate,
+			req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose,
+			req.ResID, req.ResDetail, req.ScheduleFlag, // scheduleDate = NULL
+			now, now, username, username, caseSLA, uuid,
+		}
+	}
+
+	err = conn.QueryRow(ctx, query, args...).Scan(&id)
 
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
@@ -759,7 +860,7 @@ func InsertCase(c *gin.Context) {
 			StatusID: req.StatusID,
 		}
 		fmt.Printf("=======yyy========")
-		err = CaseCurrentStageInsert(conn, ctx, c, data)
+		err = CaseResponseAndCurrentStageInsert(conn, ctx, c, data)
 		if err != nil {
 			response := model.Response{
 				Status: "-1",
@@ -849,7 +950,7 @@ func InsertCase(c *gin.Context) {
 	}
 	additionalJSON, err := json.Marshal(additionalJsonMap)
 	if err != nil {
-		log.Printf("covent additionalData Error :", err.Error())
+		log.Printf("covent additionalData Error : %v", err.Error())
 	}
 	additionalData := json.RawMessage(additionalJSON)
 	genNotiCustom(c, conn, orgId.(string), username.(string), username.(string), "", *statusName.Th, data, msg_alert, recipients, "/case/"+caseId, "User", event, &additionalData)
@@ -977,9 +1078,9 @@ func UpdateCase(c *gin.Context) {
 
 	} else {
 		err = UpdateFormAnswer(conn, ctx, orgId.(string), *req.CaseId, *req.FormData, username.(string))
-		// if err != nil {
-		// 	log.Fatal("Update Form error:", err)
-		// }
+		if err != nil {
+			log.Fatal("Update Form error:", err)
+		}
 		if err != nil {
 			response := model.Response{
 				Status: "-1",

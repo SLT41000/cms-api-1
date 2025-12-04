@@ -146,24 +146,63 @@ func unmarshalToSliceOfMaps(data []byte) ([]map[string]interface{}, error) {
 	return result, nil
 }
 
-func CaseCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context, req model.CustomCaseCurrentStage) error {
+func CaseResponseAndCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *gin.Context, req model.CustomCaseCurrentStage) error {
 	logger := utils.GetLog()
 
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
-	log.Print("===CaseCurrentStageInsert===")
-	// 1. Insert responder
-	_, err := conn.Exec(ctx, `
-        INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-        VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-    `, orgId, req.CaseID, "case", username, req.StatusID, username)
+	log.Print("===CaseResponseAndCurrentStageInsert===")
+
+	caseData, err := GetCaseByID(ctx, conn, orgId.(string), req.CaseID)
 	if err != nil {
 		log.Print(err)
 		return err
 	}
-	//log.Print("===CaseCurrentStageInsert===")
+	log.Print(caseData)
+	createdAt := time.Now().UTC()
+
+	if caseData.ScheduleFlag != nil && *caseData.ScheduleFlag {
+		if caseData.CreatedDate != nil {
+			//loc, _ := time.LoadLocation("Asia/Bangkok")
+
+			// default now in Bangkok
+			now := time.Now().UTC()
+
+			// original created date from DB, converted to Bangkok
+			createdAt = caseData.CreatedDate.UTC() // NOT UTC()
+
+			// compare
+			if createdAt.Before(now) {
+				createdAt = now
+			}
+
+		}
+	}
+	log.Print("====ScheduleFlag_2=")
+	log.Print(caseData.ScheduleFlag)
+	log.Print(caseData.StatusID)
+	log.Print(createdAt)
+	// 1. Insert responder
+
+	_, err = conn.Exec(ctx, `
+    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
+`,
+		orgId,        // $1
+		req.CaseID,   // $2
+		"case",       // $3
+		username,     // $4
+		req.StatusID, // $5
+		createdAt,    // $6   <-- ใช้ createdAt จริง
+		username,     // $7
+	)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	log.Print("===CaseResponseAndCurrentStageInsert_2===")
 	// Step 2: Load workflow node from DB
 	query := `
 	SELECT t1.id, t1."orgId", t1."wfId", t1."nodeId", t1.versions, t1.type, t1.section, t1.data,
@@ -238,6 +277,21 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 	username := GetVariableFromToken(ctx, "username")
 	orgId := GetVariableFromToken(ctx, "orgId")
 	log.Print("====9===")
+
+	caseData, err := GetCaseByID(ctx, conn, orgId.(string), req.CaseId)
+	if err != nil {
+		log.Print(err)
+		return model.Response{Status: "-1", Msg: "Failure.UpdateCurrentStageCore.0-" + req.CaseId, Desc: err.Error()}, err
+	}
+	log.Print(caseData)
+
+	// createdAt := time.Now().UTC()
+
+	// if caseData.ScheduleFlag != nil && *caseData.ScheduleFlag {
+	// 	if caseData.CreatedDate != nil {
+	// 		createdAt = *caseData.CreatedDate
+	// 	}
+	// }
 	// // 1. Insert responder
 	// _, err := conn.Exec(ctx, `
 	//     INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
@@ -360,7 +414,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 			}
 
 			//--Update tix_cases on time (Group status)
-			Result_, err := DispatchUpdateCaseStatus(ctx, conn, req, username.(string))
+			Result_, err := DispatchReponseAndUpdateCaseStatus(ctx, conn, req, username.(string))
 			if err != nil {
 
 				log.Printf("Update status failed: %v", err)
@@ -386,11 +440,30 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 
 	if unitCount == 0 || (config["action"] == req.Status) {
 		// 1. Insert responder
+
+		createdAt := time.Now().UTC()
+
+		if caseData.ScheduleFlag != nil && *caseData.ScheduleFlag {
+			if caseData.CreatedDate != nil {
+				createdAt = *caseData.CreatedDate
+			}
+		}
+
 		log.Print("--> 1. Insert responder")
 		_, err := conn.Exec(ctx, `
-		    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-		    VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-		`, orgId, req.CaseId, req.UnitId, req.UnitUser, req.Status, username)
+				INSERT INTO tix_case_responders 
+					("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+				VALUES
+					($1,$2,$3,$4,$5,$6,$7)
+			`,
+			orgId,
+			req.CaseId,
+			req.UnitId,
+			req.UnitUser,
+			req.Status,
+			createdAt, // ส่ง createdAt เข้าไป
+			username,
+		)
 		if err != nil {
 			return result, err
 		}
@@ -417,7 +490,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		//--Update tix_cases on time (Group status)
-		Result, err = DispatchUpdateCaseStatus(ctx, conn, req, username.(string))
+		Result, err = DispatchReponseAndUpdateCaseStatus(ctx, conn, req, username.(string))
 		if err != nil {
 			log.Printf("Update status failed: %v", err)
 		} else {
@@ -446,7 +519,7 @@ func UpdateCurrentStageCore(ctx *gin.Context, conn *pgx.Conn, req model.UpdateSt
 		}
 
 		//--Update tix_cases on time (Group status)
-		Result, err = DispatchUpdateCaseStatus(ctx, conn, req, username.(string))
+		Result, err = DispatchReponseAndUpdateCaseStatus(ctx, conn, req, username.(string))
 		if err != nil {
 			log.Printf("Update status failed: %v", err)
 		} else {
@@ -866,24 +939,50 @@ func dfsConnections(
 	}
 }
 
-func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest, username string) (model.Response, error) {
+func DispatchReponseAndUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest, username string) (model.Response, error) {
 
 	orgId := GetVariableFromToken(ctx, "orgId")
-	log.Print("===DispatchUpdateCaseStatus===")
-	// 1. Insert responder
-	_, err := conn.Exec(ctx, `
-        INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
-        VALUES ($1,$2,$3,$4,$5,NOW(),$6)
-    `, orgId, req.CaseId, "case", username, req.Status, username)
+	log.Print("===DispatchReponseAndUpdateCaseStatus===")
+
+	caseData, err := GetCaseByID(ctx, conn, orgId.(string), req.CaseId)
 	if err != nil {
 		log.Print(err)
-		return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.0-" + req.CaseId, Desc: err.Error()}, err
+		return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.0-" + req.CaseId, Desc: err.Error()}, err
+	}
+	log.Print(caseData)
+
+	createdAt := time.Now().UTC()
+
+	if caseData.ScheduleFlag != nil && *caseData.ScheduleFlag {
+		if caseData.CreatedDate != nil {
+			createdAt = *caseData.CreatedDate
+		}
+	}
+
+	// 1. Insert responder
+	_, err = conn.Exec(ctx, `
+	INSERT INTO tix_case_responders 
+		("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
+	VALUES 
+		($1,$2,$3,$4,$5,$6,$7)
+`,
+		orgId,
+		req.CaseId,
+		"case",
+		username,
+		req.Status,
+		createdAt, // << ใช้ค่าที่คำนวณแล้ว
+		username,
+	)
+	if err != nil {
+		log.Print(err)
+		return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.0-" + req.CaseId, Desc: err.Error()}, err
 	}
 
 	now := time.Now()
 
 	if req.ResID != "" {
-		log.Print("===DispatchUpdateCaseStatus--A===")
+		log.Print("===DispatchReponseAndUpdateCaseStatus--A===")
 		query := `
     UPDATE public."tix_cases"
     SET "statusId" = $1,
@@ -899,15 +998,15 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 		log.Print("====XXXXXXXX===")
 		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.ResID, req.ResDetail, req.CaseId, false, nil)
 		if err != nil {
-			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
+			return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
 		}
 
 		if cmd.RowsAffected() == 0 {
-			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
+			return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
 		}
 
 	} else {
-		log.Print("===DispatchUpdateCaseStatus--B===")
+		log.Print("===DispatchReponseAndUpdateCaseStatus--B===")
 		query := `
     UPDATE public."tix_cases"
     SET "statusId" = $1,
@@ -921,15 +1020,15 @@ func DispatchUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req model.Update
 
 		cmd, err := conn.Exec(ctx, query, req.Status, now, username, req.CaseId, false, nil)
 		if err != nil {
-			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
+			return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.1-" + req.CaseId, Desc: err.Error()}, err
 		}
 
 		if cmd.RowsAffected() == 0 {
-			return model.Response{Status: "-1", Msg: "Failure.DispatchUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
+			return model.Response{Status: "-1", Msg: "Failure.DispatchReponseAndUpdateCaseStatus.2-" + req.CaseId, Desc: err.Error()}, err
 		}
 	}
 
-	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchUpdateCaseStatus-" + req.CaseId}, nil
+	return model.Response{Status: "0", Msg: "Success", Desc: "DispatchReponseAndUpdateCaseStatus-" + req.CaseId}, nil
 }
 
 // ConvertSkills returns only the skills whose SkillId exists in data
