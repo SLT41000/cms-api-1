@@ -93,7 +93,7 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 
 	query := `
 	SELECT  "username", "email", "displayName", 
-	       "roleId", "active", "photo", "empId", "firstName", "lastName", "photo", "mobileNo"
+	       "roleId", "active", "photo", "empId", "firstName", "lastName", "photo", "mobileNo", "password"
 	FROM public.um_users
 	WHERE "orgId" = $1 AND "username" = $2
 	LIMIT 1;
@@ -112,6 +112,7 @@ func GetUserByUsername(ctx context.Context, conn *pgx.Conn, orgId, username stri
 		&u.LastName,
 		&u.Photo,
 		&u.MobileNo,
+		&u.Password,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -199,7 +200,7 @@ func GetCaseSubTypeByCode(ctx context.Context, conn *pgx.Conn, orgId string, sTy
 	    "en", "th", "wfId", "caseSla", "priority",
 	    "userSkillList", "unitPropLists", "active",
 	    "createdAt", "updatedAt", "createdBy", "updatedBy",
-		"mDeviceType", "mWorkOrderType"
+		"mDeviceType", "mWorkOrderType", "mDeviceTypeName"
 	FROM public.case_sub_types
 	WHERE "orgId" = $1
 	  AND "sTypeId" = $2
@@ -228,6 +229,7 @@ func GetCaseSubTypeByCode(ctx context.Context, conn *pgx.Conn, orgId string, sTy
 		&subType.UpdatedBy,
 		&subType.MDeviceType,
 		&subType.MWorkOrderType,
+		&subType.MDeviceTypeName,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {

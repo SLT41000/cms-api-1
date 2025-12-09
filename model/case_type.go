@@ -28,25 +28,26 @@ type CaseTypeUpdate struct {
 }
 
 type CaseSubType struct {
-	Id             string    `json:"id"`
-	TypeID         string    `json:"typeId"`
-	STypeID        string    `json:"sTypeId"`
-	STypeCode      string    `json:"sTypeCode"`
-	OrgID          string    `json:"orgId"`
-	EN             string    `json:"en"`
-	TH             string    `json:"th"`
-	WFID           string    `json:"wfId"`
-	CaseSLA        string    `json:"caseSla"`
-	Priority       string    `json:"priority"`
-	UserSkillList  []string  `json:"userSkillList"`
-	UnitPropLists  []string  `json:"unitPropLists"`
-	Active         bool      `json:"active"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	CreatedBy      string    `json:"createdBy"`
-	UpdatedBy      string    `json:"updatedBy"`
-	MDeviceType    *string   `json:"mDeviceType"`
-	MWorkOrderType *string   `json:"mWorkOrderType"`
+	Id              string    `json:"id"`
+	TypeID          string    `json:"typeId"`
+	STypeID         string    `json:"sTypeId"`
+	STypeCode       string    `json:"sTypeCode"`
+	OrgID           string    `json:"orgId"`
+	EN              string    `json:"en"`
+	TH              string    `json:"th"`
+	WFID            string    `json:"wfId"`
+	CaseSLA         string    `json:"caseSla"`
+	Priority        string    `json:"priority"`
+	UserSkillList   []string  `json:"userSkillList"`
+	UnitPropLists   []string  `json:"unitPropLists"`
+	Active          bool      `json:"active"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	CreatedBy       string    `json:"createdBy"`
+	UpdatedBy       string    `json:"updatedBy"`
+	MDeviceType     *string   `json:"mDeviceType"`
+	MWorkOrderType  *string   `json:"mWorkOrderType"`
+	MDeviceTypeName *string   `json:"mDeviceTypeName"`
 }
 
 type CaseSubTypeInsert struct {

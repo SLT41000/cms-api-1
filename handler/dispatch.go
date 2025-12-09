@@ -46,7 +46,7 @@ func GetSOP(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	caseId := c.Param("caseId")
 
-	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla", "deviceMetaData"
+	query := `SELECT id, "orgId", "caseId", "caseVersion", "referCaseId", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId", "phoneNo", "phoneNoHide", "caseDetail", "extReceive", "statusId", "caseLat", "caseLon", "caselocAddr", "caselocAddrDecs", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate", "commandedDate", "receivedDate", "arrivedDate", "closedDate", usercreate, usercommand, userreceive, userarrive, userclose, "resId", "resDetail", "createdAt", "updatedAt", "createdBy", "updatedBy", "caseSla", "deviceMetaData", "scheduleFlag", "scheduleDate"
 	FROM public.tix_cases WHERE "orgId"=$1 AND "caseId"=$2`
 	logger.Debug(`Query`, zap.String("query", query))
 	var cusCase model.Case
@@ -95,6 +95,8 @@ func GetSOP(c *gin.Context) {
 		&cusCase.UpdatedBy,
 		&cusCase.CaseSLA,
 		&cusCase.DeviceMetaData,
+		&cusCase.ScheduleFlag,
+		&cusCase.ScheduleDate,
 	)
 
 	if err != nil {

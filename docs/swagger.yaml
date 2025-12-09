@@ -51,6 +51,8 @@ definitions:
     properties:
       arrivedDate:
         type: string
+      assignUser:
+        type: string
       attachments:
         items:
           $ref: '#/definitions/model.TixCaseAttachmentInput'
@@ -761,6 +763,8 @@ definitions:
   model.Login:
     properties:
       organization:
+        type: string
+      organizationId:
         type: string
       password:
         type: string
@@ -1624,7 +1628,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://somewhere.com/
   title: CMS API
-  version: "1.0"
+  version: 0.0.2
 paths:
   /api/minimal/case/create:
     post:
@@ -1818,6 +1822,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Refresh Token
+      tags:
+      - Authentication
+  /api/v1/auth/verify:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      operationId: VerifyToken
+      parameters:
+      - description: Access Token to verify
+        in: formData
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK - Request successful
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Verify Token
       tags:
       - Authentication
   /api/v1/case:

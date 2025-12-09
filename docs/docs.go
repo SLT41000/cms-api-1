@@ -333,6 +333,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/verify": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify Token",
+                "operationId": "VerifyToken",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Access Token to verify",
+                        "name": "token",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/case": {
             "get": {
                 "security": [
@@ -7576,6 +7613,9 @@ const docTemplate = `{
                 "arrivedDate": {
                     "type": "string"
                 },
+                "assignUser": {
+                    "type": "string"
+                },
                 "attachments": {
                     "type": "array",
                     "items": {
@@ -8641,6 +8681,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "organization": {
+                    "type": "string"
+                },
+                "organizationId": {
                     "type": "string"
                 },
                 "password": {
@@ -9943,7 +9986,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "0.0.2",
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{"http", "https"},

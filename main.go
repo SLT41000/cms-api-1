@@ -1,5 +1,5 @@
 // @title CMS API
-// @version 0.0.1
+// @version 0.0.2
 // @termsOfService http://somewhere.com/
 // @BasePath /
 // @contact.name API Support
@@ -174,6 +174,8 @@ func main() {
 			"https://mettlink-workorder-service",
 			"https://welcome-service-qa.metthier.ai:55000",
 			"https://welcome-cms-qa.metthier.ai:55000",
+			"http://localhost:3000",  // bmta dev
+			"https://localhost:3000", // bmta dev
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
@@ -185,10 +187,11 @@ func main() {
 	router.Use(ginlimiter.NewMiddleware(instance))
 	auth := router.Group("/api/v1/auth")
 	{
-		auth.GET("/login", handler.UserLogin)
+		auth.GET("/login", handler.UserLoginGet)
 		auth.POST("/login", handler.UserLoginPost)
 		auth.POST("/add", handler.UserAddAuth)
 		auth.POST("/refresh", handler.RefreshToken)
+		auth.POST("/verify", handler.VerifyTokenHandler)
 	}
 	v1 := router.Group("/api/v1")
 	{

@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"log"
 	"mainPackage/model"
@@ -15,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -84,12 +87,13 @@ func verifyToken(tokenString string) (*jwt.Token, error) {
 }
 
 func verifyRefreshToken(tokenString string) (*jwt.Token, error) {
-	var secretKey = []byte(os.Getenv("REFRESH_TOKEN_KEY"))
+	secretKey := []byte(os.Getenv("REFRESH_TOKEN_KEY"))
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(secretKey), nil
+		return secretKey, nil
 	})
 
 	if err != nil {
@@ -173,164 +177,33 @@ func ProtectedHandler(c *gin.Context) {
 // @Param organization query string true "organization"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [get]
-func UserLogin(c *gin.Context) {
-	logger := utils.GetLog()
-	username := c.Query("username")
-	password := c.Query("password")
-	organization := c.Query("organization")
-	txtId := uuid.New().String()
-	start_time := time.Now()
+func UserLoginGet(c *gin.Context) {
+	// Parse from Query
+	req := model.Login{
+		Username:     c.Query("username"),
+		Password:     c.Query("password"),
+		Organization: c.Query("organization"),
+	}
+
+	// DB Connect
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1", Msg: "Failure", Desc: "DB connection error",
+		})
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	defer cancel()
 
-	var id string
-	query := `SELECT id FROM public.organizations WHERE name = $1`
-	logger.Debug(`Query`, zap.String("query", query))
-	logger.Debug(`request input`, zap.Any("organization", organization))
-	err := conn.QueryRow(ctx, query, organization).Scan(&id)
+	// Call Shared Logic
+	resp, err := LoginUser(ctx, c, conn, req)
 	if err != nil {
-		logger.Debug(err.Error())
-		c.JSON(http.StatusUnauthorized, model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		})
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
-	query = `SELECT 
-    u.id,
-    u."orgId",
-    u."displayName",
-    u.title,
-    u."firstName",
-    u."middleName",
-    u."lastName",
-    u."citizenId",
-    u.bod,
-    u.blood,
-    u.gender,
-    u."mobileNo",
-    u.address,
-    u.photo,
-    u.username,
-    u.password,
-    u.email,
-    u."roleId",
-    u."userType",
-    u."empId",
-    u."deptId",
-    u."commId",
-    u."stnId",
-    u.active,
-    u."activationToken",
-    u."lastActivationRequest",
-    u."lostPasswordRequest",
-    u."signupStamp",
-    u.islogin,
-    u."lastLogin",
-    u."createdAt",
-    u."updatedAt",
-    u."createdBy",
-    u."updatedBy",
-    COALESCE(a."distIdLists", '[]'::jsonb) AS "distIdLists"
-FROM public.um_users u
-LEFT JOIN public.um_user_with_area_response a
-    ON a."username" = u.username AND a."orgId" = u."orgId"
-WHERE u.username = $1
-  AND u.active = TRUE;
-`
-	logger.Debug(`Query`, zap.String("query", query))
-	logger.Debug(`request input`, zap.Any("username", username))
-	var UserOpt model.Um_User_Login
-	err = conn.QueryRow(ctx, query, username).Scan(&UserOpt.ID,
-		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
-		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
-		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
-		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
-		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
-		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
-	if err != nil {
-		logger.Debug(err.Error())
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLogin", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Failure = "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
-		return
-	}
-	var dec string
-	dec, err = decrypt(UserOpt.Password)
-	if err != nil {
-		logger.Debug(err.Error())
-		return
-	}
-
-	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
-		tokenString, refreshtoken, err := CreateToken(username, id)
-		if err != nil {
-			response := gin.H{
-				"error":   "Token creation failed",
-				"message": err.Error(),
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, UserOpt.OrgID, username,
-				txtId, "", "Authentication", "UserLogin", "",
-				"login", -1, start_time, GetQueryParams(c), response, "Token creation failed = "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusUnauthorized, response)
-			logger.Debug(err.Error())
-			return
-		}
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Desc:   "",
-			Data: gin.H{
-				"accessToken":  tokenString,
-				"refreshToken": refreshtoken,
-				"token_type":   "bearer",
-				"user":         UserOpt,
-			},
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLogin", "",
-			"login", 0, start_time, GetQueryParams(c), response, "Login successfully",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusOK, response)
-	} else {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "",
-			Desc:   "Invalid credentials",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLogin", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
-	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // @summary Login User Post
@@ -343,254 +216,27 @@ WHERE u.username = $1
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/login [post]
 func UserLoginPost(c *gin.Context) {
-	log.Print("----------xxxx------x---x-")
-	logger := utils.GetLog()
+	var req model.Login
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{Status: "-1", Msg: err.Error()})
+		return
+	}
+
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
+		c.JSON(http.StatusInternalServerError, model.Response{Status: "-1", Msg: "DB error"})
 		return
 	}
 	defer cancel()
 	defer conn.Close(ctx)
-	start_time := time.Now()
-	txtId := uuid.New().String()
-	var req model.Login
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warn("Update failed", zap.Error(err))
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, "", "",
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusBadRequest, response)
-		return
-	}
 
-	organization := req.Organization
-	username := req.Username
-	password := req.Password
-	var id string
-	query := `SELECT id FROM public.organizations WHERE name = $1`
-	logger.Debug(`Query`, zap.String("query", query))
-	logger.Debug(`request input`, zap.Any("organization", organization))
-	err := conn.QueryRow(ctx, query, organization).Scan(&id)
+	resp, err := LoginUser(ctx, c, conn, req)
 	if err != nil {
-		logger.Debug(err.Error())
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, "", username,
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
-	query = `SELECT 
-    u.id,
-    u."orgId",
-    u."displayName",
-    u.title,
-    u."firstName",
-    u."middleName",
-    u."lastName",
-    u."citizenId",
-    u.bod,
-    u.blood,
-    u.gender,
-    u."mobileNo",
-    u.address,
-    u.photo,
-    u.username,
-    u.password,
-    u.email,
-    u."roleId",
-    u."userType",
-    u."empId",
-    u."deptId",
-    u."commId",
-    u."stnId",
-    u.active,
-    u."activationToken",
-    u."lastActivationRequest",
-    u."lostPasswordRequest",
-    u."signupStamp",
-    u.islogin,
-    u."lastLogin",
-    u."createdAt",
-    u."updatedAt",
-    u."createdBy",
-    u."updatedBy",
-    COALESCE(a."distIdLists", '[]'::jsonb) AS "distIdLists"
-FROM public.um_users u
-LEFT JOIN public.um_user_with_area_response a
-    ON a."username" = u.username AND a."orgId" = u."orgId"
-WHERE u.username = $1
-  AND u."orgId" = $2
-  AND u.active = TRUE;
-`
-	logger.Debug(`Query`, zap.String("query", query))
-	logger.Debug(`request input`, zap.Any("username", username))
-	var UserOpt model.Um_User_Login
-	err = conn.QueryRow(ctx, query, username, id).Scan(&UserOpt.ID,
-		&UserOpt.OrgID, &UserOpt.DisplayName, &UserOpt.Title, &UserOpt.FirstName, &UserOpt.MiddleName, &UserOpt.LastName,
-		&UserOpt.CitizenID, &UserOpt.Bod, &UserOpt.Blood, &UserOpt.Gender, &UserOpt.MobileNo, &UserOpt.Address,
-		&UserOpt.Photo, &UserOpt.Username, &UserOpt.Password, &UserOpt.Email, &UserOpt.RoleID, &UserOpt.UserType,
-		&UserOpt.EmpID, &UserOpt.DeptID, &UserOpt.CommID, &UserOpt.StnID, &UserOpt.Active, &UserOpt.ActivationToken,
-		&UserOpt.LastActivationRequest, &UserOpt.LostPasswordRequest, &UserOpt.SignupStamp, &UserOpt.IsLogin, &UserOpt.LastLogin,
-		&UserOpt.CreatedAt, &UserOpt.UpdatedAt, &UserOpt.CreatedBy, &UserOpt.UpdatedBy, &UserOpt.DistIdLists)
-	if err != nil {
-		logger.Debug(err.Error())
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, "", username,
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
-		return
-	}
-	var dec string
-	dec, err = decrypt(UserOpt.Password)
-	if err != nil {
-		response := zap.Error(err)
-		logger.Warn("Decryption failed", response) // Use Warn for visibility
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Decryption failed : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		return
-	}
-	log.Print("====Password===")
-	log.Print(UserOpt.Password)
-	log.Print(dec)
-	if subtle.ConstantTimeCompare([]byte(dec), []byte(password)) == 1 {
-		tokenString, refreshtoken, err := CreateToken(username, id)
-		if err != nil {
-			response := gin.H{
-				"error":   "Token creation failed",
-				"message": err.Error(),
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, conn, UserOpt.OrgID, username,
-				txtId, "", "Authentication", "UserLoginPost", "",
-				"login", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusUnauthorized, response)
-			logger.Debug(err.Error())
-			return
-		}
-
-		query = `SELECT "permId" FROM public.um_role_with_permissions 
-				WHERE "orgId"=$1 AND "roleId"=$2 AND active = true`
-		logger.Debug(`Query`, zap.String("query", query), zap.Any("input", []any{UserOpt.OrgID, UserOpt.RoleID}))
-		var permId string
-		var RolePermissionList []string
-		rows, err := conn.Query(ctx, query, UserOpt.OrgID, UserOpt.RoleID)
-		if err != nil {
-			logger.Warn("Query failed", zap.Error(err))
-			response := model.Response{
-				Status: "-1",
-				Msg:    "Failure",
-				Desc:   err.Error(),
-			}
-			//=======AUDIT_START=====//
-			org := os.Getenv("INTEGRATION_ORG_ID")
-			_ = utils.InsertAuditLogs(
-				c, conn, org, username,
-				txtId, "", "Authentication", "UserLoginPost", "",
-				"login", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-		for rows.Next() {
-			err = rows.Scan(&permId)
-			if err != nil {
-				logger.Warn("Scan failed", zap.Error(err))
-				response := model.Response{
-					Status: "-1",
-					Msg:    "Failed",
-					Desc:   err.Error(),
-				}
-				//=======AUDIT_START=====//
-				_ = utils.InsertAuditLogs(
-					c, conn, UserOpt.OrgID, username,
-					txtId, "", "Authentication", "UserLoginPost", "",
-					"login", -1, start_time, GetQueryParams(c), response, "Scan failed : "+err.Error(),
-				)
-				//=======AUDIT_END=====//
-				c.JSON(http.StatusInternalServerError, response)
-			}
-			RolePermissionList = append(RolePermissionList, permId)
-
-		}
-		UserOpt.Permission = RolePermissionList
-		response := model.Response{
-			Status: "0",
-			Msg:    "Success",
-			Desc:   "",
-			Data: gin.H{
-				"accessToken":  tokenString,
-				"refreshToken": refreshtoken,
-				"token_type":   "bearer",
-				"user":         UserOpt,
-				// "permission":   RolePermissionList,
-			},
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", 0, start_time, GetQueryParams(c), response, "Successfully",
-		)
-		//=======AUDIT_END=====//
-
-		utils.GetAreaByUsernameOrLoad(ctx, conn, UserOpt.OrgID, username)
-
-		c.JSON(http.StatusOK, response)
-		return
-	} else {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "",
-			Desc:   "Invalid credentials",
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, conn, UserOpt.OrgID, username,
-			txtId, "", "Authentication", "UserLoginPost", "",
-			"login", -1, start_time, GetQueryParams(c), response, "Invalid credentials",
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
-		return
-	}
-
+	c.JSON(http.StatusOK, resp)
 }
 
 // @summary Create User Auth
@@ -725,93 +371,40 @@ func UserAddAuth(c *gin.Context) {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/auth/refresh [post]
 func RefreshToken(c *gin.Context) {
-	logger := utils.GetLog()
-	var req model.RefreshInput
-	id := c.Param("id")
-	start_time := time.Now()
-	username := GetVariableFromToken(c, "username")
-	orgId := GetVariableFromToken(c, "orgId")
-	txtId := uuid.New().String()
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failure",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, nil, orgId.(string), username.(string),
-			txtId, id, "Authentication", "RefreshToken", "",
-			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusBadRequest, response)
-		logger.Warn("Insert failed", zap.Error(err))
+	var input model.RefreshInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	parsedToken, err := verifyRefreshToken(req.RefreshToken)
+	// verify refresh token
+	token, err := verifyRefreshToken(input.RefreshToken)
 	if err != nil {
-		response := model.Response{
-			Status: "-1",
-			Msg:    "Failed",
-			Desc:   err.Error(),
-		}
-		//=======AUDIT_START=====//
-		_ = utils.InsertAuditLogs(
-			c, nil, orgId.(string), username.(string),
-			txtId, id, "Authentication", "RefreshToken", "",
-			"update", -1, start_time, GetQueryParams(c), response, "Failure : "+err.Error(),
-		)
-		//=======AUDIT_END=====//
-		c.JSON(http.StatusUnauthorized, response)
-		c.Abort()
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
 	}
 
-	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
-		username, uOK := claims["username"].(string)
-		orgId, orgOK := claims["orgId"].(string)
+	claims := token.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
+	orgId := claims["orgId"].(string)
 
-		if uOK && orgOK {
-			tokenString, _, err := CreateToken(username, orgId)
-			if err != nil {
-				response := gin.H{
-					"error":   "Token creation failed",
-					"message": err.Error(),
-				}
-				//=======AUDIT_START=====//
-				_ = utils.InsertAuditLogs(
-					c, nil, orgId, username,
-					txtId, id, "Authentication", "RefreshToken", "",
-					"update", -1, start_time, GetQueryParams(c), response, "Token creation failed : "+err.Error(),
-				)
-				//=======AUDIT_END=====//
-				c.JSON(http.StatusUnauthorized, response)
-				logger.Debug(err.Error())
-				return
-			}
-			response := model.Response{
-				Status: "0",
-				Msg:    "Success",
-				Desc:   "",
-				Data: gin.H{
-					"accessToken": tokenString,
-					// "refreshToken": refreshtoken,
-					"token_type": "bearer",
-				},
-			}
-			//=======AUDIT_START=====//
-			_ = utils.InsertAuditLogs(
-				c, nil, orgId, username,
-				txtId, id, "Authentication", "RefreshToken", "",
-				"update", 0, start_time, GetQueryParams(c), response, "RefreshToken Success",
-			)
-			//=======AUDIT_END=====//
-			c.JSON(http.StatusOK, response)
-
-		}
+	accessToken, refreshToken, err := CreateToken(username, orgId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		return
 	}
+
+	resp := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data: gin.H{
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
+			"token_type":   "bearer",
+		},
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // @summary Logout
@@ -877,4 +470,238 @@ func UserLogout(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, response)
+}
+
+// @summary Verify Token
+// @tags Authentication
+// @security ApiKeyAuth
+// @id VerifyToken
+// @accept application/x-www-form-urlencoded
+// @produce json
+// @param token formData string true "Access Token to verify"
+// @response 200 {object} model.Response "OK - Request successful"
+// @Router /api/v1/auth/verify [post]
+func VerifyTokenHandler(c *gin.Context) {
+	var input model.VerifyTokenInput
+
+	// This works with:
+	// - form-data
+	// - x-www-form-urlencoded
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	log.Print("===VerifyTokenHandler===")
+	log.Print(input.Token)
+
+	result, err := VerifyToken(input.Token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	log.Print(result.Active)
+	if result.Active {
+
+		//Process login without password
+
+		conn, ctx, cancel := utils.ConnectDB()
+		if conn == nil {
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1", Msg: "Failure", Desc: "Cannot connect to database",
+			})
+			return
+		}
+		defer cancel()
+		defer conn.Close(ctx)
+
+		orgId := os.Getenv("INTEGRATION_ORG_ID")
+
+		user, err := utils.GetUserByUsername(c, conn, orgId, result.Username)
+		if err != nil {
+			log.Printf("Error: %v", err)
+		}
+
+		if user == nil {
+			log.Printf("User not found")
+		} else {
+			pass_, _ := decrypt(user.Password)
+			loginReq := model.Login{
+				Username:       user.Username,
+				Password:       pass_, // ⚠️ user.password should be encrypted
+				OrganizationId: &orgId,
+			}
+
+			resp, err := LoginUser(ctx, c, conn, loginReq)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, resp)
+				return
+			}
+
+			c.JSON(http.StatusOK, resp)
+		}
+	} else {
+		resp := model.Response{Status: "-1", Desc: fmt.Sprintf("%t", result.Active)}
+		c.JSON(http.StatusOK, resp)
+	}
+
+}
+
+func VerifyToken(token string) (*model.TokenIntrospectResponse, error) {
+	url := os.Getenv("AUTH_SERVER")
+
+	form := map[string]string{
+		"client_id":     os.Getenv("AUTH_CLIENT_ID"),
+		"client_secret": os.Getenv("AUTH_CLETNT_SECRET"),
+		"token":         token,
+	}
+	log.Print("==VerifyToken==")
+
+	resp, err := callVerify(url, form)
+	if err != nil {
+		return nil, err
+	}
+
+	var out model.TokenIntrospectResponse
+	if err := json.Unmarshal([]byte(resp), &out); err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func LoginUser(
+	ctx context.Context,
+	c *gin.Context,
+	conn *pgx.Conn,
+	req model.Login,
+) (model.Response, error) {
+
+	//logger := utils.GetLog()
+	start_time := time.Now()
+	txtId := uuid.New().String()
+	log.Print("===LoginUser==")
+	log.Print(req)
+	// ========= Find Organization =========
+	var orgId string
+	if req.OrganizationId != nil {
+		orgId = *req.OrganizationId
+	} else {
+		err := conn.QueryRow(ctx,
+			`SELECT id FROM public.organizations WHERE name=$1`,
+			req.Organization,
+		).Scan(&orgId)
+
+		if err != nil {
+			resp := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+			_ = utils.InsertAuditLogs(
+				c, conn, "", req.Username,
+				txtId, "", "Authentication", "UserLoginPost", "",
+				"login", -1, start_time, GetQueryParams(c), resp, "org not found",
+			)
+			return resp, err
+		}
+	}
+
+	// ========= Find User =========
+	var user model.Um_User_Login
+	err := conn.QueryRow(ctx, `
+SELECT u.id, u."orgId", u."displayName", u.title,
+       u."firstName", u."middleName", u."lastName",
+       u."citizenId", u.bod, u.blood, u.gender,
+       u."mobileNo", u.address, u.photo, u.username,
+       u.password, u.email, u."roleId", u."userType",
+       u."empId", u."deptId", u."commId", u."stnId",
+       u.active, u."activationToken", u."lastActivationRequest",
+       u."lostPasswordRequest", u."signupStamp",
+       u.islogin, u."lastLogin", u."createdAt",
+       u."updatedAt", u."createdBy", u."updatedBy",
+       COALESCE(a."distIdLists", '[]'::jsonb)
+FROM public.um_users u
+LEFT JOIN public.um_user_with_area_response a
+    ON a.username = u.username
+   AND a."orgId" = u."orgId"
+WHERE u.username=$1 AND u."orgId"=$2 AND u.active=true;
+`, req.Username, orgId).Scan(
+		&user.ID, &user.OrgID, &user.DisplayName, &user.Title,
+		&user.FirstName, &user.MiddleName, &user.LastName,
+		&user.CitizenID, &user.Bod, &user.Blood, &user.Gender,
+		&user.MobileNo, &user.Address, &user.Photo, &user.Username,
+		&user.Password, &user.Email, &user.RoleID, &user.UserType,
+		&user.EmpID, &user.DeptID, &user.CommID, &user.StnID,
+		&user.Active, &user.ActivationToken, &user.LastActivationRequest,
+		&user.LostPasswordRequest, &user.SignupStamp,
+		&user.IsLogin, &user.LastLogin, &user.CreatedAt,
+		&user.UpdatedAt, &user.CreatedBy, &user.UpdatedBy,
+		&user.DistIdLists,
+	)
+
+	if err != nil {
+		resp := model.Response{Status: "-1", Msg: "Failure", Desc: err.Error()}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, req.Username,
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), resp, "user not found",
+		)
+		return resp, err
+	}
+
+	// ========= Decrypt Password =========
+	dec, err := decrypt(user.Password)
+	if err != nil || subtle.ConstantTimeCompare([]byte(dec), []byte(req.Password)) != 1 {
+		resp := model.Response{Status: "-1", Desc: "Invalid credentials"}
+		_ = utils.InsertAuditLogs(
+			c, conn, orgId, req.Username,
+			txtId, "", "Authentication", "UserLoginPost", "",
+			"login", -1, start_time, GetQueryParams(c), resp, "invalid pass",
+		)
+		return resp, err
+	}
+
+	// ========= Create Token =========
+	accessToken, refreshToken, err := CreateToken(user.Username, orgId)
+	if err != nil {
+		resp := model.Response{Status: "-1", Desc: "Token creation failed"}
+		return resp, err
+	}
+
+	// ========= Load Permissions =========
+	rows, err := conn.Query(ctx,
+		`SELECT "permId" FROM public.um_role_with_permissions WHERE "orgId"=$1 AND "roleId"=$2 AND active=true`,
+		orgId, user.RoleID,
+	)
+	if err != nil {
+		resp := model.Response{Status: "-1", Desc: "Permission failed"}
+		return resp, err
+	}
+
+	var perm []string
+	for rows.Next() {
+		var pid string
+		_ = rows.Scan(&pid)
+		perm = append(perm, pid)
+	}
+	user.Permission = perm
+
+	// ========= Cache area =========
+	utils.GetAreaByUsernameOrLoad(ctx, conn, orgId, user.Username)
+
+	resp := model.Response{
+		Status: "0",
+		Msg:    "Success",
+		Data: map[string]any{
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
+			"token_type":   "bearer",
+			"user":         user,
+		},
+	}
+
+	_ = utils.InsertAuditLogs(
+		c, conn, orgId, req.Username,
+		txtId, "", "Authentication", "UserLoginPost", "",
+		"login", 0, start_time, GetQueryParams(c), resp, "success",
+	)
+
+	return resp, nil
 }

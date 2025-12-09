@@ -79,7 +79,23 @@ type RefreshInput struct {
 }
 
 type Login struct {
-	Username     string `json:"username"`
-	Password     string `json:"password"`
-	Organization string `json:"organization"`
+	Username       string  `json:"username"`
+	Password       string  `json:"password"`
+	Organization   string  `json:"organization"`
+	OrganizationId *string `json:"organizationId"`
+}
+
+type VerifyTokenInput struct {
+	Token string `form:"token" binding:"required"`
+}
+
+type TokenIntrospectResponse struct {
+	Active            bool   `json:"active" example:"true"`
+	PreferredUsername string `json:"preferred_username,omitempty"`
+	Username          string `json:"username,omitempty"`
+	Email             string `json:"email,omitempty"`
+	Exp               int64  `json:"exp,omitempty"`
+	Iat               int64  `json:"iat,omitempty"`
+	Sub               string `json:"sub,omitempty"`
+	Error             string `json:"error,omitempty"`
 }

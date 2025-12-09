@@ -21,7 +21,10 @@ import (
 
 func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
 	log.Printf("====IntegrateCreateCaseFromWorkOrder===")
-	loc, _ := time.LoadLocation("Asia/Bangkok")
+	loc, err := time.LoadLocation("Asia/Bangkok")
+	if err != nil {
+		loc = time.UTC
+	}
 	now := time.Now().In(loc)
 	caseId := workOrder.WorkOrderNumber
 	var id int
@@ -597,6 +600,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 	// }
 	log.Print("=====sType===", sType.TH)
 	log.Print("=====DistID===", req.DistID)
+	log.Print("=====sType===>>", sType)
 	areaDist, err := utils.GetAreaById(ctx, conn, orgId.(string), req.DistID)
 	if err != nil {
 		log.Printf("areaDist Error: %v", err)
@@ -624,6 +628,20 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 
 	}
 
+	device_metadata := map[string]interface{}{
+		"device_id":            "",
+		"device_name":          "",
+		"device_type":          sType.MDeviceType,
+		"device_serial_number": "",
+		"device_model":         "",
+		"device_brand":         "",
+		"device_location": map[string]interface{}{
+			"latitude":  "",
+			"longitude": "",
+		},
+		"device_type_name": sType.MDeviceTypeName,
+	}
+
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": integration_ref_number,
@@ -642,7 +660,7 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 			"assigned_employee_code":  "",
 			"associate_employee_code": []string{},
 		},
-		"device_metadata": map[string]interface{}{}, // ตอนนี้ว่าง
+		"device_metadata": device_metadata, // ตอนนี้ว่าง
 		"sop_metadata":    map[string]interface{}{},
 		"state":           "OPEN",
 		"status":          "NEW",
@@ -751,6 +769,41 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	if err != nil {
 
 	}
+
+	var device_metadata map[string]interface{}
+	if caseData.DeviceMetaData != nil {
+		// DeviceMetaData is *json.RawMessage, so unmarshal
+		err := json.Unmarshal(*caseData.DeviceMetaData, &device_metadata)
+		if err != nil {
+			device_metadata = map[string]interface{}{
+				"device_id":            "",
+				"device_name":          "",
+				"device_type":          sType.MDeviceType,
+				"device_serial_number": "",
+				"device_model":         "",
+				"device_brand":         "",
+				"device_location": map[string]interface{}{
+					"latitude":  "",
+					"longitude": "",
+				},
+				"device_type_name": sType.MDeviceTypeName,
+			}
+		}
+	} else {
+		device_metadata = map[string]interface{}{
+			"device_id":            "",
+			"device_name":          "",
+			"device_type":          sType.MDeviceType,
+			"device_serial_number": "",
+			"device_model":         "",
+			"device_brand":         "",
+			"device_location": map[string]interface{}{
+				"latitude":  "",
+				"longitude": "",
+			},
+			"device_type_name": sType.MDeviceTypeName,
+		}
+	}
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": caseData.IntegrationRefNumber,
@@ -768,7 +821,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 			"assigned_employee_code":  uAssign,
 			"associate_employee_code": []string{},
 		},
-		"device_metadata": caseData.DeviceMetaData,
+		"device_metadata": device_metadata,
 		//"sop_metadata": caseData.DeviceMetaData,
 		"status":    stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
 		"state":     state,

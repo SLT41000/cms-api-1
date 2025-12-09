@@ -635,3 +635,31 @@ func callAPI_2(baseURL string, method string, queryParams map[string]string, dat
 
 	return string(respBody), nil
 }
+
+func callVerify(urlStr string, form map[string]string) (string, error) {
+	data := url.Values{}
+	for k, v := range form {
+		data.Set(k, v)
+	}
+
+	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
+}
