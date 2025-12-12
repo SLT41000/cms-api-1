@@ -172,6 +172,7 @@ func CaseResponseAndCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *g
 
 			// original created date from DB, converted to Bangkok
 			createdAt = caseData.CreatedDate.UTC() // NOT UTC()
+			//createdAt = createdAt.Add(-7 * time.Hour)
 
 			// compare
 			if createdAt.Before(now) {
@@ -955,9 +956,26 @@ func DispatchReponseAndUpdateCaseStatus(ctx *gin.Context, conn *pgx.Conn, req mo
 
 	if caseData.ScheduleFlag != nil && *caseData.ScheduleFlag {
 		if caseData.CreatedDate != nil {
-			createdAt = *caseData.CreatedDate
+			//createdAt = *caseData.CreatedDate
+
+			// default now in Bangkok
+			now := time.Now().UTC()
+
+			// original created date from DB, converted to Bangkok
+			createdAt = caseData.CreatedDate.UTC() // NOT UTC()
+			//createdAt = createdAt.Add(-7 * time.Hour)
+
+			// compare
+			if createdAt.Before(now) {
+				createdAt = now
+			}
 		}
 	}
+
+	log.Print("====ScheduleFlag_3=")
+	log.Print(caseData.ScheduleFlag)
+	log.Print(caseData.StatusID)
+	log.Print(createdAt)
 
 	// 1. Insert responder
 	_, err = conn.Exec(ctx, `

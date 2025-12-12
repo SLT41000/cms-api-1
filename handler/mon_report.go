@@ -115,7 +115,7 @@ func CaseHistory(c *gin.Context) error {
 				//return err
 			}
 
-			conn, ctx, cancel := utils.ConnectDB_REPORT()
+			conn, ctx, cancel := utils.ConnectDB()
 			if conn == nil {
 				log.Printf("DB connection is nil")
 				//return nil

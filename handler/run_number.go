@@ -18,7 +18,7 @@ import (
 )
 
 func GenerateCaseID(ctx context.Context, conn *pgx.Conn, prefix string) (string, error) {
-	today := time.Now().Format("060102") // YYMMDD
+	today := time.Now().UTC().Format("060102") // YYMMDD
 	logger := utils.GetLog()
 	var lastNumber int
 	err := conn.QueryRow(ctx, `

@@ -21,11 +21,11 @@ import (
 
 func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrder model.WorkOrder, username, orgId string) error {
 	log.Printf("====IntegrateCreateCaseFromWorkOrder===")
-	loc, err := time.LoadLocation("Asia/Bangkok")
-	if err != nil {
-		loc = time.UTC
-	}
-	now := time.Now().In(loc)
+	// loc, err := time.LoadLocation("Asia/Bangkok")
+	// if err != nil {
+	// 	loc = time.UTC
+	// }
+	// now := time.Now().UTC()
 	caseId := workOrder.WorkOrderNumber
 	var id int
 	caseData, err := GetCaseByID(ctx, conn, orgId, caseId)
@@ -39,18 +39,27 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		return nil
 	}
 
-	// default = CURRENT
 	useCurrent := true
 	var scheduleTime time.Time
 	scheduleFlag := false
+
+	loc, err := time.LoadLocation("Asia/Bangkok")
+	if err != nil {
+		loc = time.FixedZone("Asia/Bangkok", 7*3600)
+	}
+
 	wd := strings.TrimSpace(workOrder.WorkDate)
 	if wd != "" {
-		// parse work_date at 00:00:00
+
+		// parse work_date as 00:00:00 Bangkok time
 		t, err := time.ParseInLocation("2006-01-02", wd, loc)
 		if err == nil {
-			// ถ้า work_date > ปัจจุบัน → ใช้ t
-			if t.After(now) {
+
+			// ถ้า work_date มากกว่าเวลาปัจจุบัน → ให้ schedule
+			if t.After(time.Now().In(loc)) {
+				// ลบ 7 ชั่วโมงให้กลายเป็น UTC
 				scheduleTime = t
+
 				useCurrent = false
 				scheduleFlag = true
 			}
@@ -58,11 +67,12 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	}
 
 	if useCurrent {
-		scheduleTime = now
+		// default = now (UTC)
+		scheduleTime = time.Now().UTC()
 	}
 
-	// convert ไป UTC (ดีที่สุดสำหรับเก็บลง DB)
-	scheduleUTC := scheduleTime.UTC()
+	// scheduleTime = UTC พร้อมใช้ใน DB
+	scheduleUTC := scheduleTime
 
 	query := `
 		INSERT INTO public."tix_cases"(

@@ -702,14 +702,15 @@ func InsertCase(c *gin.Context) {
 
 	if req.ScheduleFlag != nil && *req.ScheduleFlag {
 		if req.ScheduleDate != nil {
-			loc, err := time.LoadLocation("Asia/Bangkok")
-			if err != nil {
-				log.Print("error---LoadLocation---")
-				log.Print(err)
-				loc = time.UTC
-			}
+			// loc, err := time.LoadLocation("Asia/Bangkok")
+			// if err != nil {
+			// 	log.Print("error---LoadLocation---")
+			// 	log.Print(err)
+			// 	loc = time.UTC
+			// }
 			t := *req.ScheduleDate
-			tmp := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc)
+			tmp := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+			tmp = tmp.Add(-7 * time.Hour)
 			scheduleDate = &tmp
 			//req.StatusID = "SCH" // set schedule
 		}
