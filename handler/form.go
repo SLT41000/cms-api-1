@@ -2798,7 +2798,7 @@ func WorkFlowInsert(c *gin.Context) {
 	now := time.Now()
 	query := `INSERT INTO public.wf_definitions(
 	"orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy", "totalSla")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
 	_, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc,

@@ -41,6 +41,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 
 	useCurrent := true
 	var scheduleTime time.Time
+	var scheduleTime_7 time.Time
 	scheduleFlag := false
 
 	loc, err := time.LoadLocation("Asia/Bangkok")
@@ -59,7 +60,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 			if t.After(time.Now().In(loc)) {
 				// ลบ 7 ชั่วโมงให้กลายเป็น UTC
 				scheduleTime = t
-
+				scheduleTime_7 = t.Add(-7 * time.Hour)
 				useCurrent = false
 				scheduleFlag = true
 			}
@@ -78,12 +79,12 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		INSERT INTO public."tix_cases"(
 		"orgId", "caseId", "caseVersion", "caseTypeId", "caseSTypeId", priority, "wfId", "versions", source, "deviceId",
 		"caseDetail", "statusId", "caseLat", "caseLon", "countryId", "provId", "distId", "caseDuration", "createdDate", "startedDate",
-		usercreate, "createdAt", "updatedAt", "createdBy", "updatedBy", "integration_ref_number", "caseSla", "phoneNoHide", "deviceMetaData", "scheduleFlag"
+		usercreate, "createdAt", "updatedAt", "createdBy", "updatedBy", "integration_ref_number", "caseSla", "phoneNoHide", "deviceMetaData", "scheduleFlag", "scheduleDate"
 	)
 	VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		$11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-		$21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $22, $23, $24, $25, $26, $27, $28
+		$21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $22, $23, $24, $25, $26, $27, $28, $29
 	)
 	RETURNING id;
 	`
@@ -100,7 +101,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		return fmt.Errorf("failed to get subtype for DeviceType: %s, WorkOrderType: %s", DeviceType, WorlkOrderType)
 	}
 
-	log.Print("=====sType==")
+	log.Print("=====Check==1")
 	log.Print(sType)
 
 	caseTypeId := sType.TypeID
@@ -127,6 +128,8 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	// 	Priority = 9
 	// }
 
+	log.Print("=====Check==2")
+
 	priorityMap := GetPriorityMap()
 	Priority := priorityMap[strings.ToUpper(workOrder.WorkOrderMetadata.Severity)]
 
@@ -140,7 +143,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	if err != nil {
 		log.Fatal("Failed to marshal device:", err)
 	}
-
+	log.Print("=====Check==3")
 	//======== Waiting Mapping Master data
 	area, err := utils.GetAreaByNamespace(ctx, conn, orgId, workOrder.Namespace)
 	if err != nil {
@@ -165,6 +168,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	if lon == "" {
 		lon = "0"
 	}
+	log.Print("=====Check==4")
 	//workOrder.WorkOrderType
 	createBy := workOrder.CreatedBy
 	if workOrder.CreatedBy == "" {
@@ -174,8 +178,8 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
 		lat, lon, countryId, provId, distId, caseDuration,
-		scheduleUTC, scheduleUTC, // createdDate, startedDate
-		username, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON), scheduleFlag,
+		scheduleUTC, scheduleTime_7, // createdDate, startedDate
+		username, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON), scheduleFlag, scheduleUTC,
 	).Scan(&id)
 
 	if err != nil {

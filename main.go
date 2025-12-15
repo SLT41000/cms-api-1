@@ -149,11 +149,11 @@ func main() {
 		}
 	}()
 
-	go func() {
-		if err := handler.CaseHistory(&gin.Context{}); err != nil {
-			log.Printf("CaseHistory error: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := handler.CaseHistory(&gin.Context{}); err != nil {
+	// 		log.Printf("CaseHistory error: %v", err)
+	// 	}
+	// }()
 
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)

@@ -177,7 +177,7 @@ type WorkFlowMetadata struct {
 	Status     *string   `json:"status"`
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
-	TotalSla   int       `json:"totalSla"`
+	TotalSla   *int      `json:"totalSla"`
 }
 
 type WorkFlowInsert struct {
