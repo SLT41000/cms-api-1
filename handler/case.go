@@ -1035,19 +1035,18 @@ func UpdateCase(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-	query := `UPDATE public."tix_cases"
-	SET "caseVersion"=$3, "referCaseId"=$4, "caseTypeId"=$5, "caseSTypeId"=$6,
-	 priority=$7, source=$8, "deviceId"=$9, "phoneNo"=$10, "phoneNoHide"=$11, "caseDetail"=$12, "extReceive"=$13,
-	  "statusId"=$14, "caseLat"=$15, "caseLon"=$16, "caselocAddr"=$17, "caselocAddrDecs"=$18, "countryId"=$19,
-	   "provId"=$20, "distId"=$21, "caseDuration"=$22, "createdDate"=$23, "commandedDate"=$24,
-	    "receivedDate"=$25, "arrivedDate"=$26, "closedDate"=$27, usercreate=$28, usercommand=$29, userreceive=$30,
-		 userarrive=$31, userclose=$32, "resId"=$33, "resDetail"=$34, "scheduleFlag"=$35 , "scheduleDate"=$36, "updatedAt"=$37,"updatedBy"=$38 ,"wfId"=$39
-	WHERE "caseId" = $1 AND "orgId"=$2`
+	query := `UPDATE public."tix_cases" SET "caseVersion"=$3,"referCaseId"=$4,"caseTypeId"=$5,
+	"caseSTypeId"=$6,priority=$7,source=$8,"deviceId"=$9,"phoneNo"=$10,
+	"phoneNoHide"=$11,"caseDetail"=$12,"extReceive"=$13,"statusId"=$14,"caseLat"=$15,
+	"caseLon"=$16,"caselocAddr"=$17,"caselocAddrDecs"=$18,"countryId"=$19,"provId"=$20,"distId"=$21,
+	"caseDuration"=$22,"commandedDate"=$23,"receivedDate"=$24,"arrivedDate"=$25,"closedDate"=$26,usercreate=$27,usercommand=$28,userreceive=$29,userarrive=$30
+	,userclose=$31,"resId"=$32,"resDetail"=$33,"scheduleFlag"=$34,"scheduleDate"=$35,"updatedAt"=$36,"updatedBy"=$37,"wfId"=$38 WHERE "caseId"=$1 AND "orgId"=$2`
+
 	_, err := conn.Exec(ctx, query,
 		id, orgId, req.CaseVersion, req.ReferCaseID, req.CaseTypeID, req.CaseSTypeID, req.Priority,
 		req.Source, req.DeviceID, req.PhoneNo, req.PhoneNoHide, req.CaseDetail, req.ExtReceive, req.StatusID,
 		req.CaseLat, req.CaseLon, req.CaseLocAddr, req.CaseLocAddrDecs, req.CountryID, req.ProvID, req.DistID,
-		req.CaseDuration, req.CreatedDate, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
+		req.CaseDuration, req.CommandedDate, req.ReceivedDate, req.ArrivedDate,
 		req.ClosedDate, req.UserCreate, req.UserCommand, req.UserReceive, req.UserArrive, req.UserClose, req.ResID,
 		req.ResDetail, req.ScheduleFlag, req.ScheduleDate, now, username, req.WfID)
 	logger.Debug("Update Case SQL Args",

@@ -89,7 +89,7 @@ type Um_User struct {
 type User_UnitInfo struct {
 	ID          string                    `json:"id"`
 	DisplayName string                    `json:"displayName"`
-	Title       string                    `json:"title"`
+	Title       *string                   `json:"title"`
 	FirstName   string                    `json:"firstName"`
 	MiddleName  *string                   `json:"middleName"`
 	LastName    string                    `json:"lastName"`

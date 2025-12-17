@@ -732,6 +732,11 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 		stName = "DONE"
 	}
 
+	if *caseData.ScheduleFlag {
+		log.Print("=====ScheduleDate===", caseData.ScheduleDate.String())
+		currentDate = ConvertDateSafe(caseData.ScheduleDate.String())
+	}
+
 	var uAssign interface{} = "" // default empty string
 	if req.UnitUser != "" {
 		user, err := utils.GetUserByUsername(ctx, conn, orgId.(string), req.UnitUser)

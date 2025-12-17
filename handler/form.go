@@ -2355,7 +2355,10 @@ func GetWorkFlow(c *gin.Context) {
 	defer cancel()
 	defer conn.Close(ctx)
 
-	query := `SELECT "section","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt",wf_definitions."totalSla"
+	// query := `SELECT "section","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt",wf_definitions."totalSla"
+	// FROM public.wf_definitions Inner join public.wf_nodes
+	// ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1 AND wf_nodes."orgId"=$2`
+	query := `SELECT "section","data",title,"desc",wf_definitions."versions",wf_definitions."createdAt",wf_definitions."updatedAt"
 	FROM public.wf_definitions Inner join public.wf_nodes
 	ON wf_definitions."wfId" = wf_nodes."wfId" WHERE wf_definitions."wfId" = $1 AND wf_nodes."orgId"=$2`
 
@@ -2391,8 +2394,10 @@ func GetWorkFlow(c *gin.Context) {
 		rowIndex++
 		var rawJSON []byte
 		var rowsType string
+		// err := rows.Scan(&rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
+		// 	&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt, &workflowMetaData.TotalSla)
 		err := rows.Scan(&rowsType, &rawJSON, &workflowMetaData.Title, &workflowMetaData.Desc,
-			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt, &workflowMetaData.TotalSla)
+			&workflowMetaData.Status, &workflowMetaData.CreatedAt, &workflowMetaData.UpdatedAt)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -2501,7 +2506,9 @@ func GetWorkFlowList(c *gin.Context) {
 	username := GetVariableFromToken(c, "username")
 	orgId := GetVariableFromToken(c, "orgId")
 	txtId := uuid.New().String()
-	query := `SELECT id, "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy", "totalSla"
+	// query := `SELECT id, "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy", "totalSla"
+	// FROM public.wf_definitions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
+	query := `SELECT id, "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy"
 	FROM public.wf_definitions WHERE "orgId"=$1 LIMIT $2 OFFSET $3`
 
 	var rows pgx.Rows
@@ -2530,8 +2537,10 @@ func GetWorkFlowList(c *gin.Context) {
 	var Data []model.WorkflowModel
 	found := false
 	for rows.Next() {
+		// err := rows.Scan(&Workflow.ID, &Workflow.OrgID, &Workflow.WfID, &Workflow.Title, &Workflow.Desc, &Workflow.Active,
+		// 	&Workflow.Publish, &Workflow.Locks, &Workflow.Versions, &Workflow.CreatedAt, &Workflow.UpdatedAt, &Workflow.CreatedBy, &Workflow.UpdatedBy, &Workflow.TotalSla)
 		err := rows.Scan(&Workflow.ID, &Workflow.OrgID, &Workflow.WfID, &Workflow.Title, &Workflow.Desc, &Workflow.Active,
-			&Workflow.Publish, &Workflow.Locks, &Workflow.Versions, &Workflow.CreatedAt, &Workflow.UpdatedAt, &Workflow.CreatedBy, &Workflow.UpdatedBy, &Workflow.TotalSla)
+			&Workflow.Publish, &Workflow.Locks, &Workflow.Versions, &Workflow.CreatedAt, &Workflow.UpdatedAt, &Workflow.CreatedBy, &Workflow.UpdatedBy)
 		if err != nil {
 			logger.Warn("Scan failed", zap.Error(err))
 			response := model.Response{
@@ -2796,13 +2805,18 @@ func WorkFlowInsert(c *gin.Context) {
 	}
 	uuid := uuid.New()
 	now := time.Now()
+	// query := `INSERT INTO public.wf_definitions(
+	// "orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy", "totalSla")
+	// VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 	query := `INSERT INTO public.wf_definitions(
-	"orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy", "totalSla")
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+	"orgId", "wfId", title, "desc", active, publish, locks, versions, "createdAt", "updatedAt", "createdBy", "updatedBy")
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
+	// _, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc,
+	// 	true, true, true, "draft", now, now, username, username, req.MetaData.TotalSla)
 	_, err := conn.Exec(ctx, query, orgId, uuid, req.MetaData.Title, req.MetaData.Desc,
-		true, true, true, "draft", now, now, username, username, req.MetaData.TotalSla)
+		true, true, true, "draft", now, now, username, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		response := model.Response{
@@ -2959,14 +2973,20 @@ func WorkFlowUpdate(c *gin.Context) {
 	orgId := GetVariableFromToken(c, "orgId")
 	now := time.Now()
 
+	// query := `UPDATE public.wf_definitions
+	// SET title=$3, "desc"=$4, active=$5, publish=$6, locks=$7, versions=$8, "updatedAt"=$9,"updatedBy"=$10,"totalSla"=$11
+	// 	WHERE "wfId"=$1 AND "orgId"=$2;`
 	query := `UPDATE public.wf_definitions
-	SET title=$3, "desc"=$4, active=$5, publish=$6, locks=$7, versions=$8, "updatedAt"=$9,"updatedBy"=$10,"totalSla"=$11
+	SET title=$3, "desc"=$4, active=$5, publish=$6, locks=$7, versions=$8, "updatedAt"=$9,"updatedBy"=$10
 		WHERE "wfId"=$1 AND "orgId"=$2;`
 
 	logger.Debug(`Query`, zap.String("query", query), zap.Any("req", req))
+	// _, err := conn.Exec(ctx, query,
+	// 	uuid, orgId, req.MetaData.Title, req.MetaData.Desc,
+	// 	true, true, true, "draft", now, username, req.MetaData.TotalSla)
 	_, err := conn.Exec(ctx, query,
 		uuid, orgId, req.MetaData.Title, req.MetaData.Desc,
-		true, true, true, "draft", now, username, req.MetaData.TotalSla)
+		true, true, true, "draft", now, username)
 	if err != nil {
 		logger.Warn("Query failed", zap.Error(err))
 		response := model.Response{
@@ -3105,7 +3125,7 @@ func WorkFlowUpdate(c *gin.Context) {
 		query,
 		orgId,                 // $1
 		uuid,                  // $2
-		req.MetaData.TotalSla, // $3
+		// req.MetaData.TotalSla, // $3
 		username,              // $4
 		now,                   // $5
 	)

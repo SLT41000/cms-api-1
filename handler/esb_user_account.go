@@ -312,17 +312,16 @@ func UpsertUserFromESB(type_ string, p model.ESBUserStaffPayload) error {
             "firstName" = $2,
             "lastName" = $3,
             "mobileNo" = $4,
-            "email" = $5,
-            "password" = $6,
-            "roleId" = $7::uuid,
-            "deptId" = $8::uuid,
-            "commId" = $9::uuid,
-            "stnId" = $10::uuid,
+            "email" = $5, 
+            "roleId" = $6::uuid,
+            "deptId" = $7::uuid,
+            "commId" = $8::uuid,
+            "stnId" = $9::uuid,
             "updatedAt" = NOW(),
-            "updatedBy" = $11
-        WHERE "orgId" = $12::uuid AND ("empId" = $13 OR "username" = $14)
+            "updatedBy" = $10
+        WHERE "orgId" = $11::uuid AND ("empId" = $12 OR "username" = $13)
     `,
-		displayName, p.FirstName, p.LastName, p.Phone, p.Email, encPassword,
+		displayName, p.FirstName, p.LastName, p.Phone, p.Email,
 		roleId, deptId, commId, stnId, username,
 		orgId, userCode, userUsername,
 	)
