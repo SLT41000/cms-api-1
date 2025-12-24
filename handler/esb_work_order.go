@@ -264,6 +264,11 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 	c.Set("username", username)
 	c.Set("orgId", orgId)
 
+	createBy := wo.CreatedBy
+	if wo.CreatedBy == "" {
+		createBy = username
+	}
+
 	if wo.Status == "NEW" {
 		return
 	}
@@ -272,7 +277,7 @@ func handleMessage_WO_Update(c *gin.Context, message []byte) {
 
 		resId := os.Getenv("RESULT_CLOSE")
 
-		err := CancelCaseCore(c, conn, orgId, username, wo.WorkOrderNumber, resId, "cancel from workorder integration")
+		err := CancelCaseCore(c, conn, orgId, createBy, wo.WorkOrderNumber, resId, "cancel from workorder integration")
 		if err != nil {
 			log.Printf("cancel failed: %v", err)
 		}

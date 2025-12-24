@@ -726,7 +726,7 @@ const docTemplate = `{
                 "operationId": "Update Case",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -6890,6 +6890,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users_with_skills_batch/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create User with skill (batch)",
+                "operationId": "Create User with skill (batch)",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserSkillBatchInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.UserSkillBatchResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users_with_skills/skillId/{skillId}": {
             "get": {
                 "security": [
@@ -7611,9 +7650,6 @@ const docTemplate = `{
             ],
             "properties": {
                 "arrivedDate": {
-                    "type": "string"
-                },
-                "assignUser": {
                     "type": "string"
                 },
                 "attachments": {
@@ -9320,6 +9356,29 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UserSkillBatchResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "insertedIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "insertedCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.ResponseDataFormList": {
             "type": "object",
             "properties": {
@@ -9745,6 +9804,26 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UserSkillBatchInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "skillIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
         "model.UserSkillUpdate": {
             "type": "object",
             "properties": {
@@ -9951,6 +10030,9 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "totalSla": {
+                    "type": "integer"
+                },
                 "updatedAt": {
                     "type": "string"
                 }
@@ -9986,7 +10068,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.0.2",
+	Version:          "0.0.7.2",
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{"http", "https"},

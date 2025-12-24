@@ -185,8 +185,8 @@ func CaseResponseAndCurrentStageInsert(conn *pgx.Conn, ctx context.Context, c *g
 	log.Print(caseData.ScheduleFlag)
 	log.Print(caseData.StatusID)
 	log.Print(createdAt)
-	// 1. Insert responder
 
+	// 1. Insert responder
 	_, err = conn.Exec(ctx, `
     INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
     VALUES ($1,$2,$3,$4,$5,$6,$7)

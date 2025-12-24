@@ -254,6 +254,23 @@ type UserSkillInsert struct {
 	Active   bool   `json:"active"`
 }
 
+// Batch skill insert
+type UserSkillBatchInsert struct {
+    // OrgID string   `json:"orgId"`
+    UserName string   `json:"userName" binding:"required"`
+    SkillIDs []string `json:"skillIds" binding:"required"`
+    Active   bool     `json:"active" example:"true"`
+}
+
+// Response with inserted IDs
+type UserSkillBatchResponse struct {
+    Status        string `json:"status"`
+    Msg           string `json:"msg"`
+    Desc          string `json:"desc"`
+    InsertedIDs   []int  `json:"insertedIds,omitempty"`
+    InsertedCount int    `json:"insertedCount,omitempty"`
+}
+
 type UserSkillUpdate struct {
 	SkillID string `json:"skillId"`
 	Active  bool   `json:"active"`

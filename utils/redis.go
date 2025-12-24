@@ -2,8 +2,10 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"mainPackage/model"
 	"os"
 	"strconv"
 	"time"
@@ -315,4 +317,94 @@ func OwnerUserSkillsDel(key string) error {
 	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_USER_SKILL"), key)
 	log.Print("Deleting:", name)
 	return Rdb.Del(context.Background(), name).Err()
+}
+
+// ####====Case Re Sync=====
+func CaseSyncSet(key string, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CASE_SYNC"), key)
+	log.Print(name)
+	//expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, 0).Err()
+}
+
+func CaseSyncGet(key string) (string, error) {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CASE_SYNC"), key)
+	return RedisGet(name)
+}
+
+func CaseSyncDel(key string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CASE_SYNC"), key)
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+func CaseSyncTempSet(key string, value string) error {
+	name := fmt.Sprintf("%s:%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_CASE_SYNC_TEMP"), key)
+	log.Print(name)
+	//expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, 0).Err()
+}
+
+// ####====Schedule Case Sync=====
+func OwnerCaseSyncSet(value string) error {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_CASE_SYNC"))
+	log.Print(name)
+	//expiration := getExpire()
+	return Rdb.Set(context.Background(), name, value, 0).Err()
+}
+
+func OwnerCaseSyncGet() (string, error) {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_CASE_SYNC"))
+	return RedisGet(name)
+}
+
+func OwnerCaseSyncDel() error {
+	name := fmt.Sprintf("%s:%s", os.Getenv("CACHE_PREFIX"), os.Getenv("CACHE_OWNER_CASE_SYNC"))
+	log.Print("Deleting:", name)
+	return Rdb.Del(context.Background(), name).Err()
+}
+
+// Get All Case Sync
+func GetAllCaseSync(ctx context.Context) ([]model.CaseSyncItem, error) {
+	var cursor uint64
+	var result []model.CaseSyncItem
+
+	if Rdb == nil {
+		return nil, errors.New("redis client not initialized")
+	}
+
+	pattern := fmt.Sprintf(
+		"%s:%s:*",
+		os.Getenv("CACHE_PREFIX"),
+		os.Getenv("CACHE_CASE_SYNC"),
+	)
+	log.Print("SCAN pattern:", pattern)
+
+	for {
+		keys, nextCursor, err := Rdb.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, key := range keys {
+			val, err := Rdb.Get(ctx, key).Result()
+			if err == redis.Nil {
+				continue // key หายระหว่าง scan
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, model.CaseSyncItem{
+				Key:   key,
+				Value: val,
+			})
+		}
+
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return result, nil
 }

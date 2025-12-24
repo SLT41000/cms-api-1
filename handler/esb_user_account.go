@@ -76,6 +76,9 @@ func ESB_USER_CREATE(type_ string) error {
 		}
 	}()
 
+	// decryptedPassword, err := encrypt("chiranan")
+	// log.Print("======>" + decryptedPassword)
+
 	log.Printf("Kafka CREATE %s() started. Listening for messages...%v", type_, TOPIC)
 	// username_ := os.Getenv("INTEGRATION_USR")
 	// orgId_ := os.Getenv("INTEGRATION_ORG_ID")
@@ -375,9 +378,16 @@ func UpsertUserFromESB(type_ string, p model.ESBUserStaffPayload) error {
 		return fmt.Errorf("failed to create unit: %w", err)
 	}
 
-	err = CheckArea(ctx, conn, orgId, p, username)
-	if err != nil {
-		return fmt.Errorf("failed to create unit: %w", err)
+	if type_ == "ADMIN" {
+		err = CheckAreaAll(ctx, conn, orgId, p, username)
+		if err != nil {
+			return fmt.Errorf("failed to create Area: %w", err)
+		}
+	} else {
+		err = CheckArea(ctx, conn, orgId, p, username)
+		if err != nil {
+			return fmt.Errorf("failed to create Area: %w", err)
+		}
 	}
 
 	return nil
@@ -633,6 +643,41 @@ func CheckArea(ctx context.Context, conn *pgx.Conn, orgId string, payload model.
 	return nil
 }
 
+func CheckAreaAll(ctx context.Context, conn *pgx.Conn, orgId string, payload model.ESBUserStaffPayload, username string) error {
+	log.Printf("CheckArea employee for empId=%s in orgId=%s", payload.UserCode, orgId)
+	//empId := payload.UserCode
+	//empId = "CDC005"
+	res, err := utils.GetCountryProvinceDistrictsOrLoad(ctx, conn, orgId)
+	if err != nil {
+		log.Printf("❌ employee : %v", err)
+	} else {
+		log.Printf("✅ employee : %v", res)
+	}
+
+	namespaces := ExtractNamespaces(res)
+
+	res_ := map[string]interface{}{
+		"status": 200,
+		"data": map[string]interface{}{
+			"success": true,
+			"message": "SUCCESS",
+			"payload": map[string]interface{}{
+				"skills":    []map[string]string{},
+				"namespace": namespaces, // 🔥 dynamic from res
+			},
+		},
+	}
+	b, _ := json.MarshalIndent(res_, "", "  ")
+	log.Println(string(b))
+
+	SaveUserAreas(ctx, conn, orgId, payload, string(b), username)
+
+	//SaveUserSkills(ctx, conn, orgId, payload, res, username)
+	SaveUserSkills(ctx, conn, orgId, payload.UserCode, string(b), username)
+
+	return nil
+}
+
 func SaveUserAreas(ctx context.Context, conn *pgx.Conn, orgId string, payload model.ESBUserStaffPayload, apiResponse string, createdBy string) error {
 	log.Print("=====SaveUserAreas====")
 	empId := payload.UserCode
@@ -833,4 +878,20 @@ func LoadUserSkills(ctx context.Context, conn *pgx.Conn, orgId, username string)
 		userSkills = append(userSkills, skillId)
 	}
 	return userSkills, nil
+}
+
+func ExtractNamespaces(res []model.AreaDistrictWithDetails) []string {
+	nsMap := make(map[string]struct{})
+	var namespaces []string
+
+	for _, r := range res {
+		if *r.NameSpace == "" {
+			continue
+		}
+		if _, ok := nsMap[*r.NameSpace]; !ok {
+			nsMap[*r.NameSpace] = struct{}{}
+			namespaces = append(namespaces, *r.NameSpace)
+		}
+	}
+	return namespaces
 }

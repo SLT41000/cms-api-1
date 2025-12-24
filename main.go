@@ -1,5 +1,5 @@
 // @title CMS API
-// @version 0.0.3
+// @version 0.0.7.2
 // @termsOfService http://somewhere.com/
 // @BasePath /
 // @contact.name API Support
@@ -149,11 +149,17 @@ func main() {
 		}
 	}()
 
-	// go func() {
-	// 	if err := handler.CaseHistory(&gin.Context{}); err != nil {
-	// 		log.Printf("CaseHistory error: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := handler.CaseHistory(&gin.Context{}); err != nil {
+			log.Printf("CaseHistory error: %v", err)
+		}
+	}()
+
+	go func() {
+		if err := handler.ReSyncCase(&gin.Context{}); err != nil {
+			log.Printf("SummaryReport error: %v", err)
+		}
+	}()
 
 	store := memory.NewStore()
 	instance := limiter.New(store, rate)
@@ -176,6 +182,7 @@ func main() {
 			"https://welcome-cms-qa.metthier.ai:55000",
 			"http://localhost:3000",  // bmta dev
 			"https://localhost:3000", // bmta dev
+			"https://mettriq-cms.bangkok.go.th",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
@@ -314,6 +321,7 @@ func main() {
 		v1.GET("/users_with_skills/skillId/:skillId", handler.GetUserWithSkillsBySkillId)
 		v1.GET("/users_with_skills/username/:username", handler.GetUserWithSkillsByUsername)
 		v1.POST("/users_with_skills/add", handler.InsertUserWithSkills)
+		v1.POST("/users_with_skills_batch/add", handler.InsertUserWithSkillsBatch)
 		v1.PATCH("/users_with_skills/:id", handler.UpdateUserWithSkills)
 		v1.DELETE("/users_with_skills/:id", handler.DeleteUserWithSkills)
 		v1.GET("/users_with_contacts", handler.GetUserWithContacts)

@@ -83,7 +83,7 @@ func genCaseID() string {
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case [get]
 func ListCase(c *gin.Context) {
-	logger := utils.GetLog()
+	//logger := utils.GetLog()
 	conn, ctx, cancel := utils.ConnectDB()
 	if conn == nil {
 		return
@@ -92,6 +92,7 @@ func ListCase(c *gin.Context) {
 	defer conn.Close(ctx)
 
 	orgId := GetVariableFromToken(c, "orgId")
+	username := GetVariableFromToken(c, "username")
 	start, _ := strconv.Atoi(c.DefaultQuery("start", "0"))
 	length, _ := strconv.Atoi(c.DefaultQuery("length", "100"))
 
@@ -106,6 +107,266 @@ func ListCase(c *gin.Context) {
 	provId := c.Query("provId")
 	distId := c.Query("distId")
 	createBy := c.Query("createBy")
+
+	// Load user info including dist list
+	userInfo, err := utils.GetAreaByUsernameOrLoad(c, conn, orgId.(string), username.(string))
+	if err != nil {
+		return
+	}
+	distList := *userInfo.DistIdLists // []string
+
+	// Order by support
+	orderByParam := c.DefaultQuery("orderBy", "createdAt")
+	directionParam := strings.ToUpper(c.DefaultQuery("direction", "DESC"))
+
+	orderByFields := strings.Split(orderByParam, ",")
+	directionFields := strings.Split(directionParam, ",")
+
+	allowedOrderFields := map[string]bool{
+		"createdAt":   true,
+		"priority":    true,
+		"caseId":      true,
+		"updatedAt":   true,
+		"caseTypeId":  true,
+		"caseSTypeId": true,
+		"statusId":    true,
+	}
+
+	var orderClauses []string
+	for i, field := range orderByFields {
+		f := strings.TrimSpace(field)
+		if !allowedOrderFields[f] {
+			continue
+		}
+
+		dir := "ASC"
+		if i < len(directionFields) && strings.ToUpper(strings.TrimSpace(directionFields[i])) == "DESC" {
+			dir = "DESC"
+		}
+
+		orderClauses = append(orderClauses, fmt.Sprintf(`"%s" %s`, f, dir))
+	}
+
+	if len(orderClauses) == 0 {
+		orderClauses = append(orderClauses, `"createdAt" DESC`)
+	}
+
+	orderBySQL := " ORDER BY " + strings.Join(orderClauses, ", ")
+
+	// Base Query
+	baseQuery := `
+	FROM public.tix_cases
+	WHERE "orgId" = $1
+	`
+	params := []interface{}{orgId}
+	paramIndex := 2
+
+	// Multi-value filters
+	addMultiValueFilter := func(field, values string) {
+		if values == "" {
+			return
+		}
+		list := strings.Split(values, ",")
+		var placeholders []string
+		for _, v := range list {
+			v = strings.TrimSpace(v)
+			if v == "" {
+				continue
+			}
+			placeholders = append(placeholders, fmt.Sprintf("$%d", paramIndex))
+			params = append(params, v)
+			paramIndex++
+		}
+		if len(placeholders) > 0 {
+			baseQuery += fmt.Sprintf(` AND "%s" IN (%s)`, field, strings.Join(placeholders, ","))
+		}
+	}
+
+	// Filtering logic
+	if caseId != "" {
+		baseQuery += fmt.Sprintf(` AND "caseId" ILIKE $%d`, paramIndex)
+		params = append(params, "%"+caseId+"%")
+		paramIndex++
+	}
+
+	addMultiValueFilter("caseTypeId", caseType)
+	addMultiValueFilter("caseSTypeId", caseSType)
+	addMultiValueFilter("statusId", statusId)
+	addMultiValueFilter("countryId", countryId)
+	addMultiValueFilter("provId", provId)
+
+	// ========== NEW DIST FILTERING WITH INTERSECT ==========
+	var finalDistFilter []string
+
+	if distId == "" {
+		finalDistFilter = distList
+	} else {
+		requestDist := strings.Split(distId, ",")
+		requestMap := map[string]bool{}
+		for _, d := range requestDist {
+			requestMap[strings.TrimSpace(d)] = true
+		}
+
+		for _, ud := range distList {
+			if requestMap[ud] {
+				finalDistFilter = append(finalDistFilter, ud)
+			}
+		}
+	}
+
+	//District as Null
+	finalDistFilter = append(finalDistFilter, "")
+
+	// ถ้าไม่มีสิทธิ์ดูอะไรเลย
+	if len(finalDistFilter) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"status":        "0",
+			"msg":           "Success",
+			"data":          []model.Case_{},
+			"desc":          "",
+			"currentPage":   1,
+			"pageSize":      length,
+			"totalFiltered": 0,
+			"totalPage":     1,
+			"totalRecords":  0,
+		})
+		return
+	}
+
+	var distPlaceholders []string
+	for _, v := range finalDistFilter {
+		distPlaceholders = append(distPlaceholders, fmt.Sprintf("$%d", paramIndex))
+		params = append(params, v)
+		paramIndex++
+	}
+	baseQuery += fmt.Sprintf(` AND "distId" IN (%s)`, strings.Join(distPlaceholders, ","))
+
+	// More filters
+	if detail != "" {
+		baseQuery += fmt.Sprintf(` OR "caseDetail" ILIKE $%d`, paramIndex)
+		params = append(params, "%"+detail+"%")
+		paramIndex++
+	}
+	if startDate != "" {
+		baseQuery += fmt.Sprintf(` AND "createdAt" >= $%d`, paramIndex)
+		params = append(params, startDate)
+		paramIndex++
+	}
+	if endDate != "" {
+		baseQuery += fmt.Sprintf(` AND "createdAt" <= $%d`, paramIndex)
+		params = append(params, endDate)
+		paramIndex++
+	}
+	if createBy != "" {
+		baseQuery += fmt.Sprintf(` OR "createdBy" = $%d`, paramIndex)
+		params = append(params, createBy)
+		paramIndex++
+	}
+
+	// Total count
+	var totalRecords, totalFiltered int
+	_ = conn.QueryRow(ctx,
+		`SELECT COUNT(*) FROM public.tix_cases WHERE "orgId" = $1`, orgId,
+	).Scan(&totalRecords)
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	_ = conn.QueryRow(ctx, countQuery, params...).Scan(&totalFiltered)
+
+	// Pagination
+	currentPage := 1
+	if length > 0 {
+		currentPage = (start / length) + 1
+	}
+	totalPage := 1
+	if length > 0 && totalFiltered > 0 {
+		totalPage = int(math.Ceil(float64(totalFiltered) / float64(length)))
+	}
+
+	// Main Query
+	query := `
+	SELECT  "caseId", "caseTypeId", "caseSTypeId",
+		priority, "caseDetail",
+		"statusId", "caselocAddr", "caselocAddrDecs", "createdDate",
+		"createdAt", "startedDate", usercreate,
+		"createdBy", "caseSla"
+	` + baseQuery + orderBySQL + fmt.Sprintf(` LIMIT $%d OFFSET $%d`, paramIndex, paramIndex+1)
+
+	params = append(params, length, start)
+
+	rows, err := conn.Query(ctx, query, params...)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status: "-1", Msg: "Failure", Desc: err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var caseLists []model.Case_
+	for rows.Next() {
+		var cusCase model.Case_
+		if err := rows.Scan(
+			&cusCase.CaseID, &cusCase.CaseTypeID, &cusCase.CaseSTypeID,
+			&cusCase.Priority, &cusCase.CaseDetail,
+			&cusCase.StatusID,
+			&cusCase.CaseLocAddr, &cusCase.CaseLocAddrDecs, &cusCase.CreatedDate,
+			&cusCase.CreatedAt, &cusCase.StartedDate,
+			&cusCase.UserCreate, &cusCase.CreatedBy, &cusCase.CaseSLA,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, model.Response{
+				Status: "-1", Msg: "Failed", Desc: err.Error(),
+			})
+			return
+		}
+		caseLists = append(caseLists, cusCase)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":        "0",
+		"msg":           "Success",
+		"data":          caseLists,
+		"desc":          "",
+		"currentPage":   currentPage,
+		"pageSize":      length,
+		"totalFiltered": totalFiltered,
+		"totalPage":     totalPage,
+		"totalRecords":  totalRecords,
+	})
+}
+
+func ListCase_bk(c *gin.Context) {
+	logger := utils.GetLog()
+	conn, ctx, cancel := utils.ConnectDB()
+	if conn == nil {
+		return
+	}
+	defer cancel()
+	defer conn.Close(ctx)
+
+	orgId := GetVariableFromToken(c, "orgId")
+	//username := GetVariableFromToken(c, "username")
+	start, _ := strconv.Atoi(c.DefaultQuery("start", "0"))
+	length, _ := strconv.Atoi(c.DefaultQuery("length", "100"))
+
+	caseId := c.Query("caseId")
+	caseType := c.Query("caseType")
+	caseSType := c.Query("caseSType")
+	statusId := c.Query("statusId")
+	detail := c.Query("detail")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	countryId := c.Query("countryId")
+	provId := c.Query("provId")
+	distId := c.Query("distId")
+	createBy := c.Query("createBy")
+
+	// 1) Load user info + distId list
+	// userInfo, err := utils.GetAreaByUsernameOrLoad(c, conn, orgId.(string), username.(string))
+	// if err != nil {
+	// 	return
+	// }
+
+	// distList := userInfo.DistIdLists // []string
 
 	// ✅ Multiple orderBy and direction support
 	orderByParam := c.DefaultQuery("orderBy", "createdAt")
@@ -830,7 +1091,7 @@ func InsertCase(c *gin.Context) {
 	}
 
 	err = conn.QueryRow(ctx, query, args...).Scan(&id)
-
+	log.Print(err)
 	if err != nil {
 		// log.Printf("Insert failed: %v", err)
 		response := model.Response{
@@ -852,7 +1113,18 @@ func InsertCase(c *gin.Context) {
 	req.CaseId = &caseId
 
 	if req.PhoneNo == nil || *req.PhoneNo != os.Getenv("FOR_LOAD_TEST") {
-
+		log.Print("Insert Case Sync")
+		//Insert Case Sync
+		req_ := model.OwnerCaseSyncReq{
+			CaseId: caseId,
+			Type:   "create",
+			Count:  0,
+		}
+		b, err := json.Marshal(req_)
+		if err != nil {
+			logger.Warn("Insert failed", zap.Error(err))
+		}
+		utils.CaseSyncSet(caseId, string(b))
 		CreateBusKafka_WO(c, conn, req, sType, uuid.String(), os.Getenv("INTEGRATION_SOURCE"), username.(string))
 	}
 
@@ -1005,7 +1277,7 @@ func InsertCase(c *gin.Context) {
 // @accept json
 // @produce json
 // @tags Cases
-// @Param id path int true "id"
+// @Param id path string true "id"
 // @param Body body model.CaseUpdate true "Update data"
 // @response 200 {object} model.Response "OK - Request successful"
 // @Router /api/v1/case/{id} [patch]

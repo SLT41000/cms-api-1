@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"strings"
 	"crypto/subtle"
 	"mainPackage/model"
 	"mainPackage/utils"
@@ -1416,6 +1418,226 @@ func InsertUserWithSkills(c *gin.Context) {
 	//=======AUDIT_END=====//
 	c.JSON(http.StatusOK, response)
 
+}
+
+// @summary Update User Skills (Replace existing skills)
+// @id Update User Skills Batch
+// @security ApiKeyAuth
+// @tags User
+// @accept json
+// @produce json
+// @param Body body model.UserSkillBatchInsert true "Update Skills Data"
+// @success 200 {object} model.UserSkillBatchResponse "OK - Request successful"
+// @failure 400 {object} model.Response "Bad Request"
+// @failure 500 {object} model.Response "Internal Server Error"
+// @Router /api/v1/users_with_skills_batch/update [post]
+func InsertUserWithSkillsBatch(c *gin.Context) {
+    logger := utils.GetLog()
+    conn, ctx, cancel := utils.ConnectDB()
+    if conn == nil {
+        return
+    }
+    defer cancel()
+    defer conn.Close(ctx)
+    
+    now := time.Now()
+    username := GetVariableFromToken(c, "username")
+    orgId := GetVariableFromToken(c, "orgId")
+    txtId := uuid.New().String()
+    
+    var req model.UserSkillBatchInsert
+    if err := c.ShouldBindJSON(&req); err != nil {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   err.Error(),
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            c, conn, orgId.(string), username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusBadRequest, response)
+        logger.Warn("Batch insert failed - invalid request", zap.Error(err))
+        return
+    }
+
+    // Validate that skillIds is not empty
+    if len(req.SkillIDs) == 0 {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   "skillIds cannot be empty",
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            c, conn, orgId.(string), username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "update", -1, now, GetQueryParams(c), response, "Failed : skillIds is empty",
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusBadRequest, response)
+        logger.Warn("Batch insert failed - empty skillIds")
+        return
+    }
+
+    // Start transaction
+    tx, err := conn.Begin(ctx)
+    if err != nil {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   "Failed to start transaction: " + err.Error(),
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            c, conn, orgId.(string), username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "update", -1, now, GetQueryParams(c), response, "Failed : "+err.Error(),
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusInternalServerError, response)
+        logger.Error("Failed to start transaction", zap.Error(err))
+        return
+    }
+    defer tx.Rollback(ctx)
+
+	// FIXED: Use orgId from token instead of req.OrgID
+    orgIdStr := orgId.(string)
+
+    // Step 1: Delete existing skills for this user
+    deleteQuery := `
+        DELETE FROM public."um_user_with_skills"
+        WHERE "orgId" = $1 AND "userName" = $2
+    `
+    
+    // cmdTag, err := tx.Exec(ctx, deleteQuery, req.OrgID, req.UserName)
+	cmdTag, err := tx.Exec(ctx, deleteQuery, orgIdStr, req.UserName)
+    if err != nil {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   "Failed to delete existing skills: " + err.Error(),
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            // c, conn, orgId.(string), username.(string),
+			c, conn, orgIdStr, username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "delete", -1, now, GetQueryParams(c), response, "Failed to delete old skills: "+err.Error(),
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusInternalServerError, response)
+        logger.Error("Failed to delete existing skills", zap.Error(err))
+        return
+    }
+    
+    deletedCount := cmdTag.RowsAffected()
+    logger.Info("Deleted existing skills", 
+        zap.Int64("count", deletedCount), 
+        zap.String("userName", req.UserName),
+        zap.String("orgId", orgIdStr))
+
+    // Step 2: Build dynamic query with multiple VALUES for insert
+    valueStrings := make([]string, 0, len(req.SkillIDs))
+    valueArgs := make([]interface{}, 0, len(req.SkillIDs)*8)
+    
+    for i, skillID := range req.SkillIDs {
+        offset := i * 8
+        valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+            offset+1, offset+2, offset+3, offset+4, offset+5, offset+6, offset+7, offset+8))
+        
+        // valueArgs = append(valueArgs, req.OrgID, req.UserName, skillID, req.Active, now, now, username, username)
+		// FIXED: Use orgIdStr instead of req.OrgID
+        valueArgs = append(valueArgs, orgIdStr, req.UserName, skillID, req.Active, now, now, username, username)
+    }
+
+    insertQuery := fmt.Sprintf(`
+        INSERT INTO public."um_user_with_skills"(
+        "orgId", "userName", "skillId", active, "createdAt", "updatedAt", "createdBy", "updatedBy")
+        VALUES %s
+        RETURNING id;
+    `, strings.Join(valueStrings, ","))
+
+    // Step 3: Execute batch insert
+    rows, err := tx.Query(ctx, insertQuery, valueArgs...)
+    if err != nil {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   "Failed to insert new skills: " + err.Error(),
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            // c, conn, orgId.(string), username.(string),
+			c, conn, orgIdStr, username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "insert", -1, now, GetQueryParams(c), response, "Failed to insert new skills: "+err.Error(),
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusInternalServerError, response)
+        logger.Error("Batch insert failed", zap.Error(err))
+        return
+    }
+    defer rows.Close()
+
+    insertedIDs := make([]int, 0, len(req.SkillIDs))
+    for rows.Next() {
+        var id int
+        if err := rows.Scan(&id); err != nil {
+            logger.Error("Failed to scan ID", zap.Error(err))
+            continue
+        }
+        insertedIDs = append(insertedIDs, id)
+    }
+
+    // Step 4: Commit transaction
+    if err := tx.Commit(ctx); err != nil {
+        response := model.Response{
+            Status: "-1",
+            Msg:    "Failure",
+            Desc:   "Failed to commit transaction: " + err.Error(),
+        }
+        //=======AUDIT_START=====//
+        _ = utils.InsertAuditLogs(
+            // c, conn, orgId.(string), username.(string),
+			c, conn, orgIdStr, username.(string),
+            txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+            "update", -1, now, GetQueryParams(c), response, "Failed to commit: "+err.Error(),
+        )
+        //=======AUDIT_END=====//
+        c.JSON(http.StatusInternalServerError, response)
+        logger.Error("Failed to commit transaction", zap.Error(err))
+        return
+    }
+
+    // Success response
+    response := model.UserSkillBatchResponse{
+        Status:        "0",
+        Msg:           "Success",
+        Desc:          fmt.Sprintf("Successfully updated user skills. Deleted: %d, Inserted: %d", deletedCount, len(insertedIDs)),
+        InsertedIDs:   insertedIDs,
+        InsertedCount: len(insertedIDs),
+    }
+    
+    //=======AUDIT_START=====//
+    _ = utils.InsertAuditLogs(
+        // c, conn, orgId.(string), username.(string),
+		c, conn, orgIdStr, username.(string),
+        txtId, "", "um_user", "InsertUserWithSkillsBatch", "",
+        "update", 0, now, GetQueryParams(c), response, 
+        fmt.Sprintf("Updated user skills. Deleted: %d, Inserted: %d skills.", deletedCount, len(insertedIDs)),
+    )
+    //=======AUDIT_END=====//
+    c.JSON(http.StatusOK, response)
+    
+    logger.Info("Successfully updated user skills",
+        zap.String("userName", req.UserName),
+		zap.String("orgId", orgIdStr),
+        zap.Int64("deleted", deletedCount),
+        zap.Int("inserted", len(insertedIDs)))
 }
 
 // @summary Update User with skill

@@ -427,3 +427,28 @@ type Case_ struct {
 	CreatedBy       *string    `json:"createdBy"`
 	CaseSLA         *int       `json:"caseSla"`
 }
+
+type OwnerCaseSyncReq struct {
+	CaseId  string                   `json:"caseId"`
+	Type    string                   `json:"type"`
+	Count   int                      `json:"count"`
+	Result  *WorkOrderCreateResponse `json:"result,omitempty"`
+	Message *string                  `json:"message"`
+}
+
+type CaseSyncItem struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type WorkOrderCreateResponse struct {
+	Status  int                  `json:"status"`
+	Message string               `json:"message"`
+	Data    *WorkOrderCreateData `json:"data,omitempty"`
+}
+
+type WorkOrderCreateData struct {
+	Success         bool   `json:"success"`
+	Message         string `json:"message"`
+	WorkOrderNumber string `json:"work_order_number"`
+}

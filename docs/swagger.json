@@ -16,7 +16,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.0.2"
+        "version": "0.0.7.2"
     },
     "basePath": "/",
     "paths": {
@@ -722,7 +722,7 @@
                 "operationId": "Update Case",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "id",
                         "name": "id",
                         "in": "path",
@@ -6886,6 +6886,45 @@
                 }
             }
         },
+        "/api/v1/users_with_skills_batch/add": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create User with skill (batch)",
+                "operationId": "Create User with skill (batch)",
+                "parameters": [
+                    {
+                        "description": "Create Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserSkillBatchInsert"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Request successful",
+                        "schema": {
+                            "$ref": "#/definitions/model.UserSkillBatchResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users_with_skills/skillId/{skillId}": {
             "get": {
                 "security": [
@@ -7607,9 +7646,6 @@
             ],
             "properties": {
                 "arrivedDate": {
-                    "type": "string"
-                },
-                "assignUser": {
                     "type": "string"
                 },
                 "attachments": {
@@ -9316,6 +9352,29 @@
                 }
             }
         },
+        "model.UserSkillBatchResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "insertedIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "insertedCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.ResponseDataFormList": {
             "type": "object",
             "properties": {
@@ -9741,6 +9800,26 @@
                 }
             }
         },
+        "model.UserSkillBatchInsert": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "skillIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
         "model.UserSkillUpdate": {
             "type": "object",
             "properties": {
@@ -9946,6 +10025,9 @@
                 },
                 "title": {
                     "type": "string"
+                },
+                "totalSla": {
+                    "type": "integer"
                 },
                 "updatedAt": {
                     "type": "string"

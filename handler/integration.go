@@ -41,7 +41,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 
 	useCurrent := true
 	var scheduleTime time.Time
-	var scheduleTime_7 time.Time
+	///var scheduleTime_7 time.Time
 	scheduleFlag := false
 
 	loc, err := time.LoadLocation("Asia/Bangkok")
@@ -60,7 +60,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 			if t.After(time.Now().In(loc)) {
 				// ลบ 7 ชั่วโมงให้กลายเป็น UTC
 				scheduleTime = t
-				scheduleTime_7 = t.Add(-7 * time.Hour)
+				//scheduleTime_7 = t.Add(-7 * time.Hour)
 				useCurrent = false
 				scheduleFlag = true
 			}
@@ -174,12 +174,14 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	if workOrder.CreatedBy == "" {
 		createBy = username
 	}
+	ctx.Set("username", createBy)
+
 	err = conn.QueryRow(ctx, query,
 		orgId, caseId, "publish", caseTypeId, caseSTypeId, Priority, wfId, wfVersion,
 		source, workOrder.DeviceMetadata.DeviceID, workOrder.WorkOrderMetadata.Description, statusId,
 		lat, lon, countryId, provId, distId, caseDuration,
-		scheduleUTC, scheduleTime_7, // createdDate, startedDate
-		username, createBy, username, IntegrationRefNumber, caseSla, true, string(deviceJSON), scheduleFlag, scheduleUTC,
+		scheduleUTC, scheduleUTC, // createdDate, startedDate
+		username, createBy, createBy, IntegrationRefNumber, caseSla, true, string(deviceJSON), scheduleFlag, scheduleUTC,
 	).Scan(&id)
 
 	if err != nil {
@@ -204,7 +206,7 @@ func IntegrateCreateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	_, err = conn.Exec(ctx, `
 	    INSERT INTO tix_case_responders ("orgId","caseId","unitId","userOwner","statusId","createdAt","createdBy")
 	    VALUES ($1,$2,$3,$4,$5,$6,$7)
-	`, orgId, caseId, "case", username, statusId, scheduleUTC, username)
+	`, orgId, caseId, "case", createBy, statusId, scheduleUTC, createBy)
 	if err != nil {
 		return err
 	}
@@ -413,7 +415,7 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 	query := `
 	SELECT 
 		"caseId", "integration_ref_number", "distId", "statusId", "caseTypeId", "caseSTypeId", "priority", "caseLat", "caseLon", "caseDetail", "deviceMetaData", "wfId",
-		"countryId", "provId", "distId", "createdDate", "scheduleFlag", "scheduleDate"
+		"countryId", "provId", "distId", "createdDate", "scheduleFlag", "scheduleDate", "createdBy"
 	FROM public."tix_cases"
 	WHERE "orgId" = $1 AND "caseId" = $2
 	LIMIT 1;
@@ -441,6 +443,7 @@ func GetCaseByID(ctx context.Context, conn *pgx.Conn, orgId string, caseId strin
 		&c.CreatedDate,
 		&c.ScheduleFlag,
 		&c.ScheduleDate,
+		&c.CreatedBy,
 	)
 
 	// ✅ case not found
@@ -507,6 +510,13 @@ func IntegrateUpdateCaseFromWorkOrder(ctx *gin.Context, conn *pgx.Conn, workOrde
 	// }
 
 	// === UPDATED SQL QUERY ===
+
+	createBy := workOrder.CreatedBy
+	if workOrder.CreatedBy == "" {
+		createBy = username
+	}
+	ctx.Set("username", createBy)
+
 	query := `
 UPDATE public."tix_cases"
 SET 
@@ -534,7 +544,7 @@ WHERE
 		workOrder.WorkOrderMetadata.Description, // $4  caseDetail
 		statusId,                                // $5  statusId
 		now,                                     // $6  updatedAt
-		username,                                // $7  updatedBy
+		createBy,                                // $7  updatedBy
 		workOrder.WorkOrderRefNumber,            // $8  integration_ref_number
 		string(deviceJSON),                      // $9  deviceMetaData
 		orgId,                                   // $10 orgId
@@ -698,6 +708,8 @@ func CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.CaseInsert, s
 		return err
 	}
 
+	//Delete Case Sync
+	utils.CaseSyncDel(*req.CaseId)
 	log.Print(res)
 
 	return nil
@@ -826,6 +838,7 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	data := map[string]interface{}{
 		"work_order_number":     req.CaseId,
 		"work_order_ref_number": caseData.IntegrationRefNumber,
+		"work_order_type":       sType.MWorkOrderType,
 		"work_order_metadata": map[string]interface{}{
 			"title":       sType.TH,
 			"description": caseData.CaseDetail,
@@ -866,6 +879,189 @@ func UpdateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRe
 	log.Print(res)
 
 	return nil
+}
+
+func Re_CreateBusKafka_WO(ctx *gin.Context, conn *pgx.Conn, req model.UpdateStageRequest, orgId string) (*model.WorkOrderCreateResponse, error) {
+	log.Print("=====Re_CreateBusKafka_WO===")
+	//currentDate := time.Now().Format("2006-01-02")
+	log.Print(ctx)
+	log.Print(orgId)
+	log.Print(req)
+	caseData, err := GetCaseByID(ctx, conn, orgId, req.CaseId)
+	if err != nil {
+		log.Printf("Error getting case: %v", err)
+	}
+	if caseData == nil {
+		return nil, fmt.Errorf("Empty Case case: %s", req.CaseId)
+	}
+	log.Print("=====caseData===")
+	log.Print(caseData)
+	currentDate := ConvertDateSafe(caseData.CreatedDate.String())
+
+	areaDist, err := utils.GetAreaById(ctx, conn, orgId, caseData.DistID)
+	if err != nil {
+		log.Printf("areaDist Error: %v", err)
+	}
+	log.Print("=====areaDist===")
+	log.Print(areaDist)
+	if areaDist == nil {
+		return nil, fmt.Errorf("failed for areaDist: %s", caseData.DistID)
+	}
+	log.Print("=====areaDist===", areaDist.Th)
+
+	stName := mapStatus(caseData.StatusID)
+	//---> REF Number
+	//---> user profile
+	// --- User assignment info
+	var state = "OPEN"
+	if stName == "CLOSED" {
+		state = stName
+		stName = "DONE"
+	}
+
+	// if *caseData.ScheduleFlag {
+	// 	log.Print("=====ScheduleDate===", caseData.ScheduleDate.String())
+	// 	currentDate = ConvertDateSafe(caseData.ScheduleDate.String())
+	// }
+
+	var uAssign interface{} = "" // default empty string
+	if req.UnitUser != "" {
+		user, err := utils.GetUserByUsername(ctx, conn, orgId, req.UnitUser)
+		if err != nil {
+			log.Printf("Error getting user: %v", err)
+		} else if user != nil {
+			uAssign = map[string]interface{}{
+				"user_employee_code": user.EmpID,
+				"user_firstname":     user.FirstName,
+				"user_lastname":      user.LastName,
+				"user_avatar":        user.Photo,
+				"user_phone":         user.MobileNo,
+			}
+		}
+	}
+
+	if stName == "CANCEL" {
+		state = "CLOSED"
+		uAssign = ""
+		assign_ := os.Getenv("ASSIGNED")
+		unitLists, count, err := GetUnits(ctx, conn, orgId, req.CaseId, assign_, "")
+		if err != nil {
+			return nil, fmt.Errorf("get unitLists failed: %w", err)
+		}
+		if count > 0 {
+			firstUnitId := unitLists[0].UnitID
+			user, err := utils.GetUserByUsername(ctx, conn, orgId, firstUnitId)
+			if err != nil {
+				log.Printf("Error getting user: %v", err)
+			} else if user != nil {
+				uAssign = map[string]interface{}{
+					"user_employee_code": user.EmpID,
+					"user_firstname":     user.FirstName,
+					"user_lastname":      user.LastName,
+					"user_avatar":        user.Photo,
+					"user_phone":         user.MobileNo,
+				}
+			}
+		}
+
+	}
+
+	sType, err := utils.GetCaseSubTypeByCode(ctx, conn, orgId, caseData.CaseSTypeID)
+	if err != nil {
+		log.Printf("sType Error: %v", err)
+	}
+
+	attachments, err := GetCaseAttachments_(ctx, conn, orgId, req.CaseId)
+	if err != nil {
+
+	}
+
+	var device_metadata map[string]interface{}
+	if caseData.DeviceMetaData != nil {
+		// DeviceMetaData is *json.RawMessage, so unmarshal
+		err := json.Unmarshal(*caseData.DeviceMetaData, &device_metadata)
+		if err != nil {
+			device_metadata = map[string]interface{}{
+				"device_id":            "",
+				"device_name":          "",
+				"device_type":          sType.MDeviceType,
+				"device_serial_number": "",
+				"device_model":         "",
+				"device_brand":         "",
+				"device_location": map[string]interface{}{
+					"latitude":  "",
+					"longitude": "",
+				},
+				"device_type_name": sType.MDeviceTypeName,
+			}
+		}
+	} else {
+		device_metadata = map[string]interface{}{
+			"device_id":            "",
+			"device_name":          "",
+			"device_type":          sType.MDeviceType,
+			"device_serial_number": "",
+			"device_model":         "",
+			"device_brand":         "",
+			"device_location": map[string]interface{}{
+				"latitude":  "",
+				"longitude": "",
+			},
+			"device_type_name": sType.MDeviceTypeName,
+		}
+	}
+	data := map[string]interface{}{
+		"work_order_number":     req.CaseId,
+		"work_order_ref_number": caseData.IntegrationRefNumber,
+		"work_order_type":       sType.MWorkOrderType,
+		"work_order_metadata": map[string]interface{}{
+			"title":       sType.TH,
+			"description": caseData.CaseDetail,
+			"severity":    GetPriorityName_TXT(caseData.Priority), // CRITICAL, HIGH, MEDIUM, LOW
+			"location": map[string]interface{}{
+				"latitude":  caseData.CaseLat,
+				"longitude": caseData.CaseLon,
+			},
+			"images": attachments,
+		},
+		"user_metadata": map[string]interface{}{
+			"assigned_employee_code":  uAssign,
+			"associate_employee_code": []string{},
+		},
+		"device_metadata": device_metadata,
+		//"sop_metadata": caseData.DeviceMetaData,
+		"status":     stName, //NEW, ASSIGNED, ACKNOWLEDGE, INPROGRESS, DONE, ONHOLD, CANCEL
+		"state":      state,
+		"work_date":  currentDate,
+		"workspace":  os.Getenv("INTEGRATION_WORKSPACE"),
+		"namespace":  *areaDist.NameSpace,
+		"source":     os.Getenv("INTEGRATION_SOURCE"),
+		"created_by": caseData.CreatedBy,
+	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+	}
+
+	jsonStr := string(jsonBytes)
+	fmt.Println(jsonStr)
+
+	resStr, err := callAPI(os.Getenv("METTTER_SERVER")+"/mettriq/v1/work_order/create", "POST", data)
+	if err != nil {
+		return nil, err
+	}
+	log.Print("/mettriq/v1/work_order/create")
+	log.Print(data)
+	log.Print(resStr)
+
+	var res model.WorkOrderCreateResponse
+	if err := json.Unmarshal([]byte(resStr), &res); err != nil {
+		return nil, err
+	}
+
+	utils.CaseSyncDel(req.CaseId)
+	return &res, nil
 }
 
 func InsertCaseAttachment(ctx context.Context, conn *pgx.Conn,
