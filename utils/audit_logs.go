@@ -188,7 +188,7 @@ func GetAuditLogsAllow() map[string][]int {
 	return allowMap
 }
 
-func WriteConsole(level string, function string, msg string, args ...interface{}) {
+func WriteConsole(level string, function string, msg string, args ...zap.Field) {
 	// Global enable/disable
 	if strings.ToLower(os.Getenv("CONSOLE_LOG")) != "true" {
 		return
@@ -218,7 +218,7 @@ func WriteConsole(level string, function string, msg string, args ...interface{}
 	if len(args) > 0 {
 		// If msg has no % directives, just append the args
 		if strings.Contains(msg, "%") {
-			formatted = fmt.Sprintf(msg, args...)
+			formatted = fmt.Sprintf(msg, args)
 		} else {
 			formatted = fmt.Sprintf("%s | %v", msg, args)
 		}

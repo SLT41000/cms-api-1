@@ -180,7 +180,7 @@ func GetSOP(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 	paramQuery := c.Request.URL.RawQuery
-	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logStr := Process("Case-SOP", paramQuery, response.Status, paramQuery, response)
 	logger.Info(logStr)
 }
 
@@ -810,7 +810,7 @@ func GetUnitSOP(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 	paramQuery := c.Request.URL.RawQuery
-	logStr := Process("ListCase", paramQuery, response.Status, paramQuery, response)
+	logStr := Process("Unit-SOP", paramQuery, response.Status, paramQuery, response)
 	logger.Info(logStr)
 }
 

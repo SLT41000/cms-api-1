@@ -16,7 +16,7 @@ func ConnectDB() (*pgx.Conn, context.Context, context.CancelFunc) {
 	var host string = os.Getenv("DB_HOST")
 	var database string = os.Getenv("DB_NAME")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s", username, password, host, database)
-	logger.Debug("Connection String : " + connStr)
+	//logger.Debug("Connection String : " + connStr)
 	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 
@@ -36,7 +36,7 @@ func ConnectDB_REPORT() (*pgx.Conn, context.Context, context.CancelFunc) {
 	var host string = os.Getenv("DB_HOST")
 	var database string = os.Getenv("DB_NAME_REPORT")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s", username, password, host, database)
-	logger.Debug("Connection String : " + connStr)
+	//logger.Debug("Connection String : " + connStr)
 	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 

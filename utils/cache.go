@@ -275,7 +275,7 @@ func GroupTypeGetOrLoad(conn *pgx.Conn) ([]model.CaseGroupType, error) {
 		// ✅ ถ้ามี cache
 		var cached []model.CaseGroupType
 		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
-			log.Println("✅ Loaded GroupType from Redis cache")
+			log.Println("⚠️ Loaded GroupType from Redis cache")
 			return cached, nil
 		}
 	}
@@ -461,7 +461,7 @@ func GetAreaByUsernameOrLoad(ctx context.Context, dbConn *pgx.Conn, orgId string
 	if err == nil && cacheData != "" {
 		var cached model.Um_User_Login
 		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
-			log.Println("✅ Loaded UserPermission from Redis cache")
+			log.Println("⚠️ Loaded GetAreaByUsernameOrLoad from Redis cache")
 			return &cached, nil
 		}
 	}
@@ -532,7 +532,7 @@ func GetCountryProvinceDistrictsOrLoad(ctx context.Context, conn *pgx.Conn, orgI
 		var cached []model.AreaDistrictWithDetails
 
 		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
-			log.Println("✅ Loaded UserPermission from Redis cache")
+			log.Println("⚠️ Loaded GetCountryProvinceDistrictsOrLoad from Redis cache")
 			return cached, nil
 		}
 	}
@@ -598,7 +598,7 @@ func GetDepartmentCommandStationOrLoad(ctx context.Context, conn *pgx.Conn, orgI
 		var cached []model.StationWithCommandDept
 
 		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
-			log.Println("✅ Loaded UserPermission from Redis cache")
+			log.Println("⚠️ Loaded GetDepartmentCommandStationOrLoad from Redis cache")
 			return cached, nil
 		}
 	}
@@ -662,7 +662,7 @@ func GetUserSkillsOrLoad(ctx context.Context, conn *pgx.Conn, orgId string) ([]m
 	if err == nil && cacheData != "" {
 		var cached []model.Skill
 		if jsonErr := json.Unmarshal([]byte(cacheData), &cached); jsonErr == nil {
-			log.Println("✅ Loaded UserSkills from Redis cache")
+			log.Println("⚠️ Loaded UserSkills from Redis cache")
 			return cached, nil
 		}
 	}
