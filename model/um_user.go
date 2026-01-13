@@ -26,7 +26,7 @@ type Um_User_Login struct {
 	RoleID                string     `json:"roleId"`
 	Permission            []string   `json:"permission"`
 	RoleName              string     `json:"roleName"`
-	UserType              string     `json:"userType"`
+	UserType              *string    `json:"userType"`
 	EmpID                 string     `json:"empId"`
 	DeptID                string     `json:"deptId"`
 	CommID                string     `json:"commId"`
@@ -66,7 +66,7 @@ type Um_User struct {
 	Email                 *string                   `json:"email"`
 	RoleID                string                    `json:"roleId"`
 	RoleName              string                    `json:"roleName"`
-	UserType              string                    `json:"userType"`
+	UserType              *string                   `json:"userType"`
 	EmpID                 string                    `json:"empId"`
 	DeptID                string                    `json:"deptId"`
 	CommID                string                    `json:"commId"`
@@ -256,19 +256,19 @@ type UserSkillInsert struct {
 
 // Batch skill insert
 type UserSkillBatchInsert struct {
-    // OrgID string   `json:"orgId"`
-    UserName string   `json:"userName" binding:"required"`
-    SkillIDs []string `json:"skillIds" binding:"required"`
-    Active   bool     `json:"active" example:"true"`
+	// OrgID string   `json:"orgId"`
+	UserName string   `json:"userName" binding:"required"`
+	SkillIDs []string `json:"skillIds" binding:"required"`
+	Active   bool     `json:"active" example:"true"`
 }
 
 // Response with inserted IDs
 type UserSkillBatchResponse struct {
-    Status        string `json:"status"`
-    Msg           string `json:"msg"`
-    Desc          string `json:"desc"`
-    InsertedIDs   []int  `json:"insertedIds,omitempty"`
-    InsertedCount int    `json:"insertedCount,omitempty"`
+	Status        string `json:"status"`
+	Msg           string `json:"msg"`
+	Desc          string `json:"desc"`
+	InsertedIDs   []int  `json:"insertedIds,omitempty"`
+	InsertedCount int    `json:"insertedCount,omitempty"`
 }
 
 type UserSkillUpdate struct {

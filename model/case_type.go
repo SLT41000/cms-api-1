@@ -51,33 +51,35 @@ type CaseSubType struct {
 }
 
 type CaseSubTypeInsert struct {
-	TypeID         string   `json:"typeId"`
-	STypeCode      string   `json:"sTypeCode"`
-	EN             string   `json:"en"`
-	TH             string   `json:"th"`
-	WFID           string   `json:"wfId"`
-	CaseSLA        string   `json:"caseSla"`
-	Priority       string   `json:"priority"`
-	UserSkillList  []string `json:"userSkillList"`
-	UnitPropLists  []string `json:"unitPropLists"`
-	Active         bool     `json:"active"`
-	MDeviceType    *string  `json:"mDeviceType"`
-	MWorkOrderType *string  `json:"mWorkOrderType"`
+	TypeID          string   `json:"typeId"`
+	STypeCode       string   `json:"sTypeCode"`
+	EN              string   `json:"en"`
+	TH              string   `json:"th"`
+	WFID            string   `json:"wfId"`
+	CaseSLA         string   `json:"caseSla"`
+	Priority        string   `json:"priority"`
+	UserSkillList   []string `json:"userSkillList"`
+	UnitPropLists   []string `json:"unitPropLists"`
+	Active          bool     `json:"active"`
+	MDeviceType     *string  `json:"mDeviceType"`
+	MWorkOrderType  *string  `json:"mWorkOrderType"`
+	MDeviceTypeName *string  `json:"mDeviceTypeName"`
 }
 
 type CaseSubTypeUpdate struct {
-	TypeID         string   `json:"typeId"`
-	STypeCode      string   `json:"sTypeCode"`
-	EN             string   `json:"en"`
-	TH             string   `json:"th"`
-	WFID           string   `json:"wfId"`
-	CaseSLA        string   `json:"caseSla"`
-	Priority       string   `json:"priority"`
-	UserSkillList  []string `json:"userSkillList"`
-	UnitPropLists  []string `json:"unitPropLists"`
-	Active         bool     `json:"active"`
-	MDeviceType    *string  `json:"mDeviceType"`
-	MWorkOrderType *string  `json:"mWorkOrderType"`
+	TypeID          string   `json:"typeId"`
+	STypeCode       string   `json:"sTypeCode"`
+	EN              string   `json:"en"`
+	TH              string   `json:"th"`
+	WFID            string   `json:"wfId"`
+	CaseSLA         string   `json:"caseSla"`
+	Priority        string   `json:"priority"`
+	UserSkillList   []string `json:"userSkillList"`
+	UnitPropLists   []string `json:"unitPropLists"`
+	Active          bool     `json:"active"`
+	MDeviceType     *string  `json:"mDeviceType"`
+	MWorkOrderType  *string  `json:"mWorkOrderType"`
+	MDeviceTypeName *string  `json:"mDeviceTypeName"`
 }
 
 type CaseTypeWithSubType struct {
